@@ -35,6 +35,7 @@ add_library(ppui STATIC
     DictionaryKey.cpp
     Event.cpp
     Font.cpp
+    Graphics_8BIT.cpp
     Graphics_15BIT.cpp
     Graphics_16BIT.cpp
     Graphics_24bpp_generic.cpp
@@ -154,6 +155,10 @@ else()
                 osinterface/posix
                 sdl
                 ${SDL_INCLUDE_DIR}
+        )
+        target_include_directories(ppui
+            PRIVATE
+                ${PROJECT_SOURCE_DIR}/include/amiga
         )
     else()
         target_include_directories(ppui PUBLIC sdl ${SDL2_INCLUDE_DIRS})

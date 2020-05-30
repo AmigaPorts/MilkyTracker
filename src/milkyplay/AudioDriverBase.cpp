@@ -39,11 +39,15 @@
 #include "MasterMixer.h"
 
 #if defined(__PSP__)
-#include <pspkernel.h>
+#	include <pspkernel.h>
 #elif !defined(WIN32) && !defined(_WIN32_WCE)
-#include <unistd.h>
+#	include <unistd.h>
 #else
-#include <windows.h>
+#	include <windows.h>
+#endif
+
+#if defined(__AMIGA__)
+extern "C" void usleep(unsigned long microseconds);
 #endif
 
 void AudioDriverBase::msleep(mp_uint32 msecs)
@@ -52,10 +56,12 @@ void AudioDriverBase::msleep(mp_uint32 msecs)
 	::Sleep(msecs);
 #elif defined(__PSP__)
 	sceKernelDelayThreadCB(msecs*1000);
-#elif defined(__AROS__) || defined(__AMIGA__)
+#elif defined(__AROS__)
 	// usleep is not implemented on AROS
 	if(msecs < 1000) msecs = 1000;
 	sleep(msecs/1000);
+#elif defined(__AMIGA__)
+	usleep(msecs*1000);
 #else
 	usleep(msecs*1000);
 #endif
@@ -65,14 +71,14 @@ bool AudioDriverBase::isMixerActive()
 {
 	if (idle)
 		return false;
-		
+
 	if (markedAsIdle)
 	{
 		markedAsIdle = false;
 		idle = true;
 		return false;
 	}
-	
+
 	return (mixer && mixer->isPlaying());
 }
 
@@ -85,9 +91,9 @@ void AudioDriverBase::setIdle(bool idle)
 	{
 		if (markedAsIdle || this->idle)
 			return;
-			
+
 		markedAsIdle = true;
-		
+
 		// this is going to loop infinitely when the audio device is not running
 		double waitMillis = ((double)(bufferSize/2) / (double)mixFrequency) * 1000.0 * 2.0;
 		if (waitMillis < 1.0)

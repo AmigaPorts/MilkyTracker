@@ -29,7 +29,7 @@
 
 /*
  *  PlayerGeneric.cpp
- *  MilkyPlay 
+ *  MilkyPlay
  *
  *  PlayerGeneric is a wrapper that allocates a suiting type of player
  *	for a module while providing the same player interfaces.
@@ -71,10 +71,10 @@ void PlayerGeneric::adjustSettings()
 {
 	mp_uint32 bufferSize = mixer->getBufferSize();
 	mp_uint32 sampleRate = mixer->getSampleRate();
-	
+
 	this->bufferSize = bufferSize;
 	this->frequency = sampleRate;
-	
+
 	if (player)
 	{
 		player->setBufferSize(bufferSize);
@@ -86,7 +86,7 @@ PlayerBase::PlayerTypes PlayerGeneric::getPreferredPlayerType(XModule* module)
 {
 	if (module == NULL)
 		return PlayerBase::PlayerType_INVALID;
-		
+
 	switch (module->getType())
 	{
 		case XModule::ModuleType_669:
@@ -131,7 +131,7 @@ PlayerBase::PlayerTypes PlayerGeneric::getPreferredPlayerType(XModule* module)
 		case XModule::ModuleType_NONE:
 			return PlayerBase::PlayerType_Generic;
 			break;
-			
+
 		default:
 			return PlayerBase::PlayerType_INVALID;
 	}
@@ -149,7 +149,7 @@ PlayerBase*	PlayerGeneric::getPreferredPlayer(XModule* module) const
 #endif
 		case PlayerBase::PlayerType_Generic:
 			return new PlayerSTD(frequency);
-			
+
 		default:
 			return NULL;
 	}
@@ -166,7 +166,7 @@ PlayerGeneric::PlayerGeneric(mp_sint32 frequency, AudioDriverInterface* audioDri
 
 	bufferSize = 0;
 	sampleShift = 0;
-	
+
 	resamplerType = MIXER_NORMAL;
 
 	idle = false;
@@ -199,7 +199,7 @@ PlayerGeneric::PlayerGeneric(mp_sint32 frequency, AudioDriverInterface* audioDri
 		strcpy(audioDriverName, defaultName);
 	}
 }
-	
+
 PlayerGeneric::~PlayerGeneric()
 {
 
@@ -209,12 +209,12 @@ PlayerGeneric::~PlayerGeneric()
 			mixer->removeDevice(player);
 		delete player;
 	}
-	
+
 	if (mixer)
 		delete mixer;
 
 	delete[] audioDriverName;
-	
+
 	delete listener;
 }
 
@@ -251,10 +251,10 @@ ChannelMixer::ResamplerTypes PlayerGeneric::getResamplerType() const
 {
 	if (player)
 		return player->getResamplerType();
-		
+
 	return resamplerType;
 }
-	
+
 void PlayerGeneric::setSampleShift(mp_sint32 shift)
 {
 	sampleShift = shift;
@@ -266,7 +266,7 @@ mp_sint32 PlayerGeneric::getSampleShift() const
 {
 	if (mixer)
 		return mixer->getSampleShift();
-	
+
 	return sampleShift;
 }
 
@@ -278,12 +278,12 @@ void PlayerGeneric::setPeakAutoAdjust(bool b)
 mp_sint32 PlayerGeneric::adjustFrequency(mp_uint32 frequency)
 {
 	this->frequency = frequency;
-	
+
 	mp_sint32 res = MP_OK;
-	
+
 	if (mixer)
 		res = mixer->setSampleRate(frequency);
-	
+
 	return res;
 }
 
@@ -291,7 +291,7 @@ mp_sint32 PlayerGeneric::getMixFrequency() const
 {
 	if (player)
 		return player->getMixFrequency();
-		
+
 	return frequency;
 }
 
@@ -308,12 +308,12 @@ mp_sint32 PlayerGeneric::adjustBufferSize(mp_uint32 numBeats)
 mp_sint32 PlayerGeneric::setBufferSize(mp_uint32 bufferSize)
 {
 	mp_sint32 res = 0;
-	
+
 	this->bufferSize = bufferSize;
-	
+
 	if (mixer)
 	{
-		// If we're told to compensate the samples until we 
+		// If we're told to compensate the samples until we
 		// we reached 2^n buffer sizes
 		if (compensateBufferFlag)
 		{
@@ -325,14 +325,14 @@ mp_sint32 PlayerGeneric::setBufferSize(mp_uint32 bufferSize)
 					break;
 				}
 			}
-		}		
-	
+		}
+
 		res = mixer->setBufferSize(bufferSize);
 	}
-	
+
 	return res;
 }
-	
+
 mp_sint32 PlayerGeneric::setPowerOfTwoCompensationFlag(bool b)
 {
 	if (mixer && compensateBufferFlag != b)
@@ -356,7 +356,7 @@ const char*	PlayerGeneric::getCurrentAudioDriverName() const
 
 	return audioDriverName;
 }
-	
+
 bool PlayerGeneric::setCurrentAudioDriverByName(const char* name)
 {
 	if (name == NULL)
@@ -383,7 +383,7 @@ bool PlayerGeneric::setCurrentAudioDriverByName(const char* name)
 			delete[] audioDriverName;
 
 		audioDriverName = new char[strlen(name)+1];
-		strcpy(audioDriverName, name);		
+		strcpy(audioDriverName, name);
 		return true;
 	}
 
@@ -395,7 +395,7 @@ bool PlayerGeneric::isInitialized() const
 {
 	if (mixer)
 		return mixer->isInitialized();
-		
+
 	return false;
 }
 
@@ -403,15 +403,15 @@ bool PlayerGeneric::isPlaying() const
 {
 	if (mixer)
 		return mixer->isPlaying();
-		
+
 	return false;
 }
-	
+
 mp_int64 PlayerGeneric::getSampleCounter() const
 {
 	if (player)
 		return player->getSampleCounter();
-	
+
 	return 0;
 }
 
@@ -420,12 +420,12 @@ void PlayerGeneric::resetSampleCounter()
 	if (player)
 		player->resetSampleCounter();
 }
-	
+
 mp_sint32 PlayerGeneric::getCurrentSamplePosition() const
 {
 	if (mixer && mixer->getAudioDriver())
 		return mixer->getAudioDriver()->getBufferPos();
-	
+
 	return 0;
 }
 
@@ -433,15 +433,15 @@ mp_sint32 PlayerGeneric::getCurrentBeatIndex()
 {
 	if (player)
 		return player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
-	
+
 	return 0;
 }
-	
+
 mp_sint32 PlayerGeneric::getCurrentSample(mp_sint32 position, mp_sint32 channel)
 {
 	if (mixer)
 		return mixer->getCurrentSample(position, channel);
-	
+
 	return 0;
 }
 
@@ -487,7 +487,7 @@ PlayerGeneric::PlayModes PlayerGeneric::getPlayMode() const
 {
 	if (player)
 		return player->getPlayMode();
-		
+
 	return playMode;
 }
 
@@ -495,7 +495,7 @@ void PlayerGeneric::enable(PlayModeOptions option, bool b)
 {
 	ASSERT(option>=PlayModeOptionFirst && option<PlayModeOptionLast);
 	options[option] = b;
-	
+
 	if (player)
 		player->enable(option, b);
 }
@@ -503,10 +503,10 @@ void PlayerGeneric::enable(PlayModeOptions option, bool b)
 bool PlayerGeneric::isEnabled(PlayModeOptions option) const
 {
 	ASSERT(option>=PlayModeOptionFirst && option<PlayModeOptionLast);
-	
+
 	if (!player)
 		return options[option];
-	else 
+	else
 		return player->isEnabled(option);
 }
 
@@ -528,11 +528,11 @@ void PlayerGeneric::resetAllSpeed()
 		player->resetAllSpeed();
 }
 
-mp_sint32 PlayerGeneric::startPlaying(XModule* module, 
-									  bool repeat/* = false*/, 
-									  mp_uint32 startPosition/* = 0*/, 
+mp_sint32 PlayerGeneric::startPlaying(XModule* module,
+									  bool repeat/* = false*/,
+									  mp_uint32 startPosition/* = 0*/,
 									  mp_uint32 startRow/* = 0*/,
-									  mp_sint32 numChannels/* = -1*/, 
+									  mp_sint32 numChannels/* = -1*/,
 									  const mp_ubyte* customPanningTable/* = NULL*/,
 									  bool idle/* = false*/,
 									  mp_sint32 patternIndex/* = -1*/,
@@ -559,9 +559,9 @@ mp_sint32 PlayerGeneric::startPlaying(XModule* module,
 				mixer->removeDevice(player);
 			delete player;
 		}
-		
+
 		player = getPreferredPlayer(module);
-		
+
 		if (player)
 		{
 			// apply our own "state" to the state of the newly allocated player
@@ -574,8 +574,8 @@ mp_sint32 PlayerGeneric::startPlaying(XModule* module,
 			player->setPlayMode(playMode);
 
 			for (mp_sint32 i = PlayModeOptionFirst; i < PlayModeOptionLast; i++)
-				player->enable((PlayModeOptions)i, options[i]);			
-			
+				player->enable((PlayModeOptions)i, options[i]);
+
 			player->setDisableMixing(disableMixing);
 			player->setAllowFilters(allowFilters);
 			//if (paused)
@@ -583,18 +583,18 @@ mp_sint32 PlayerGeneric::startPlaying(XModule* module,
 
 			// adjust number of virtual channels if necessary
 			setNumMaxVirChannels(numMaxVirChannels);
-		}		
+		}
 	}
-	
+
 	if (player && mixer)
 	{
 		if (!mixer->isDeviceRemoved(player))
 			mixer->removeDevice(player);
-			
+
 		player->startPlaying(module, repeat, startPosition, startRow, numChannels, customPanningTable, idle, patternIndex, playOneRowOnly);
-		
+
 		mixer->addDevice(player);
-		
+
 		if (!mixer->isPlaying())
 			return mixer->start();
 	}
@@ -616,7 +616,7 @@ mp_sint32 PlayerGeneric::stopPlaying()
 
 	if (mixer)
 		return mixer->stop();
-		
+
 	return MP_OK;
 }
 
@@ -624,7 +624,7 @@ bool PlayerGeneric::hasSongHalted() const
 {
 	if (player)
 		return player->hasSongHalted();
-		
+
 	return true;
 }
 
@@ -639,7 +639,7 @@ bool PlayerGeneric::isIdle() const
 {
 	if (player)
 		return player->isIdle();
-		
+
 	return idle;
 }
 
@@ -654,16 +654,16 @@ bool PlayerGeneric::isRepeating() const
 {
 	if (player)
 		return player->isRepeating();
-		
+
 	return repeat;
 }
-	
+
 mp_sint32 PlayerGeneric::pausePlaying()
 {
 	paused = true;
 	if (mixer)
 		return mixer->pause();
-		
+
 	return MP_OK;
 }
 
@@ -684,7 +684,7 @@ bool PlayerGeneric::isPaused() const
 {
 	if (mixer)
 		return mixer->isPaused();
-		
+
 	return paused;
 }
 
@@ -708,7 +708,7 @@ bool PlayerGeneric::getAllowFilters() const
 {
 	if (player)
 		return player->getAllowFilters();
-		
+
 	return allowFilters;
 }
 
@@ -724,7 +724,7 @@ mp_sint32 PlayerGeneric::getMasterVolume() const
 {
 	if (player)
 		return player->getMasterVolume();
-		
+
 	return masterVolume;
 }
 
@@ -740,7 +740,7 @@ mp_sint32 PlayerGeneric::getPanningSeparation() const
 {
 	if (player)
 		return player->getPanningSeparation();
-		
+
 	return panningSeparation;
 }
 
@@ -751,7 +751,7 @@ mp_sint32 PlayerGeneric::getSongMainVolume() const
 		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		return player->getSongMainVolume(index);
 	}
-	
+
 	return 255;
 }
 
@@ -762,7 +762,7 @@ mp_sint32 PlayerGeneric::getRow() const
 		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		return player->getRow(index);
 	}
-	
+
 	return 0;
 }
 
@@ -773,7 +773,7 @@ mp_sint32 PlayerGeneric::getOrder() const
 		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		return player->getOrder(index);
 	}
-		
+
 	return 0;
 }
 
@@ -781,11 +781,11 @@ void PlayerGeneric::getPosition(mp_sint32& order, mp_sint32& row) const
 {
 	if (player)
 	{
-		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());	
+		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		player->getPosition(order, row, index);
 		return;
 	}
-	
+
 	order = row = 0;
 }
 
@@ -793,7 +793,7 @@ mp_sint32 PlayerGeneric::getLastUnvisitedPosition() const
 {
 	if (player)
 		return player->getLastUnvisitedPosition();
-	
+
 	return 0;
 }
 
@@ -805,7 +805,7 @@ void PlayerGeneric::getPosition(mp_sint32& order, mp_sint32& row, mp_sint32& tic
 		player->getPosition(order, row, ticker, index);
 		return;
 	}
-	
+
 	order = row = ticker = 0;
 }
 
@@ -813,7 +813,7 @@ mp_int64 PlayerGeneric::getSyncCount() const
 {
 	if (player)
 		return player->getSyncCount();
-		
+
 	return 0;
 }
 
@@ -821,7 +821,7 @@ mp_uint32 PlayerGeneric::getSyncSampleCounter() const
 {
 	if (player)
 		return player->getSyncSampleCounter();
-		
+
 	return 0;
 }
 
@@ -850,7 +850,7 @@ mp_sint32 PlayerGeneric::getTempo() const
 		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		return player->getTempo(index);
 	}
-		
+
 	return 0;
 }
 
@@ -861,22 +861,22 @@ mp_sint32 PlayerGeneric::getSpeed() const
 		mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 		return player->getSpeed(index);
 	}
-		
+
 	return 0;
 }
 
-void PlayerGeneric::resetOnStop(bool b) 
+void PlayerGeneric::resetOnStop(bool b)
 {
 	resetOnStopFlag = b;
 	if (player)
-		player->resetOnStop(b); 
+		player->resetOnStop(b);
 }
 
 void PlayerGeneric::resetMainVolumeOnStartPlay(bool b)
 {
 	resetMainVolumeOnStartPlayFlag = b;
 	if (player)
-		player->resetMainVolumeOnStartPlay(b); 
+		player->resetMainVolumeOnStartPlay(b);
 }
 
 struct PeakAutoAdjustFilter : public Mixable
@@ -884,27 +884,27 @@ struct PeakAutoAdjustFilter : public Mixable
 	mp_uint32 mixerShift;
 	mp_uint32 masterVolume;
 	mp_sint32 lastPeakValue;
-	
-	PeakAutoAdjustFilter() : 
+
+	PeakAutoAdjustFilter() :
 		mixerShift(0),
 		masterVolume(256),
 		lastPeakValue(0)
 	{
 	}
-	
-	virtual void mix(mp_sint32* buffer, mp_uint32 bufferSize)
+
+	virtual void mix(mp_sint32* buffer, mp_uint32 bufferSize, mp_uint32 numChannels, mp_sword** buffers)
 	{
 		const mp_sint32* buffer32 = buffer;
-		
+
 		for (mp_uint32 i = 0; i < bufferSize*MP_NUMCHANNELS; i++)
 		{
 			mp_sint32 b = *buffer32++;
-			
+
 			if (abs(b) > lastPeakValue)
-				lastPeakValue = abs(b);					
+				lastPeakValue = abs(b);
 		}
 	}
-	
+
 	void calculateMasterVolume()
 	{
 		if (lastPeakValue)
@@ -918,40 +918,40 @@ struct PeakAutoAdjustFilter : public Mixable
 };
 
 // export to 16bit stereo WAV
-mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module, 
-									 mp_sint32 startOrder/* = 0*/, mp_sint32 endOrder/* = -1*/, 
+mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module,
+									 mp_sint32 startOrder/* = 0*/, mp_sint32 endOrder/* = -1*/,
 									 const mp_ubyte* mutingArray/* = NULL*/, mp_uint32 mutingNumChannels/* = 0*/,
 									 const mp_ubyte* customPanningTable/* = NULL*/,
 									 AudioDriverBase* preferredDriver/* = NULL*/,
 									 mp_sint32* timingLUT/* = NULL*/)
 {
 	PlayerBase* player = NULL;
-	
+
 	AudioDriverBase* wavWriter = preferredDriver;
 	bool isWAVWriterDriver = false;
-	
+
 	if (wavWriter == NULL)
 	{
 		wavWriter = new WAVWriter(fileName);
 		isWAVWriterDriver = true;
-	
+
 		if (!static_cast<WAVWriter*>(wavWriter)->isOpen())
 		{
 			delete wavWriter;
 			return MP_DEVICE_ERROR;
 		}
 	}
-	
+
 	MasterMixer mixer(frequency, bufferSize, 1, wavWriter);
 	mixer.setSampleShift(sampleShift);
 	mixer.setDisableMixing(disableMixing);
-	
+
 	player = getPreferredPlayer(module);
-	
+
 	PeakAutoAdjustFilter filter;
 	if (autoAdjustPeak)
 		mixer.setFilterHook(&filter);
-		
+
 	if (player)
 	{
 		player->adjustFrequency(frequency);
@@ -961,7 +961,7 @@ mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module,
 		player->setMasterVolume(masterVolume);
 		player->setPlayMode(playMode);
 		player->setDisableMixing(disableMixing);
-		player->setAllowFilters(allowFilters);		
+		player->setAllowFilters(allowFilters);
 #ifndef MILKYTRACKER
 		if (player->getType() == PlayerBase::PlayerType_IT)
 		{
@@ -979,19 +979,19 @@ mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module,
 				player->muteChannel(i, mutingArray[i] == 1);
 		}
 		player->startPlaying(module, false, startOrder, 0, -1, customPanningTable, false, -1);
-		
+
 		mixer.start();
 	}
 
 	if (endOrder == -1 || endOrder < startOrder || endOrder > module->header.ordnum - 1)
-		endOrder = module->header.ordnum - 1;		
+		endOrder = module->header.ordnum - 1;
 
 	mp_sint32 curOrderPos = startOrder;
 	if (timingLUT)
 	{
 		for (mp_sint32 i = 0; i < module->header.ordnum; i++)
 			timingLUT[i] = -1;
-		
+
 		timingLUT[curOrderPos] = 0;
 	}
 
@@ -1006,15 +1006,15 @@ mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module,
 #endif
 			curOrderPos = player->getOrder(0);
 			if (timingLUT && curOrderPos < module->header.ordnum && timingLUT[curOrderPos] == -1)
-				timingLUT[curOrderPos] = wavWriter->getNumPlayedSamples();			
+				timingLUT[curOrderPos] = wavWriter->getNumPlayedSamples();
 		}
 	}
 
 	player->stopPlaying();
-	
+
 	mixer.stop();
 	// important step, otherwise destruction of the audio driver will cause
-	// trouble if the mixer instance is removed from this function's stack 
+	// trouble if the mixer instance is removed from this function's stack
 	// and trys to access the driver which is no longer existant
 	mixer.closeAudioDevice();
 
@@ -1027,7 +1027,7 @@ mp_sint32 PlayerGeneric::exportToWAV(const SYSCHAR* fileName, XModule* module,
 	delete player;
 
 	mp_sint32 numWrittenSamples = wavWriter->getNumPlayedSamples();
-	
+
 	if (isWAVWriterDriver)
 		delete wavWriter;
 
@@ -1038,7 +1038,7 @@ bool PlayerGeneric::grabChannelInfo(mp_sint32 chn, TPlayerChannelInfo& channelIn
 {
 	if (player)
 		return player->grabChannelInfo(chn, channelInfo);
-		
+
 	return false;
 }
 

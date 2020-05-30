@@ -58,7 +58,7 @@ protected:
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_Window* theWindow;
 	int drv_index;
-	
+
 	SDL_Window* CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags);
 	SDL_Cursor *cursorStandard, *cursorResizeHoriz, *cursorEggtimer, *cursorHand;
 #else
@@ -75,7 +75,6 @@ protected:
 	void adjust(pp_int32& x, pp_int32& y);
 
 	// Mouse pointers
-	
 	void initMousePointers();
 
 public:
@@ -84,12 +83,12 @@ public:
 					SDL_Surface*& screen,
 #endif
 					pp_int32 width,
-					pp_int32 height, 
+					pp_int32 height,
 					pp_int32 scaleFactor,
-					pp_int32 bpp, 
+					pp_int32 bpp,
 					bool fullScreen,
 					Orientations theOrientation = ORIENTATION_NORMAL);
-				  
+
 	virtual ~PPDisplayDevice();
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_Window* getWindow();
@@ -103,15 +102,17 @@ public:
 
 	Orientations getOrientation() { return orientation; }
 
-
-
 	// ----------------------------- ex. PPWindow ----------------------------
-	virtual void setTitle(const PPSystemString& title);	
+	virtual void setTitle(const PPSystemString& title);
 	virtual bool goFullScreen(bool b);
 
 	virtual void shutDown();
 	virtual void signalWaitState(bool b, const PPColor& color);
 	virtual void setMouseCursor(MouseCursorTypes type);
+
+#if defined(AMIGA_SAGA_PIP)
+	virtual void setSAGAPiPSize() = 0;
+#endif
 };
 
 #endif

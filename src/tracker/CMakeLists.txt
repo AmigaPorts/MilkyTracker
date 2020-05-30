@@ -282,11 +282,15 @@ elseif(WIN32)
 elseif(AROS OR AMIGA)
     target_sources(tracker PRIVATE
         # Sources
-        sdl-1.2/SDL_KeyTranslation.cpp
-        sdl-1.2/SDL_Main.cpp
+        amiga/SDL_KeyTranslation.cpp
+        amiga/SDL_Main.cpp
 
         # Headers
-        sdl-1.2/SDL_KeyTranslation.h
+        amiga/SDL_KeyTranslation.h
+    )
+
+    target_include_directories(tracker PRIVATE
+        ${PROJECT_SOURCE_DIR}/include/amiga
     )
 else()
     target_sources(tracker PRIVATE

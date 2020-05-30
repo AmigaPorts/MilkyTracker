@@ -37,12 +37,12 @@ void PPGraphics_BGR24::setPixel(pp_int32 x, pp_int32 y)
 	{
 
 		pp_uint8* buff = (pp_uint8*)buffer+pitch*y+x*BPP;
-		
+
 		buff[0] = (pp_uint8)currentColor.b;
 		buff[1] = (pp_uint8)currentColor.g;
-		buff[2] = (pp_uint8)currentColor.r;		
+		buff[2] = (pp_uint8)currentColor.r;
 
-	}	
+	}
 }
 
 void PPGraphics_BGR24::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
@@ -52,17 +52,17 @@ void PPGraphics_BGR24::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 	{
 
 		pp_uint8* buff = (pp_uint8*)buffer+pitch*y+x*BPP;
-		
+
 		buff[0] = (pp_uint8)color.b;
 		buff[1] = (pp_uint8)color.g;
-		buff[2] = (pp_uint8)color.r;		
+		buff[2] = (pp_uint8)color.r;
 
-	}	
+	}
 }
 
 void PPGraphics_BGR24::fill(PPRect rect)
 {
-	
+
 	if (rect.y1 < currentClipRect.y1)
 		rect.y1 = currentClipRect.y1;
 
@@ -83,29 +83,29 @@ void PPGraphics_BGR24::fill(PPRect rect)
 		(((pp_uint32)r) << 16) +
 		(((pp_uint32)g) << 8) +
 		(((pp_uint32)b));
-	
+
 	pp_uint32 rgb2 = (((pp_uint32)currentColor.g) << 24) +
 		(((pp_uint32)b) << 16) +
 		(((pp_uint32)r) << 8) +
 		(((pp_uint32)g));
-	
+
 	pp_uint32 rgb3 = (((pp_uint32)currentColor.r) << 24) +
 		(((pp_uint32)g) << 16) +
 		(((pp_uint32)b) << 8) +
 		(((pp_uint32)r));
 
-	pp_int32 realLen = (rect.x2-rect.x1)*BPP; 
+	pp_int32 realLen = (rect.x2-rect.x1)*BPP;
 	pp_int32 len = realLen/12;
 	pp_int32 remainder = (((rect.x2-rect.x1)*BPP)%12) / 3;
 
-	pp_uint8* buff = (pp_uint8*)buffer+(pitch*rect.y1+rect.x1*BPP); 
-	
+	pp_uint8* buff = (pp_uint8*)buffer+(pitch*rect.y1+rect.x1*BPP);
+
 	for (pp_int32 y = rect.y1; y < rect.y2; y++)
-	{				
+	{
 		pp_uint32* ptr = reinterpret_cast<pp_uint32*>(buff);
-		
+
 		pp_int32 i;
-		
+
 		for (i = 0; i < len; i++)
 		{
 			*ptr = rgb1;
@@ -113,19 +113,19 @@ void PPGraphics_BGR24::fill(PPRect rect)
 			*(ptr+2) = rgb3;
 			ptr+=3;
 		}
-		
+
 		buff = reinterpret_cast<pp_uint8*>(ptr);
-		
+
 		for (i = 0; i < remainder; i++)
 		{
 			*buff++ = (pp_uint8)b;
 			*buff++ = (pp_uint8)g;
-			*buff++ = (pp_uint8)r;		
+			*buff++ = (pp_uint8)r;
 		}
 
 		buff+=(pitch - realLen);
-		
-	}	
+
+	}
 
 }
 
@@ -198,7 +198,7 @@ void PPGraphics_BGR24::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
 	{
 		*buff++ = (pp_uint8)currentColor.b;
 		*buff++ = (pp_uint8)currentColor.g;
-		*buff++ = (pp_uint8)currentColor.r;		
+		*buff++ = (pp_uint8)currentColor.r;
 	}
 
 }
@@ -233,7 +233,7 @@ void PPGraphics_BGR24::drawVLine(pp_int32 y1, pp_int32 y2, pp_int32 x)
 	pp_uint16 col16 = (pp_uint16)((currentColor.g << 8) + currentColor.b);
 
 	for (pp_int32 y = ly; y < ry; y++)
-	{	
+	{
 		*((pp_uint16*)buff) = col16;
 		buff[2] = (pp_uint8)currentColor.r;
 		buff+=pitch;
@@ -255,9 +255,9 @@ void PPGraphics_BGR24::blit(const pp_uint8* src, const PPPoint& p, const PPSize&
 {
 	pp_int32 w = size.width;
 	pp_int32 h = size.height;
-	
-	pp_uint8* dst = (pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP); 
-	
+
+	pp_uint8* dst = (pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP);
+
 	const pp_uint32 bytesPerPixel = bpp;
 
 	if (intensity == 256)
@@ -265,7 +265,7 @@ void PPGraphics_BGR24::blit(const pp_uint8* src, const PPPoint& p, const PPSize&
 		for (pp_int32 y = 0; y < h; y++)
 		{
 			for (pp_int32 x = 0; x < w; x++)
-			{		
+			{
 				dst[2] = src[0];
 				dst[1] = src[1];
 				dst[0] = src[2];
@@ -281,7 +281,7 @@ void PPGraphics_BGR24::blit(const pp_uint8* src, const PPPoint& p, const PPSize&
 		for (pp_int32 y = 0; y < h; y++)
 		{
 			for (pp_int32 x = 0; x < w; x++)
-			{		
+			{
 				dst[2] = (src[0]*intensity)>>8;
 				dst[1] = (src[1]*intensity)>>8;
 				dst[0] = (src[2]*intensity)>>8;
@@ -303,7 +303,7 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 
 
 	pp_int32 charWidth = (signed)currentFont->getCharWidth();
-	pp_int32 charHeight = (signed)currentFont->getCharHeight(); 
+	pp_int32 charHeight = (signed)currentFont->getCharHeight();
 	pp_int32 charDim = currentFont->charDim;
 
 	if (x + (signed)charWidth < currentClipRect.x1 ||
@@ -311,7 +311,7 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 		y + (signed)charHeight < currentClipRect.y1 ||
 		y > currentClipRect.y2)
 		return;
-	
+
 	/*pp_uint8 r = (pp_uint8)currentColor.r;
 	pp_uint8 g = (pp_uint8)currentColor.g;
 	pp_uint8 b = (pp_uint8)currentColor.b;
@@ -324,12 +324,12 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 			pp_uint8* buff = (pp_uint8*)buffer + (y+i)*pitch + x*3;
 			for (pp_uint32 j = 0; j < currentFont->charWidth; j++)
 			{
-				
+
 				if (currentFont->getPixelBit(chr, j,i))
 				{
 					buff[0] = b;
 					buff[1] = g;
-					buff[2] = r;					
+					buff[2] = r;
 				}
 				buff+=3;
 			}
@@ -340,18 +340,18 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 		for (pp_uint32 i = 0; i < currentFont->charHeight; i++)
 			for (pp_uint32 j = 0; j < currentFont->charWidth; j++)
 			{
-				
+
 				if (y+(signed)i >= currentClipRect.y1 && y+(signed)i < currentClipRect.y2 &&
 					x+(signed)j >= currentClipRect.x1 && x+(signed)j < currentClipRect.x2 &&
 					currentFont->getPixelBit(chr, j,i))
 				{
-					
+
 					pp_uint8* buff = (pp_uint8*)buffer+((y+i)*pitch+(x+j)*3);
-					
+
 					buff[0] = b;
 					buff[1] = g;
 					buff[2] = r;
-					
+
 				}
 			}
 
@@ -369,7 +369,7 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 	if (x>= currentClipRect.x1 && x + charWidth < currentClipRect.x2 &&
 		y>= currentClipRect.y1 && y + charHeight < currentClipRect.y2)
 	{
-		
+
 		pp_uint32 yChr = cchrDim;
 		for (pp_uint32 i = 0; i < (unsigned)charHeight; i++)
 		{
@@ -397,14 +397,14 @@ void PPGraphics_BGR24::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 			pp_uint32 xChr = yChr;
 			for (pp_uint32 j = 0; j < (unsigned)charWidth; j++)
 			{
-				
+
 				if (y+(signed)i >= currentClipRect.y1 && y+(signed)i < currentClipRect.y2 &&
 					x+(signed)j >= currentClipRect.x1 && x+(signed)j < currentClipRect.x2 &&
 					(fontbuffer[xChr>>3]>>(xChr&7)&1))
 				{
-					
+
 					pp_uint8* buff = (pp_uint8*)buffer+((y+i)*pitch+(x+j)*BPP);
-					
+
 					buff[0] = b;
 					buff[1] = g;
 					buff[2] = r;
@@ -432,7 +432,7 @@ void PPGraphics_BGR24::drawString(const char* str, pp_int32 x, pp_int32 y, bool 
 
 	pp_int32 sx = x;
 
-    while (*str) 
+    while (*str)
 	{
 		switch (*str)
 		{
@@ -459,7 +459,7 @@ void PPGraphics_BGR24::drawStringVertical(const char* str, pp_int32 x, pp_int32 
 	pp_int32 charWidth = (signed)currentFont->getCharWidth();
 	pp_int32 charHeight = (signed)currentFont->getCharHeight();
 
-    while (*str) 
+    while (*str)
 	{
 		switch (*str)
 		{

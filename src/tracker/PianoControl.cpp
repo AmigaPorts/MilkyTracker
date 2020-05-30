@@ -33,9 +33,9 @@
 #define SCROLLBARWIDTH SCROLLBUTTONSIZE
 
 #ifdef __AMIGA__
-template<> 
+template<>
 PianoBitmapSmall * PPSingleton<PianoBitmapSmall>::instance = NULL;
-template<> 
+template<>
 PianoBitmapLarge * PPSingleton<PianoBitmapLarge>::instance = NULL;
 #endif
 
@@ -55,7 +55,7 @@ static const bool blackKeys[] =
 	false
 };
 
-static const PPPoint positions[] = 
+static const PPPoint positions[] =
 {
 	PPPoint(1,17),
 	PPPoint(5,6),
@@ -71,7 +71,7 @@ static const PPPoint positions[] =
 	PPPoint(49, 17)
 };
 
-static const PPColor colors[] = 
+static const PPColor colors[] =
 {
 	PPColor(0,0,0),
 	PPColor(255,255,255),
@@ -102,11 +102,11 @@ pp_int32 PianoControl::KEYWIDTH()
 	return XMAX()/pianoBitmap->getBitmapLUTWidth();
 }
 
-PianoControl::PianoControl(pp_int32 id, 
-						   PPScreen* parentScreen, 
-						   EventListenerInterface* eventListener, 
-						   const PPPoint& location, 
-						   const PPSize& size, 
+PianoControl::PianoControl(pp_int32 id,
+						   PPScreen* parentScreen,
+						   EventListenerInterface* eventListener,
+						   const PPPoint& location,
+						   const PPSize& size,
 						   pp_uint8 numNotes,
 						   bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
@@ -137,10 +137,10 @@ PianoControl::PianoControl(pp_int32 id,
 	visibleHeight = size.height - SCROLLBARWIDTH - 2;
 
 	adjustScrollbars();
-	
+
 	startPos = 0;
-	
-	caughtControl = NULL;	
+
+	caughtControl = NULL;
 	controlCaughtByLMouseButton = controlCaughtByRMouseButton = false;
 
 	nbu = new pp_uint8[NUMNOTES];
@@ -156,7 +156,7 @@ PianoControl::~PianoControl()
 	delete hScrollbar;
 
 	delete[] nbu;
-	
+
 	delete[] keyState;
 }
 
@@ -164,7 +164,7 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 {
 	if (!isVisible())
 		return;
-	
+
 	pp_int32 xOffset = 2;
 
 	pp_int32 yOffset = 2;
@@ -179,11 +179,11 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 	g->setRect(location.x + 1, location.y + 1, location.x + size.width - 2, location.y + size.height - 2);
 
 	pp_int32 width = visibleWidth;
-	
+
 	pp_int32 adder = 65536/xscale;
-	
+
 	pp_int32 oy = location.y + 1;
-	
+
 	// for black piano keys
 	PPColor colCorrect(TrackerConfig::colorThemeMain);
 	colCorrect.r<<=1; colCorrect.g<<=1; colCorrect.b<<=1;
@@ -192,16 +192,16 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 	colCorrect2.scale(1.5f, 1.5f, 1.6f);
 	pp_int32 avg = (colCorrect2.b+colCorrect2.g+colCorrect2.r) / 3;
 	PPColor colCorrect4(avg, avg, avg);
-	
+
 	pp_int32 PIANO_LUT_WIDTH = pianoBitmap->getBitmapLUTWidth();
 	const pp_uint8* PIANO_LUT = pianoBitmap->getBitmapLUT();
 	const pp_uint8* PIANO = pianoBitmap->getBitmap();
-	
+
 	const pp_int32* DIVLUT = pianoBitmap->getDIVLUT();
-	const pp_int32* MODLUT = pianoBitmap->getMODLUT(); 
-	
+	const pp_int32* MODLUT = pianoBitmap->getMODLUT();
+
 	const pp_int32 XMAX = this->XMAX();
-	
+
 	for (pp_int32 y = 0; y < visibleHeight; y++)
 	{
 		pp_int32 ry = y/yscale;
@@ -210,10 +210,10 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 		pp_int32 ofs = 0;
 
 		const pp_uint8* src = PIANO_LUT + (ry*PIANO_LUT_WIDTH*3);
-		
+
 		const pp_int32* divLutPtr = DIVLUT-ry*XMAX;
 		const pp_int32* modLutPtr = MODLUT-ry*XMAX;
-		
+
 		pp_int32 ox = location.x + 1;
 		for (pp_int32 x = 0; x < width; x++)
 		{
@@ -223,7 +223,7 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 			pp_int32 c = src[px];
 			pp_int32 gr = src[px+1];
 			pp_int32 b = src[px+2];
-			
+
 			if (c == 255 && gr == 0 && b == 0)
 			{
 				g->setColor(PIANO[sx], PIANO[sx], PIANO[sx]);
@@ -232,9 +232,9 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 			{
 				// color values equal/above 240
 				if (c >= 240) c-=240;
-			
+
 				pp_int32 note = divLutPtr[sx] + c;
-			
+
 				if (keyState[note].pressed)
 				{
 					if (keyState[note].muted)
@@ -255,25 +255,29 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 				else
 					g->setColor(PIANO[sx], PIANO[sx], PIANO[sx]);
 			}
-			g->setPixel(ox, oy);
+
+			if(!g->needsPalette()) {
+				g->setPixel(ox, oy);
+			}
+
 			ofs+=adder;
 			ox++;
 		}
 		oy++;
 	}
-	
+
 	float newXScale = pianoBitmap->getBitmapWidth() / PianoBitmapSmall::getInstance()->getBitmapWidth();
 	float newYScale = pianoBitmap->getBitmapHeight() / PianoBitmapSmall::getInstance()->getBitmapHeight();
 
 	if (mode == ModeEdit)
 	{
 		PPFont* font;
-		
-		font = (xscale == 1 && pianoBitmap == PianoBitmapSmall::getInstance()) ? 
+
+		font = (xscale == 1 && pianoBitmap == PianoBitmapSmall::getInstance()) ?
 			PPFont::getFont(PPFont::FONT_TINY) : PPFont::getFont(PPFont::FONT_SYSTEM);
-		
+
 		g->setFont(font);
-		
+
 		xOffset = 0;
 		yOffset = -1;
 		if (xscale > 1)
@@ -284,7 +288,7 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 		{
 			xOffset = 1;
 		}
-		
+
 		if (yscale > 1)
 		{
 			yOffset = -2;
@@ -293,7 +297,7 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 		{
 			yOffset = 0;
 		}
-		
+
 		for (pp_int32 i = 0; i < NUMNOTES; i++)
 		{
 			pp_int32 posx = location.x + 1 + (i/12)*(PIANO_LUT_WIDTH*xscale) - startPos;
@@ -302,24 +306,24 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 			//	posx;
 
 			g->setColor(colors[i%12]);
-			
+
 			char str[3] = "-";
-			
+
 			if (nbu[i] != 255)
 				PPTools::convertToHex(str, nbu[i], 1);
-			
+
 			g->drawChar(str[0],
-						(pp_int32)(posx + (positions[i%12].x*xscale + xOffset)*newXScale), 
+						(pp_int32)(posx + (positions[i%12].x*xscale + xOffset)*newXScale),
 						(pp_int32)(location.y + 1 + (positions[i%12].y*yscale + yOffset)*newYScale));
 		}
-		
+
 	}
 	else if (mode == ModePlay && (xscale >= 2 || pianoBitmap == PianoBitmapLarge::getInstance()))
 	{
 		PPFont* font = PPFont::getFont(PPFont::FONT_TINY);
-		
+
 		g->setFont(font);
-		
+
 		if (pianoBitmap == PianoBitmapLarge::getInstance())
 		{
 			xOffset = 1;
@@ -330,16 +334,16 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 			xOffset = 1;
 			yOffset = -1;
 		}
-		
+
 		for (pp_int32 i = 0; i < NUMNOTES; i++)
 		{
 			pp_int32 posx = location.x + 1 + (i/12)*(PIANO_LUT_WIDTH*xscale) - startPos;
-			
+
 			if (blackKeys[i%12] && pianoBitmap == PianoBitmapLarge::getInstance())
 				posx--;
-			
+
 			g->setColor(colors[i%12]);
-			
+
 			char str[4]/* = "C#"*/;
 			PatternTools::getNoteName(str, i+1);
 			if (str[1] == '-')
@@ -353,15 +357,15 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 				str[2] = '\0';
 				xOffset = 1;
 			}
-		
+
 			pp_int32 correctx = (KEYWIDTH()*xscale) / 2 - font->getStrWidth(str) / 2 - 3;
 			if (correctx < 0)
 				correctx = 0;
-		
+
 			xOffset += correctx;
-					
+
 			g->drawString(str,
-						  (pp_int32)(posx + (positions[i%12].x*xscale + xOffset)*newXScale), 
+						  (pp_int32)(posx + (positions[i%12].x*xscale + xOffset)*newXScale),
 						  (pp_int32)(location.y + 1 + (positions[i%12].y*yscale + yOffset)*newYScale));
 		}
 	}
@@ -371,7 +375,7 @@ void PianoControl::paint(PPGraphicsAbstract* g)
 }
 
 pp_int32 PianoControl::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -393,8 +397,8 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 				caughtControl->dispatchEvent(event);
 			}
 			break;
-		}		
-	
+		}
+
 		case eLMouseDown:
 		{
 			PPPoint* p = (PPPoint*)event->getDataPtr();
@@ -422,7 +426,7 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 						case ModeEdit:
 						{
 							nbu[note] = (pp_uint8)sampleIndex & 0xf;
-							PPEvent e(eValueChanged, &nbu, sizeof(pp_uint8*));	
+							PPEvent e(eValueChanged, &nbu, sizeof(pp_uint8*));
 							eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 							break;
 						}
@@ -449,7 +453,7 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 			if (caughtControl && !controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
-				caughtControl = NULL;			
+				caughtControl = NULL;
 				break;
 			}
 			break;
@@ -462,7 +466,7 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 
 				if (note != -1)
 				{
-					
+
 					switch (mode)
 					{
 						case ModePlay:
@@ -475,12 +479,12 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 						case ModeEdit:
 							break;
 					}
-					
+
 					parentScreen->paintControl(this);
 				}
 				break;
 			}
-			
+
 			controlCaughtByLMouseButton = false;
 			if (!controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
@@ -496,7 +500,7 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 				caughtControl->dispatchEvent(event);
 				break;
 			}
-			
+
 			//positionToNote(*(PPPoint*)event->getDataPtr());
 
 			//parentScreen->paintControl(this);
@@ -505,35 +509,35 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 
 			if (note != -1)
 			{
-				
+
 				switch (mode)
 				{
 					case ModeEdit:
 					{
 						nbu[note] = (pp_uint8)sampleIndex & 0xf;
-						
-						PPEvent e(eValueChanged, &nbu, sizeof(pp_uint8*));	
-						
+
+						PPEvent e(eValueChanged, &nbu, sizeof(pp_uint8*));
+
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 						break;
 					}
-					
+
 					case ModePlay:
 					{
 						if (note == currentSelectedNote)
 							break;
-					
+
 						pp_int32 v = (1 << 16) + currentSelectedNote;
 						PPEvent e(eSelection, &v, sizeof(v));
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
-						
+
 						currentSelectedNote = note;
 						PPEvent e2(eSelection, &note, sizeof(note));
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e2);
 						break;
 					}
 				}
-				
+
 				parentScreen->paintControl(this);
 			}
 
@@ -546,18 +550,18 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 				caughtControl->dispatchEvent(event);
 			break;
 		}
-		
+
 		case eRMouseRepeat:
 		{
 			if (caughtControl && controlCaughtByRMouseButton)
 				caughtControl->dispatchEvent(event);
 			break;
 		}
-		
+
 		case eMouseWheelMoved:
 		{
 			TMouseWheelEventParams* params = (TMouseWheelEventParams*)event->getDataPtr();
-			
+
 			if ((params->deltaX > 0 || params->deltaY < 0) && hScrollbar)
 			{
 				PPEvent e(eBarScrollDown);
@@ -568,12 +572,12 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 				PPEvent e(eBarScrollUp);
 				handleEvent(reinterpret_cast<PPObject*>(hScrollbar), &e);
 			}
-			
+
 			event->cancel();
-			
+
 			break;
 		}
-		
+
 		default:
 			if (caughtControl == NULL)
 				break;
@@ -587,7 +591,7 @@ pp_int32 PianoControl::dispatchEvent(PPEvent* event)
 }
 
 pp_int32 PianoControl::handleEvent(PPObject* sender, PPEvent* event)
-{	
+{
 	// Horizontal scrollbar, scroll up (=left)
 	if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 event->getID() == eBarScrollUp)
@@ -624,14 +628,14 @@ pp_int32 PianoControl::handleEvent(PPObject* sender, PPEvent* event)
 		float pos = hScrollbar->getBarPosition()/65536.0f;
 
 		pp_int32 visibleItems = visibleWidth;
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
 
 		startPos = (pp_uint32)(v*pos);
 	}
 
 	parentScreen->paintControl(this);
-	
+
 	return 0;
 }
 
@@ -646,7 +650,7 @@ void PianoControl::adjustScrollbars()
 
 	float olds = hScrollbar->getBarSize() / 65536.0f;
 
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 
 	s = hScrollbar->getBarSize() / 65536.0f;
 
@@ -658,10 +662,10 @@ void PianoControl::adjustScrollbars()
 	pos = hScrollbar->getBarPosition()/65536.0f;
 
 	pp_int32 visibleItems = visibleWidth;
-		
+
 	float v = (float)(getMaxWidth() - visibleItems);
 
-	startPos = (pp_uint32)(v*pos);	
+	startPos = (pp_uint32)(v*pos);
 
 	if (startPos < 0)
 	{
@@ -671,16 +675,16 @@ void PianoControl::adjustScrollbars()
 		//pp_int32 entireSize = (horizontal?this->size.width:this->size.height) - SCROLLBUTTONSIZE*2;
 }
 
-void PianoControl::setxScale(pp_int32 scale) 
-{ 
-	xscale = scale; 
+void PianoControl::setxScale(pp_int32 scale)
+{
+	xscale = scale;
 	adjustScrollbars();
 	assureNoteVisible(4*12);
 }
 
-void PianoControl::setyScale(pp_int32 scale) 
-{ 
-	yscale = scale; 
+void PianoControl::setyScale(pp_int32 scale)
+{
+	yscale = scale;
 }
 
 void PianoControl::setLocation(const PPPoint& location)
@@ -739,7 +743,7 @@ bool PianoControl::getNoteState(pp_int32 note) const
 void PianoControl::assureNoteVisible(pp_int32 note)
 {
 	pp_int32 PIANO_LUT_WIDTH = pianoBitmap->getBitmapLUTWidth();
-	
+
 	pp_int32 startPos = (PIANO_LUT_WIDTH*(note/12)+positions[note%12].x)*xscale;
 	float v = (float)(getMaxWidth() - visibleWidth);
 	hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
@@ -756,33 +760,33 @@ pp_int32 PianoControl::positionToNote(PPPoint cp)
 
 	cp.x -= location.x + 1;
 	cp.y -= location.y + 1;
-				
+
 	if (cp.x < 0 || cp.x >= visibleWidth || cp.y < 0 || cp.y >= visibleHeight)
 		return -1;
 
 	pp_int32 PIANO_LUT_WIDTH = pianoBitmap->getBitmapLUTWidth();
 	const pp_uint8* PIANO_LUT = pianoBitmap->getBitmapLUT();
-	
+
 	cp.x/=xscale;
 	cp.y/=yscale;
-	
+
 	cp.x+=startPos/xscale;
-				
+
 	pp_int32 octave = cp.x / PIANO_LUT_WIDTH;
 	pp_int32 ox = cp.x % PIANO_LUT_WIDTH;
-				
+
 	pp_int32 c = PIANO_LUT[(cp.y * PIANO_LUT_WIDTH + ox)*3];
 	pp_int32 g = PIANO_LUT[(cp.y * PIANO_LUT_WIDTH + ox)*3+1];
 	pp_int32 b = PIANO_LUT[(cp.y * PIANO_LUT_WIDTH + ox)*3+2];
-	
+
 	if (c == 255 && g == 0 && b == 0)
 		return -1;
-	
+
 	// color values equal/above 240
 	if (c >= 240) c-=240;
-				
+
 	pp_int32 note = octave*12 + c;
-				
+
 	if (note < 0 || note >= NUMNOTES)
 		return -1;
 

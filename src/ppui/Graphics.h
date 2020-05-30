@@ -30,6 +30,8 @@
 
 #include "GraphicsAbstract.h"
 
+#include <SDL.h>
+
 class PPGraphicsFrameBuffer : public PPGraphicsAbstract
 {
 protected:
@@ -84,6 +86,15 @@ static inline void set_pixel_transp(PPGraphicsAbstract* g, pp_int32 x, pp_int32 
 	g->setPixel(x, y, newColor);
 }
 
+// Amiga
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_8BIT,
+	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);
+	virtual void setColor(const PPColor& color);
+	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b);
+	virtual void fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
+	virtual void fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
+	virtual bool needsPalette() { return true; }
+)
 // used for win32
 SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24, __EMPTY__)
 // OSX (carbon, 32 bits with alpha channel)

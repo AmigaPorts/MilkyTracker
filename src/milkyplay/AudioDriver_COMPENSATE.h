@@ -46,7 +46,7 @@ class AudioDriver_COMPENSATE : public AudioDriverBase
 protected:
 	bool		deviceHasStarted;
 	mp_uint32	sampleCounter;
-	
+
 public:
 	AudioDriver_COMPENSATE() :
 		deviceHasStarted(false),
@@ -59,13 +59,13 @@ public:
 	}
 
 	virtual		mp_uint32	getNumPlayedSamples() const { return sampleCounter; }
-	
+
 	void fillAudioWithCompensation(char* stream, int length)
 	{
 		// sanity check
 		if (!this->deviceHasStarted)
 			return;
-		
+
 		MasterMixer* mixer = this->mixer;
 
 		// Attention: Sample buffer MUST be 16 bit stereo, otherwise this will not work

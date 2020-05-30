@@ -60,7 +60,7 @@ pp_int32 ScopesControl::WRAPCHANNELS() const
         {
             return 22;
         }
-        
+
         return 32;
     }
     else
@@ -167,8 +167,14 @@ public:
 	{
 		const pp_int32 y = (((-sample >> 10)*(signed)channelHeight)>>6) + locy;
 
-		g->setSafeColor(sr>>16, sg>>16, sb>>16);
+		if(g->needsPalette()) {
+			g->setColor(scopebColor);
+		} else {
+			g->setSafeColor(sr>>16, sg>>16, sb>>16);
+		}
+
 		sr+=addr; sg+=addg; sb+=addb;
+
 		if (flipCounter >= (count2>>1)-1 && !flipped)
 		{
 			flipped = true;
@@ -274,7 +280,7 @@ void ScopesControl::paint(PPGraphicsAbstract* g)
     const pp_uint32 channelsPerLine = ceil((float)numChannels/(float)numLines);
     if (isWrapped())
 	{
-        
+
 		channelWidth = visibleWidth / channelsPerLine;
 		channelHeight/=numLines;
 
@@ -319,7 +325,7 @@ void ScopesControl::paint(PPGraphicsAbstract* g)
 	scopedColor.scaleFixed(49192);
 
     const bool wrapped = isWrapped();
-    
+
 	for (pp_int32 c = 0; c < numChannels; c++)
 	{
 		char buffer[8];
@@ -334,7 +340,7 @@ void ScopesControl::paint(PPGraphicsAbstract* g)
         channelRects[c].y1 = starty;
         channelRects[c].x2 = locx + cWidth;
         channelRects[c].y2 = starty + channelHeight;
-        
+
 		pp_int32 count = cWidth;
 
 		// correct last channel
@@ -436,18 +442,18 @@ void ScopesControl::paint(PPGraphicsAbstract* g)
         {
             g->setColor(bColor);
             g->drawHLine(xPos, xPos + visibleWidth - 1, yPos - 1);
-            
+
             g->setColor(*borderColor);
             g->drawHLine(xPos, xPos + visibleWidth - 1, yPos);
-            
+
             g->setColor(dColor);
             g->drawHLine(xPos, xPos + visibleWidth - 1, yPos + 1);
-            
+
             yPos += channelHeight;
         }
     }
-    
-    
+
+
     x = location.x + xOffset + channelWidthTable[0];
 	for (cn = 0; cn < (visibleWidth / channelWidth) - 1; cn++)
 	{

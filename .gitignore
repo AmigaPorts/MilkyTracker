@@ -1,5 +1,8 @@
 # The build output folder
 build/
+Debug/
+emu/
+Release/
 
 # Resources generated with docerator on OSX
 resources/pictures/docicons/osx/MilkyTracker-*.icns
@@ -16,7 +19,6 @@ include/inline/SDL_inline.h
 include/SDL/*
 projects/*
 Makefile
-*.cmake
 CMakeCache.txt
 CMakeFiles
 *.a

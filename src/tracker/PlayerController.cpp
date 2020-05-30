@@ -44,14 +44,14 @@ public:
 	{
 		clearUpdateCommandBuff();
 	}
-	
+
 	// this is being called from the player callback in a serialized fashion
-	virtual void playerTickStarted(PlayerSTD& player, XModule& module) 
-	{ 
+	virtual void playerTickStarted(PlayerSTD& player, XModule& module)
+	{
 		while (rbReadIndex < rbWriteIndex)
-		{			
-			mp_sint32 idx = rbReadIndex & (UPDATEBUFFSIZE-1);			
-			
+		{
+			mp_sint32 idx = rbReadIndex & (UPDATEBUFFSIZE-1);
+
 			// handle notes that are played from external source
 			// i.e. keyboard playback
 			switch (updateCommandBuff[idx].code)
@@ -62,8 +62,8 @@ public:
 					mp_sint32 note = command->note;
 					if (note)
 					{
-						player.playNote(command->channel, note, 
-										command->ins, 
+						player.playNote(command->channel, note,
+										command->ins,
 										command->volume);
 						command->note = 0;
 					}
@@ -80,24 +80,24 @@ public:
 										   command->rangeStart,  command->rangeEnd);
 						command->smp = NULL;
 					}
-					
+
 					break;
 				}
-				
+
 			}
 			rbReadIndex++;
 		}
-	}	
-	
-	virtual void patternEndReached(PlayerSTD& player, XModule& module, mp_sint32& newOrderIndex) 
-	{ 
+	}
+
+	virtual void patternEndReached(PlayerSTD& player, XModule& module, mp_sint32& newOrderIndex)
+	{
 		handleQueuedPositions(player, newOrderIndex);
 	}
 
 	void playNote(mp_ubyte chn, mp_sint32 note, mp_sint32 ins, mp_sint32 vol/* = -1*/)
-	{	
+	{
 		// fill ring buffer with note entries
-		// the callback will query these notes and play them 
+		// the callback will query these notes and play them
 		mp_sint32 idx = rbWriteIndex & (UPDATEBUFFSIZE-1);
 		UpdateCommandNote* command = reinterpret_cast<UpdateCommandNote*>(&updateCommandBuff[idx]);
 		command->channel = chn;
@@ -122,10 +122,10 @@ public:
 		command->code = UpdateCommandCodeSample;
 		rbWriteIndex++;
 	}
-				  
+
 private:
 	PlayerController& playerController;
-	
+
 	void handleQueuedPositions(PlayerSTD& player, mp_sint32& poscnt)
 	{
 		// there is a queued position
@@ -154,12 +154,12 @@ private:
 			playerController.nextPatternIndexToPlay = -1;
 		}
 	}
-	
-	void playSampleInternal(PlayerSTD& player, mp_ubyte chn, const TXMSample* smp, mp_sint32 currentSamplePlayNote, 
+
+	void playSampleInternal(PlayerSTD& player, mp_ubyte chn, const TXMSample* smp, mp_sint32 currentSamplePlayNote,
 							mp_sint32 rangeStart, mp_sint32 rangeEnd)
 	{
 		pp_int32 period = player.getlogperiod(currentSamplePlayNote+1, smp->relnote, smp->finetune) << 8;
-		pp_int32 freq = player.getlogfreq(period); 
+		pp_int32 freq = player.getlogfreq(period);
 
 		player.setFreq(chn,freq);
 		player.setVol(chn, (smp->vol*512)/255);
@@ -168,11 +168,11 @@ private:
 		player.chninfo[chn].flags |= 0x100; // CHANNEL_FLAGS_UPDATE_IGNORE
 
 		pp_int32 flags = (smp->type >> 2) & 4;
-		
+
 		if (rangeStart == -1 && rangeEnd == -1)
 		{
 			flags |= smp->type & 3;
-			
+
 			if (flags & 3)
 				player.playSample(chn, smp->sample, smp->samplen, 0, 0, false, smp->loopstart, smp->loopstart+smp->looplen, flags);
 			else
@@ -182,7 +182,7 @@ private:
 		{
 			if (rangeStart == -1 || rangeEnd == -1)
 				return;
-			
+
 			if (rangeEnd > (signed)smp->samplen)
 				rangeEnd = smp->samplen;
 
@@ -195,30 +195,30 @@ private:
 		memset(updateCommandBuff, 0, sizeof(updateCommandBuff));
 		rbReadIndex = rbWriteIndex = 0;
 	}
-	
+
 	enum
 	{
 		// must be 2^n
 		UPDATEBUFFSIZE = 128
 	};
-	
+
 	enum UpdateCommandCodes
 	{
 		UpdateCommandCodeInvalid = 0,
 		UpdateCommandCodeNote,
 		UpdateCommandCodeSample,
 	};
-	
+
 	struct UpdateCommand
 	{
-		mp_ubyte code;			
+		mp_ubyte code;
 		mp_uint32 data[8];
 		void* pdata[8];
 	};
 
 	struct UpdateCommandNote
 	{
-		mp_ubyte code;			
+		mp_ubyte code;
 		mp_sint32 note;
 		mp_sint32 channel;
 		mp_sint32 ins;
@@ -226,7 +226,7 @@ private:
 		mp_uint32 data[4];
 		void* pdata[8];
 	};
-	
+
 	struct UpdateCommandSample
 	{
 		mp_ubyte code;
@@ -238,11 +238,11 @@ private:
 		const TXMSample* smp;
 		void* pdata[7];
 	};
-	
+
 	UpdateCommand updateCommandBuff[UPDATEBUFFSIZE];
-	
+
 	mp_sint32 rbReadIndex;
-	mp_sint32 rbWriteIndex;	
+	mp_sint32 rbWriteIndex;
 };
 
 void PlayerController::assureNotSuspended()
@@ -283,7 +283,7 @@ PlayerController::PlayerController(MasterMixer* mixer, bool fakeScopes) :
 	criticalSection(NULL),
 	playerStatusTracker(new PlayerStatusTracker(*this)),
 	patternPlay(false), playRowOnly(false),
-	patternIndex(-1), 
+	patternIndex(-1),
 	nextOrderIndexToPlay(-1),
 	nextPatternIndexToPlay(-1),
 	lastPosition(-1), lastRow(-1),
@@ -306,12 +306,12 @@ PlayerController::PlayerController(MasterMixer* mixer, bool fakeScopes) :
 	player->setBufferSize(mixer->getBufferSize());
 
 	currentPlayingChannel = useVirtualChannels ? numPlayerChannels : 0;
-	
+
 	pp_uint32 i;
-	
+
 	for (i = 0; i < sizeof(muteChannels) / sizeof(bool); i++)
 		muteChannels[i] = false;
-										
+
 	for (i = 0; i < sizeof(recordChannels) / sizeof(bool); i++)
 		recordChannels[i] = false;
 
@@ -344,9 +344,9 @@ PlayerController::~PlayerController()
 		detachDevice();
 		delete player;
 	}
-	
+
 	delete playerStatusTracker;
-	
+
 	delete criticalSection;
 }
 
@@ -363,12 +363,12 @@ void PlayerController::attachModuleEditor(ModuleEditor* moduleEditor)
 
 	ASSERT(sizeof(muteChannels)/sizeof(bool) >= (unsigned)totalPlayerChannels);
 
-	player->startPlaying(module, true, 0, 0, totalPlayerChannels, panning, true);	
+	player->startPlaying(module, true, 0, 0, totalPlayerChannels, panning, true);
 
 	// restore muting
 	for (mp_sint32 i = 0; i < numPlayerChannels; i++)
 		player->muteChannel(i, muteChannels[i]);
-	
+
 	mixer->addDevice(player);
 }
 
@@ -430,7 +430,7 @@ void PlayerController::playPattern(mp_sint32 index, mp_sint32 songPosition, mp_s
 		criticalSection->enter(false);
 
 	readjustSpeed();
-	
+
 	reset();
 
 	setCurrentPatternIndex(index);
@@ -443,14 +443,14 @@ void PlayerController::playPattern(mp_sint32 index, mp_sint32 songPosition, mp_s
 		player->muteChannel(i, muteChannels[i]);
 		this->muteChannels[i] = muteChannels[i];
 	}
-	
+
 	if (rowPosition == -1)
 	{
 		rowPosition = player->getRow();
 		if (rowPosition >= module->phead[index].rows)
 			rowPosition = 0;
 	}
-	
+
 	player->restart(songPosition, rowPosition, false, panning, playRowOnly);
 	player->setIdle(false);
 	//resetPlayTimeCounter();
@@ -494,7 +494,7 @@ void PlayerController::stop(bool bResetMainVolume/* = true*/)
 
 	patternPlay = false;
 	playRowOnly = false;
-	
+
 	readjustSpeed();
 
 	player->setIdle(true);
@@ -508,10 +508,10 @@ void PlayerController::stop(bool bResetMainVolume/* = true*/)
 		this->muteChannels[i] = muteChannels[i];
 	}
 
-	// reset internal variables	
+	// reset internal variables
 	if (bResetMainVolume)
-		resetMainVolume();	
-		
+		resetMainVolume();
+
 	setNextOrderToPlay(-1);
 	setNextPatternToPlay(-1);
 
@@ -519,7 +519,7 @@ void PlayerController::stop(bool bResetMainVolume/* = true*/)
 }
 
 void PlayerController::continuePlaying()
-{	
+{
 	continuePlaying(true);
 }
 
@@ -527,7 +527,7 @@ void PlayerController::continuePlaying(bool assureNotSuspended)
 {
 	if (lastPosition == -1 || lastRow == -1)
 		return;
-		
+
 	if (!player)
 		return;
 
@@ -536,7 +536,7 @@ void PlayerController::continuePlaying(bool assureNotSuspended)
 
 	if (!module->isModuleLoaded())
 		return;
-		
+
 	if (assureNotSuspended)
 		this->assureNotSuspended();
 
@@ -544,7 +544,7 @@ void PlayerController::continuePlaying(bool assureNotSuspended)
 		criticalSection->enter(false);
 
 	readjustSpeed();
-	
+
 	if (wasPlayingPattern)
 		player->setPatternToPlay(patternIndex);
 	else
@@ -552,13 +552,13 @@ void PlayerController::continuePlaying(bool assureNotSuspended)
 
 	for (mp_sint32 i = 0; i < numPlayerChannels; i++)
 		player->muteChannel(i, muteChannels[i]);
-		
+
 	player->restart(lastPosition, lastRow, false, panning);
 	player->setIdle(false);
 
 	patternPlay = wasPlayingPattern;
 	playRowOnly = false;
-	
+
 	criticalSection->leave(false);
 }
 
@@ -584,7 +584,7 @@ bool PlayerController::isPlaying() const
 	if (!module)
 		return false;
 
-	return player->isPlaying() && (!player->isIdle()) && !player->hasSongHalted();	
+	return player->isPlaying() && (!player->isIdle()) && !player->hasSongHalted();
 }
 
 bool PlayerController::isPlayingRowOnly() const
@@ -595,7 +595,7 @@ bool PlayerController::isPlayingRowOnly() const
 	if (!module)
 		return false;
 
-	return playRowOnly;	
+	return playRowOnly;
 }
 
 bool PlayerController::isActive() const
@@ -606,7 +606,7 @@ bool PlayerController::isActive() const
 	if (!module)
 		return false;
 
-	return player->isPlaying() && (!player->isIdle());	
+	return player->isPlaying() && (!player->isIdle());
 }
 
 bool PlayerController::isPlayingPattern(mp_sint32 index) const
@@ -616,7 +616,7 @@ bool PlayerController::isPlayingPattern(mp_sint32 index) const
 
 	if (index < 0)
 		return false;
-		
+
 	if (player->getPatternToPlay() < 0)
 		return false;
 
@@ -625,7 +625,7 @@ bool PlayerController::isPlayingPattern(mp_sint32 index) const
 
 void PlayerController::setNextOrderToPlay(mp_sint32 orderIndex)
 {
-	nextOrderIndexToPlay = orderIndex; 
+	nextOrderIndexToPlay = orderIndex;
 	if (orderIndex != -1)
 		nextPatternIndexToPlay = -1;
 }
@@ -637,7 +637,7 @@ mp_sint32 PlayerController::getNextOrderToPlay() const
 
 void PlayerController::setNextPatternToPlay(mp_sint32 patternIndex)
 {
-	nextPatternIndexToPlay = patternIndex; 
+	nextPatternIndexToPlay = patternIndex;
 	if (patternIndex != -1)
 		nextOrderIndexToPlay = -1;
 }
@@ -658,12 +658,12 @@ void PlayerController::unpause()
 	if (player)
 		player->resumePlaying();
 }
-	
+
 bool PlayerController::isPaused() const
 {
 	if (player)
 		return player->isPaused();
-		
+
 	return false;
 }
 
@@ -709,7 +709,7 @@ void PlayerController::setSpeed(mp_sint32 BPM, mp_sint32 speed, bool adjustModul
 		pp_uint32 bpmRate = player->getbpmrate(BPM);
 		player->adder = bpmRate;
 	}
-	
+
 	if (module && adjustModuleHeader)
 	{
 		module->header.speed = BPM;
@@ -735,8 +735,8 @@ void PlayerController::playSample(const TXMSample& smp, mp_sint32 currentSampleP
 	{
 		pp_int32 i = numPlayerChannels + numVirtualChannels + 1;
 
-		playerStatusTracker->playSample(i, smp, currentSamplePlayNote, rangeStart, rangeEnd);		
-	}	
+		playerStatusTracker->playSample(i, smp, currentSamplePlayNote, rangeStart, rangeEnd);
+	}
 
 }
 
@@ -752,8 +752,8 @@ void PlayerController::stopSample()
 
 		player->stopSample(i);
 
-		player->chninfo[i].flags &= ~0x100; // CHANNEL_FLAGS_UPDATE_IGNORE		
-	}	
+		player->chninfo[i].flags &= ~0x100; // CHANNEL_FLAGS_UPDATE_IGNORE
+	}
 
 }
 
@@ -773,14 +773,14 @@ void PlayerController::stopInstrument(mp_sint32 insIndex)
 				player->chninfo[i].flags &= ~0x100; // CHANNEL_FLAGS_UPDATE_IGNORE
 			}
 		}
-	}	
+	}
 }
 
 void PlayerController::playNote(mp_ubyte chn, mp_sint32 note, mp_sint32 i, mp_sint32 vol/* = -1*/)
 {
 	if (!player)
 		return;
-		
+
 	assureNotSuspended();
 
 	// note playing goes synchronized in the playback callback
@@ -798,10 +798,10 @@ void PlayerController::suspendPlayer(bool bResetMainVolume/* = true*/, bool stop
 	if (stopPlaying)
 	{
 		stopSample();
-		stop(bResetMainVolume);	
+		stop(bResetMainVolume);
 	}
 }
-	
+
 void PlayerController::resumePlayer(bool continuePlaying)
 {
 	if (!player)
@@ -820,7 +820,7 @@ void PlayerController::resumePlayer(bool continuePlaying)
 void PlayerController::muteChannel(mp_sint32 c, bool m)
 {
 	muteChannels[c] = m;
-	
+
 	if (player)
 		player->muteChannel(c, m);
 }
@@ -829,7 +829,7 @@ bool PlayerController::isChannelMuted(mp_sint32 c)
 {
 	return muteChannels[c];
 	// do not poll the state from the player it will be resetted when the
-	// player stops playing of a song 
+	// player stops playing of a song
 	/*if (player)
 	{
 		if (!player->getPlayerInstance())
@@ -837,7 +837,7 @@ bool PlayerController::isChannelMuted(mp_sint32 c)
 
 		return static_cast<PlayerSTD*>(player->getPlayerInstance())->isChannelMuted(c);
 	}
-	
+
 	return false;*/
 }
 
@@ -853,14 +853,14 @@ bool PlayerController::isChannelRecording(mp_sint32 c)
 
 void PlayerController::reallocateChannels(mp_sint32 moduleChannels/* = 32*/, mp_sint32 virtualChannels/* = 0*/)
 {
-    
+
     // channels might be changed, we need to make sure playing is stopped firstly
     bool paused = false;
     if (player && module) {
         paused = player->isPaused();
         stop(false);
     }
-    
+
 	numPlayerChannels = moduleChannels;
 	numVirtualChannels = virtualChannels;
     totalPlayerChannels = numPlayerChannels + (numVirtualChannels >= 0 ? numVirtualChannels : 0) + 2;
@@ -896,13 +896,13 @@ void PlayerController::resetFirstPlayingChannel()
 mp_sint32 PlayerController::getNextPlayingChannel(mp_sint32 currentChannel)
 {
 	// if we're using virtual channels for instrument playback
-	// the virtual channels are located in the range 
+	// the virtual channels are located in the range
 	// [numPlayerChannels .. numPlayerChannels + numVirtualChannels]
 	if (useVirtualChannels)
 	{
 		if (currentPlayingChannel < numPlayerChannels)
 			currentPlayingChannel = numPlayerChannels-1;
-	
+
 		mp_sint32 res = currentPlayingChannel++;
 
 		if (currentPlayingChannel >= numPlayerChannels + numVirtualChannels)
@@ -929,10 +929,10 @@ mp_sint32 PlayerController::getNextPlayingChannel(mp_sint32 currentChannel)
 				break;
 			}
 		}
-		
+
 		return found ? res : currentChannel;
 	}
-	
+
 	return currentChannel;
 }
 
@@ -976,7 +976,7 @@ void PlayerController::resetMainVolume()
 {
 	if (!player || !module)
 		return;
-		
+
 	player->setSongMainVolume((mp_ubyte)module->header.mainvol);
 }
 
@@ -986,7 +986,7 @@ mp_int64 PlayerController::getPlayTime()
 		return 0;
 
 	float freq = (float)player->getMixFrequency();
-	
+
 	return (mp_int64)(player->getSampleCounter()/freq);
 }
 
@@ -1004,7 +1004,7 @@ void PlayerController::setPanning(mp_ubyte chn, mp_ubyte pan)
 		return;
 
 	panning[chn] = pan;
-	
+
 	if (player && player->isPlaying())
 	{
 		for (mp_sint32 i = 0; i < TrackerConfig::numPlayerChannels; i++)
@@ -1014,13 +1014,13 @@ void PlayerController::setPanning(mp_ubyte chn, mp_ubyte pan)
 
 void PlayerController::getPosition(mp_sint32& pos, mp_sint32& row)
 {
-	mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());	
+	mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 	player->getPosition(pos, row, index);
 }
 
 void PlayerController::getPosition(mp_sint32& order, mp_sint32& row, mp_sint32& ticker)
 {
-	mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());	
+	mp_uint32 index = player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
 	player->getPosition(order, row, ticker, index);
 }
 
@@ -1033,7 +1033,7 @@ void PlayerController::switchPlayMode(PlayModes playMode, bool exactSwitch/* = t
 {
 	if (!player)
 		return;
-	
+
 	switch (playMode)
 	{
 		case PlayMode_ProTracker2:
@@ -1063,11 +1063,11 @@ void PlayerController::switchPlayMode(PlayModes playMode, bool exactSwitch/* = t
 			}
 			player->setPlayMode(PlayerBase::PlayMode_FastTracker2);
 			break;
-			
+
 		default:
 			ASSERT(false);
 	}
-	
+
 	//stop();
 	//continuePlaying();
 }
@@ -1076,7 +1076,7 @@ PlayerController::PlayModes PlayerController::getPlayMode()
 {
 	if (!player)
 		return PlayMode_Auto;
-	
+
 	switch (player->getPlayMode())
 	{
 		case PlayerBase::PlayMode_ProTracker2:
@@ -1086,9 +1086,9 @@ PlayerController::PlayModes PlayerController::getPlayMode()
 		case PlayerBase::PlayMode_FastTracker2:
 			return PlayMode_FastTracker2;
 		default:
-			ASSERT(false);	
+			ASSERT(false);
 	}
-	
+
 	return PlayMode_Auto;
 }
 
@@ -1097,7 +1097,7 @@ void PlayerController::enablePlayModeOption(PlayModeOptions option, bool b)
 	switch (option)
 	{
 		case PlayModeOptionPanning8xx:
-			player->enable(PlayerSTD::PlayModeOptionPanning8xx, b);			
+			player->enable(PlayerSTD::PlayModeOptionPanning8xx, b);
 			break;
 		case PlayModeOptionPanningE8x:
 			player->enable(PlayerSTD::PlayModeOptionPanningE8x, b);
@@ -1114,11 +1114,11 @@ bool PlayerController::isPlayModeOptionEnabled(PlayModeOptions option)
 {
 	if (!player)
 		return false;
-	
+
 	switch (option)
 	{
 		case PlayModeOptionPanning8xx:
-			return player->isEnabled(PlayerSTD::PlayModeOptionPanning8xx);			
+			return player->isEnabled(PlayerSTD::PlayModeOptionPanning8xx);
 		case PlayModeOptionPanningE8x:
 			return player->isEnabled(PlayerSTD::PlayModeOptionPanningE8x);
 		case PlayModeOptionForcePTPitchLimit:
@@ -1133,7 +1133,7 @@ mp_sint32 PlayerController::getAllNumPlayingChannels()
 {
 	if (!player)
 		return 0;
-		
+
 	return player->mixerNumAllocatedChannels;
 }
 
@@ -1141,7 +1141,7 @@ mp_sint32 PlayerController::getPlayerNumPlayingChannels()
 {
 	if (!player)
 		return 0;
-		
+
 	return player->initialNumChannels;
 }
 
@@ -1149,7 +1149,7 @@ mp_sint32 PlayerController::getCurrentSamplePosition()
 {
 	if (mixer && mixer->getAudioDriver())
 		return mixer->getAudioDriver()->getBufferPos();
-	
+
 	return 0;
 }
 
@@ -1157,7 +1157,7 @@ mp_sint32 PlayerController::getCurrentBeatIndex()
 {
 	if (player)
 		return player->getBeatIndexFromSamplePos(getCurrentSamplePosition());
-	
+
 	return 0;
 }
 
@@ -1165,7 +1165,7 @@ bool PlayerController::isSamplePlaying(const TXMSample& smp, mp_sint32 channel, 
 {
 	if (!player)
 		return false;
-		
+
 	ChannelMixer* mixer = player;
 
 	// this rather critical
@@ -1173,16 +1173,16 @@ bool PlayerController::isSamplePlaying(const TXMSample& smp, mp_sint32 channel, 
 	// player or mixer class itself, so I don't need to access it here
 	pp_int32 j = getCurrentBeatIndex();
 	pos = mixer->channel[channel].timeRecord[j].smppos;
-	
+
 	// compare sample from sample editor against sample from current mixer channel
-	if (pos >= 0 && 
+	if (pos >= 0 &&
 		(void*)mixer->channel[channel].timeRecord[j].sample == (void*)smp.sample)
 	{
 		vol = (mixer->channel[channel].timeRecord[j].volPan & 0xFFFF) >> 1;
 		pan = (mixer->channel[channel].timeRecord[j].volPan) >> 16;
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -1194,7 +1194,7 @@ bool PlayerController::isEnvelopePlaying(const TEnvelope& envelope, mp_sint32 en
 	ChannelMixer* mixer = player;
 
 	const PlayerSTD::TPrEnv* env = NULL;
-	
+
 	switch (envelopeType)
 	{
 		case 0:
@@ -1204,14 +1204,14 @@ bool PlayerController::isEnvelopePlaying(const TEnvelope& envelope, mp_sint32 en
 			env = &player->chninfo[channel].penv;
 			break;
 	}
-	
+
 	pp_int32 j = getCurrentBeatIndex();
 	pos = env->timeRecord[j].pos;
-	
+
 	if (env && env->timeRecord[j].envstruc && env->timeRecord[j].envstruc == &envelope)
 	{
-		
-		if ((env->timeRecord[j].envstruc->num && 
+
+		if ((env->timeRecord[j].envstruc->num &&
 			 !(env->timeRecord[j].envstruc->type & 4) &&
 			 pos >= env->timeRecord[j].envstruc->env[env->timeRecord[j].envstruc->num-1][0]) ||
 			!(mixer->channel[channel].timeRecord[j].volPan & 0xFFFF))
@@ -1221,7 +1221,7 @@ bool PlayerController::isEnvelopePlaying(const TEnvelope& envelope, mp_sint32 en
 
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -1231,7 +1231,7 @@ bool PlayerController::isNotePlaying(mp_sint32 ins, mp_sint32 channel, mp_sint32
 		return false;
 
 	const PlayerSTD::TModuleChannel* chnInf = &player->chninfo[channel];
-	
+
 	if (player->channel[channel].flags&ChannelMixer::MP_SAMPLE_PLAY)
 	{
 		if (chnInf->ins == ins && chnInf->keyon && chnInf->note)
@@ -1241,7 +1241,7 @@ bool PlayerController::isNotePlaying(mp_sint32 ins, mp_sint32 channel, mp_sint32
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -1272,36 +1272,36 @@ bool PlayerController::isNotePlaying(mp_sint32 ins, mp_sint32 channel, mp_sint32
 void PlayerController::grabSampleData(mp_uint32 chnIndex, mp_sint32 count, mp_sint32 fMul, SampleDataFetcher& fetcher)
 {
 	if (!player)
-		return;	
+		return;
 
 	if (mixerDataCache && (count * 2 > mixerDataCacheSize))
 	{
 		delete[] mixerDataCache;
-		mixerDataCacheSize = count * 2 * 2;		
+		mixerDataCacheSize = count * 2 * 2;
 		mixerDataCache = new mp_sint32[mixerDataCacheSize];
 	}
-	
+
 	ChannelMixer* mixer = player;
 
 	ChannelMixer::TMixerChannel* chn = &mixer->channel[chnIndex];
-	
+
 	pp_int32 j = getCurrentBeatIndex();
 
 	if (chn->flags & ChannelMixer::MP_SAMPLE_PLAY)
 	{
 		// this is critical
 		// it might be that the audio thread modifies the data as we are
-		// accessing it... So in the worst case we're getting a sample 
+		// accessing it... So in the worst case we're getting a sample
 		// but the channel state data does belong to another sample already
 		// in that case we're displaying garbage...
 		// BUT it's important that we only access sample data
 		// within the range of the current sample we have
-		ChannelMixer::TMixerChannel channel;	
+		ChannelMixer::TMixerChannel channel;
 		channel.sample = chn->timeRecord[j].sample;
-		
+
 		if (channel.sample == NULL)
 			goto resort;
-		
+
 		channel.smplen = TXMSample::getSampleSizeInSamples((mp_ubyte*)channel.sample);
 		channel.flags = chn->timeRecord[j].flags;
 		channel.smppos = chn->timeRecord[j].smppos % channel.smplen;
@@ -1319,10 +1319,10 @@ void PlayerController::grabSampleData(mp_uint32 chnIndex, mp_sint32 count, mp_si
 //		channel.index = chnIndex; Uncomment this if you like crackly audio
 		// The scopes (which I assume is what this function is for) are currently
 		// using channel 33, to avoid interfering with playback
-		
-		channel.smpadd = (channel.smpadd*fMul) / (!count ? 1 : count);		
+
+		channel.smpadd = (channel.smpadd*fMul) / (!count ? 1 : count);
 		chn = &channel;
-				
+
 		if (mixerDataCache && channel.smpadd <= 65536)
 		{
 			memset(mixerDataCache, 0, count*2*sizeof(mp_sint32));
@@ -1330,21 +1330,21 @@ void PlayerController::grabSampleData(mp_uint32 chnIndex, mp_sint32 count, mp_si
 			channel.rsmpadd = (mp_sint32)((1.0 / channel.smpadd) * 65536.0);
 
 			// we only need the left channel as no panning is involved
-			channel.finalvoll = (channel.vol*128*256)<<6; 
+			channel.finalvoll = (channel.vol*128*256)<<6;
 			channel.finalvolr = 0;
 			channel.rampFromVolStepL = channel.rampFromVolStepR = 0;
-			
+
 			player->getCurrentResampler()->addChannel(chn, mixerDataCache, count, count);
-		
+
 			for (mp_sint32 i = 0; i < count; i++)
 				fetcher.fetchSampleData(mixerDataCache[i*2]);
 		}
 		else
 		{
-			pp_int32 vol = chn->vol;	
-			mp_sint32 y;		
+			pp_int32 vol = chn->vol;
+			mp_sint32 y;
 			FULLMIXER_TEMPLATE(FULLMIXER_8BIT_NORMAL_TEMP, FULLMIXER_16BIT_NORMAL_TEMP, 16, 0);
-		}		
+		}
 	}
 	else
 	{
@@ -1357,7 +1357,7 @@ resort:
 bool PlayerController::hasSampleData(mp_uint32 chnIndex)
 {
 	if (!player)
-		return false;	
+		return false;
 
 	ChannelMixer* mixer = player;
 

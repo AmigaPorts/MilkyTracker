@@ -78,7 +78,7 @@
 		MIXER \
 		posfixed+=smpadd; \
 		remainCount--; \
-	} 
+	}
 
 #define NOCHECKMIXER_TEMPLATE(MIXER_8BIT,MIXER_16BIT) \
 	if (!(chn->flags&4)) \
@@ -90,8 +90,8 @@
 	{ \
 		const mp_sword* sample = (const mp_sword*)chn->sample + basepos; \
 		PROCESS_BLOCK(MIXER_16BIT) \
-	} 
-	
+	}
+
 /////////////////////////////////////////////////////////
 //		NO INTERPOLATION AND NO VOLUME RAMPING		   //
 /////////////////////////////////////////////////////////
@@ -101,7 +101,7 @@
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 #define NOCHECKMIXER_16BIT_NORMAL \
 	sd1 = sample[posfixed>>16]; \
@@ -109,7 +109,7 @@
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 /////////////////////////////////////////////////////////
 //			NO INTERPOLATION BUT VOLUME RAMPING		   //
@@ -150,7 +150,7 @@
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 #define NOCHECKMIXER_16BIT_LERP \
 	sd1 = sample[posfixed>>16]; \
@@ -161,7 +161,7 @@
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 /////////////////////////////////////////////////////////
 //			INTERPOLATION AND VOLUME RAMPING		   //
@@ -257,7 +257,7 @@
 		} while (!(SMPPOS >= LOOPSTART && SMPPOS <= LOOPEND)); \
 	}
 
-						
+
 #define FULLMIXER_TEMPLATE(MIXER_8BIT, MIXER_16BIT, FRACBITS, LABELNO) \
 	mp_sint32 smppos = chn->smppos; \
 	mp_sint32 smpposfrac = chn->smpposfrac; \
@@ -475,7 +475,7 @@ continueWithBiDir16_## LABELNO: \
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 /////////////////////////////////////////////////////////
 //			NO INTERPOLATION BUT VOLUME RAMPING		   //
@@ -491,7 +491,7 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
 #define FULLMIXER_16BIT_NORMAL_RAMP(_RAMP_) \
 	/* 16 bit sample */ \
@@ -504,7 +504,7 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
 /////////////////////////////////////////////////////////
 //			INTERPOLATION AND NO VOLUME RAMPING		   //
@@ -519,7 +519,7 @@ continueWithBiDir16_## LABELNO: \
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
+	(*buffer++)+=((sd1*(volr>>15))>>15);
 
 #define FULLMIXER_16BIT_LERP \
 	/* 16 bit sample */ \
@@ -531,8 +531,8 @@ continueWithBiDir16_## LABELNO: \
 	/* adjust volume for left channel & mix */ \
 	(*buffer++)+=((sd1*(voll>>15))>>15); \
 	/* adjust volume for right channel & mix */ \
-	(*buffer++)+=((sd1*(volr>>15))>>15); 
-		
+	(*buffer++)+=((sd1*(volr>>15))>>15);
+
 /////////////////////////////////////////////////////////
 //			INTERPOLATION AND VOLUME RAMPING		   //
 /////////////////////////////////////////////////////////
@@ -552,7 +552,7 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
 #define FULLMIXER_16BIT_LERP_RAMP(_RAMP_) \
 	/* 16 bit sample */ \
@@ -570,7 +570,7 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
 /////////////////////////////////////////////////////////
 //	    INTERPOLATION/VOLUME RAMPING and FILTERING     //
@@ -635,7 +635,7 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
 #define FULLMIXER_16BIT_LERP_RAMP_HIRES(_RAMP_) \
 	/* 16 bit sample */ \
@@ -653,7 +653,21 @@ continueWithBiDir16_## LABELNO: \
 	{ \
 		voll+=rampFromVolStepL; \
 		volr+=rampFromVolStepR; \
-	} 
+	}
 
+///////////////////////////////////////////////////////////////////////
+// DIRECT OUT WITHOUT MIXING: NO INTERPOLATION AND NO VOLUME RAMPING //
+///////////////////////////////////////////////////////////////////////
+#define FULLDIRECTOUT_8BIT_NORMAL \
+	/* 8 bit sample */ \
+	sd1 = ((mp_sbyte)sample[smppos])<<8; \
+	/* this is mono! */ \
+	(*buffer++) = (sd1*(vol>>15))>>15;
+
+#define FULLDIRECTOUT_16BIT_NORMAL \
+	/* 16 bit sample */ \
+	sd1 = ((mp_sword*)(sample))[smppos]; \
+	/* this is mono */ \
+	(*buffer++) = (sd1*(vol>>15))>>15;
 
 #endif

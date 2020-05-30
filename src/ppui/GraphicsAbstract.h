@@ -163,16 +163,18 @@ protected:
 	}
 
 	pp_int32 width, height;
+	pp_uint8 depth;
 
 public:
 	bool lock;
 
-protected:		
+protected:
 	PPColor currentColor;
 	pp_uint16 color16;
 	PPRect currentClipRect, origRect;
-
 	PPFont* currentFont;
+	pp_uint8 currentColorIndex;
+	PPColor * currentPalette;
 
 	virtual void validateRect()
 	{
@@ -187,7 +189,7 @@ protected:
 			currentClipRect.y2 = 0;
 			return;
 		}
-	
+
 		if (currentClipRect.x1 < 0)
 			currentClipRect.x1 = 0;
 		if (currentClipRect.y1 < 0)
@@ -207,7 +209,8 @@ protected:
 	PPGraphicsAbstract(pp_int32 w, pp_int32 h) :
 		width(w), height(h),
 		lock(false),
-		currentFont(NULL)
+		currentFont(NULL),
+		currentPalette(NULL)
 	{
 	}
 
@@ -216,16 +219,16 @@ public:
 	pp_int32 getWidth() { return width; }
 	pp_int32 getHeight() { return height; }
 
-	void setRect(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2) 
-	{ 
-		currentClipRect.x1 = x1; currentClipRect.y1 = y1; currentClipRect.x2 = x2; currentClipRect.y2 = y2; 
+	void setRect(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
+	{
+		currentClipRect.x1 = x1; currentClipRect.y1 = y1; currentClipRect.x2 = x2; currentClipRect.y2 = y2;
 		origRect = currentClipRect;
 		validateRect();
 	}
-	
-	void setRect(PPRect r) 
-	{ 
-		currentClipRect = origRect = r; 
+
+	void setRect(PPRect r)
+	{
+		currentClipRect = origRect = r;
 		validateRect();
 	}
 
@@ -233,10 +236,10 @@ public:
 
 	void setFullRect()
 	{
-		currentClipRect.x1 = 0; 
-		currentClipRect.y1 = 0; 
-		currentClipRect.x2 = width-1; 
-		currentClipRect.y2 = height-1; 	
+		currentClipRect.x1 = 0;
+		currentClipRect.y1 = 0;
+		currentClipRect.x2 = width-1;
+		currentClipRect.y2 = height-1;
 		origRect = currentClipRect;
 		validateRect();
 	}
@@ -246,7 +249,7 @@ public:
 		if (x1 < currentClipRect.x1)
 		{
 			float stepy = (float)(y2 - y1) / (float)(x2 - x1);
-		
+
 			y1 = (pp_int32)((float)y1 + stepy * (currentClipRect.x1-x1));
 			x1 = currentClipRect.x1;
 		}
@@ -254,20 +257,29 @@ public:
 		if (x2 > currentClipRect.x2)
 		{
 			float stepy = (float)(y2 - y1) / (float)(x2 - x1);
-		
+
 			x2 = currentClipRect.x2;
 			y2 = (pp_int32)((float)y1 + stepy * (x2-x1));
 		}
 	}
 
-	void setColor(pp_int32 r,pp_int32 g,pp_int32 b) { currentColor.r = r; currentColor.g = g; currentColor.b = b; convertColorTo16(); }
-	void setColor(const PPColor& color) { currentColor = color;  convertColorTo16(); }
-	void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b) 
-	{ 
+	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b)
+	{
+		currentColor.r = r; currentColor.g = g; currentColor.b = b; convertColorTo16();
+	}
+
+	virtual void setColor(const PPColor& color)
+	{
+		currentColor = color;  convertColorTo16();
+	}
+
+	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b)
+	{
 		if (r > 255) r = 255;
 		if (g > 255) g = 255;
 		if (b > 255) b = 255;
-		currentColor.r = r; currentColor.g = g; currentColor.b = b; convertColorTo16(); 
+
+		currentColor.r = r; currentColor.g = g; currentColor.b = b; convertColorTo16();
 	}
 
 	PPColor getColor() { return currentColor; }
@@ -288,7 +300,7 @@ public:
 	virtual void drawLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2) = 0;
 	virtual void drawAntialiasedLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2) = 0;
 
-	virtual void blit(const pp_uint8* src, const PPPoint& p, const PPSize& size, 
+	virtual void blit(const pp_uint8* src, const PPPoint& p, const PPSize& size,
 					  pp_uint32 pitch, pp_uint32 bpp, pp_int32 intensity = 256) = 0;
 
 	virtual void drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underlined = false) = 0;
@@ -305,14 +317,14 @@ public:
 		pp_int32 addr = (colDst.r - colSrc.r)*65536 / height;
 		pp_int32 addg = (colDst.g - colSrc.g)*65536 / height;
 		pp_int32 addb = (colDst.b - colSrc.b)*65536 / height;
-		
+
 		if (invertShading)
 		{
 			addr = -addr;
 			addg = -addg;
 			addb = -addb;
 		}
-					
+
 		pp_int32 rd = (invertShading ? colDst.r : colSrc.r) * 65536;
 		pp_int32 gr = (invertShading ? colDst.g : colSrc.g) * 65536;
 		pp_int32 bl = (invertShading ? colDst.b : colSrc.b) * 65536;
@@ -327,9 +339,47 @@ public:
 		}
 	}
 
+	virtual void fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
+	{
+		fillVerticalShaded(r, colSrc, colDst, invertShading);
+	}
+
 	virtual void fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading)
 	{
 		fillVerticalShaded(currentClipRect, colSrc, colDst, invertShading);
+	}
+
+	virtual void fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
+	{
+		fillVerticalShaded(currentClipRect, colSrc, colDst, invertShading);
+	}
+
+	virtual bool needsPalette()
+	{
+		return false;
+	}
+
+	virtual pp_uint8 searchPaletteIndex(const PPColor& color)
+	{
+		int i;
+
+		if(!needsPalette() || !currentPalette)
+			return 0;
+
+		for(i = 0; i < 256; i++) {
+			PPColor * c = &currentPalette[i];
+			if(c->r == color.r && c->g == color.g && c->b == color.b)
+				return i;
+		}
+
+		return 0;
+	}
+
+	virtual void setPalette(PPColor * palette)
+	{
+		if(!needsPalette())
+			return;
+		currentPalette = palette;
 	}
 };
 

@@ -27,7 +27,7 @@
 #include "Font.h"
 #include "PPUIConfig.h"
 
-PPRadioGroup::PPRadioGroup(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
+PPRadioGroup::PPRadioGroup(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
 	const PPPoint& location, const PPSize& size, pp_uint32 spacerHeight /* = 4 */) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	radioButtonColor(&PPUIConfig::getInstance()->getColor(PPUIConfig::ColorRadioGroupButton)),
@@ -56,7 +56,7 @@ void PPRadioGroup::paint(PPGraphicsAbstract* g)
 	g->setFont(font);
 
 	PPColor dark, ldark, bright, normal;
-	
+
 	normal = bright = ldark = dark = *radioButtonColor;
 	bright.scale(1.25f);
 	ldark.scale(0.75f);
@@ -70,9 +70,9 @@ void PPRadioGroup::paint(PPGraphicsAbstract* g)
 		dark.scaleFixed(40000);
 	}
 
-	PPColor textColor = *(this->textColor);		
+	PPColor textColor = *(this->textColor);
 	if (!enabled)
-		textColor.scaleFixed(40000);		
+		textColor.scaleFixed(40000);
 
 	pp_uint32 spacerHeight = (font->getCharHeight()) + this->spacerHeight;
 
@@ -89,50 +89,49 @@ void PPRadioGroup::paint(PPGraphicsAbstract* g)
 
 			for (j = 0; j < 5; j++)
 			{
-				
 				g->setColor(ldark);
 				for (k = px+j; k <= px+8-j; k++)
 					g->setPixel(k, py-j);
-				
+
 				g->setColor(dark);
 				g->setPixel(px+j, py-j-1);
 				g->setPixel(px+8-j, py-j-1);
-				
+
 				g->setPixel(px+j, py-j);
 				g->setPixel(px+8-j, py-j);
 			}
-			
+
 			for (j = 0; j < 5; j++)
 			{
-				
+
 				g->setColor(ldark);
 				for (k = px+j; k <= px+8-j; k++)
 					g->setPixel(k, py+j);
-				
+
 				g->setColor(normal);
 				g->setPixel(px+j, py+j);
 				g->setPixel(px+j-1, py+j);
-				
+
 				g->setPixel(px+8-j, py+j+1);
 				g->setPixel(px+8-j+1, py+j+1);
 			}
 
-			
+
 			for (j = 0; j < 3; j++)
 			{
-				
+
 				g->setColor(textColor);
 				for (k = px+j; k <= px+4-j; k++)
 					g->setPixel(k+2, py-j+1);
 			}
-			
+
 			for (j = 0; j < 3; j++)
 			{
-				
+
 				g->setColor(textColor);
 				for (k = px+j; k <= px+4-j; k++)
 					g->setPixel(k+2, py+j+1);
-				
+
 			}
 
 		}
@@ -140,33 +139,33 @@ void PPRadioGroup::paint(PPGraphicsAbstract* g)
 		{
 			for (j = 0; j < 5; j++)
 			{
-				
+
 				g->setColor(normal);
 				for (k = px+j; k <= px+8-j; k++)
 					g->setPixel(k, py-j);
-				
+
 				g->setColor(bright);
 				g->setPixel(px+j, py-j-1);
 				g->setPixel(px+8-j, py-j-1);
 			}
-			
+
 			for (j = 0; j < 5; j++)
 			{
-				
+
 				g->setColor(normal);
 				for (k = px+j; k <= px+8-j; k++)
 					g->setPixel(k, py+j);
-				
+
 				g->setColor(dark);
 				g->setPixel(px+j, py+j+1);
 				g->setPixel(px+j-1, py+j+1);
-				
+
 				g->setPixel(px+8-j, py+j+1);
 				g->setPixel(px+8-j+1, py+j+1);
 			}
 
 		}
-		
+
 		g->setColor(0, 0, 0);
 		g->drawString(*items.get(i), px + 12 + 1, py - (font->getCharHeight()>>1)+1 + 1);
 
@@ -179,7 +178,7 @@ void PPRadioGroup::paint(PPGraphicsAbstract* g)
 }
 
 pp_int32 PPRadioGroup::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -191,7 +190,7 @@ pp_int32 PPRadioGroup::dispatchEvent(PPEvent* event)
 		case eLMouseDown:
 		{
 			PPPoint* p = (PPPoint*)event->getDataPtr();
-		
+
 			p->y -= location.y + 2;
 			p->x -= location.x + 2;
 
@@ -216,7 +215,7 @@ pp_int32 PPRadioGroup::dispatchEvent(PPEvent* event)
 				break;
 
 			choice = index;
-			
+
 			PPEvent e(eSelection, &choice, sizeof(choice));
 			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 
@@ -228,10 +227,10 @@ pp_int32 PPRadioGroup::dispatchEvent(PPEvent* event)
 			break;
 		default:
 			break;
-	}	
+	}
 
 	return 0;
-	//return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), event); 
+	//return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), event);
 }
 
 void PPRadioGroup::addItem(const PPString& item)

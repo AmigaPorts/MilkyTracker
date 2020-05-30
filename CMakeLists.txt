@@ -20,6 +20,9 @@
 #
 
 cmake_minimum_required(VERSION 3.10)
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 project(MilkyTracker)
 
 # Set C++ standard to C++98
@@ -46,9 +49,6 @@ endif()
 # Lowercase project name for binaries and packaging
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER)
-
-# Additional CMake modules
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Version number in format X.YY.ZZ
 set(VER_X  1)
@@ -92,7 +92,7 @@ if(APPLE)
 elseif(WIN32)
     set(CPACK_GENERATOR ZIP)
 elseif(AMIGA)
-    set(CPACK_GENERATOR LHA)
+    set(CPACK_GENERATOR ZIP)
 else()
     set(CPACK_GENERATOR "TGZ;DEB;RPM")
 endif()
@@ -188,6 +188,10 @@ elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
     find_package(SDL 1.2 REQUIRED)
+
+    add_definitions(-DAMIGA_DIRECTOUT)
+    # add_definitions(-DAMIGA_SAGA_PIP)
+    # add_definitions(-D__LOWRES__)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
     # https://bugzilla.libsdl.org/show_bug.cgi?id=3295

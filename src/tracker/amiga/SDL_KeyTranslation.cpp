@@ -31,10 +31,6 @@
  *    Small fix in toSC
  *    Various keys added to toVK - rewritten to use array instead of select
  */
-#ifdef __APPLE__
-#define NOT_PC_KB
-#endif
-
 #include "SDL_KeyTranslation.h"
 
 bool isX11 = false;
@@ -119,7 +115,7 @@ pp_uint16 toVK(const SDL_keysym& keysym)
 	for(int i=0; i < sizeof(sdl_keysym_to_vk)/2; i+=2)
 		if(sdl_keysym_to_vk[i] == keysym.sym)
 			return sdl_keysym_to_vk[i+1];
-	
+
 	return 0;
 }
 
@@ -380,7 +376,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x00, /* 253 SDLK_WORLD_93 */
      0x00, /* 254 SDLK_WORLD_94 */
      0x00, /* 255 SDLK_WORLD_95 */
-     
+
      0x52,   /* 256 SDLK_KP0 */
      0x4f,   /* 257 SDLK_KP1 */
      0x50,   /* 258 SDLK_KP2 */
@@ -398,7 +394,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x4e,   /* 270 SDLK_KP_PLUS */
      0x1ce0, /* 271 SDLK_KP_ENTER */
      0x00,   /* 272 SDLK_KP_EQUALS */
- 
+
      0x48e0, /* 273 SDLK_UP */
      0x50e0, /* 274 SDLK_DOWN */
      0x4de0, /* 275 SDLK_RIGHT */
@@ -408,7 +404,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x4fe0, /* 279 SDLK_END */
      0x49e0, /* 280 SDLK_PAGEUP */
      0x51e0, /* 281 SDLK_PAGEDOWN */
- 
+
      0x3b, /* 282 SDLK_F1 */
      0x3c, /* 283 SDLK_F2 */
      0x3d, /* 284 SDLK_F3 */
@@ -427,7 +423,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x00, /* 297 */
      0x00, /* 298 */
      0x00, /* 299 */
- 
+
      0x45,   /* 300 SDLK_NUMLOCK */
      0x3a,   /* 301 SDLK_CAPSLOCK */
      0x46,   /* 302 SDLK_SCROLLOCK */
@@ -443,7 +439,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x5ce0, /* 312 SDLK_RSUPER */
      0x00,   /* 313 SDLK_MODE -- Alt Gr */
      0x00,   /* 314 SDLK_COMPOSE */
- 
+
      0x00,   /* 315 SDLK_HELP */
      0x00,   /* 316 SDLK_PRINT */
      0x00,   /* 317 SDLK_SYSREQ */
@@ -453,7 +449,7 @@ static const pp_uint32 sdl_keycode_to_pc_keycode[] = {
      0x00,   /* 321 SDLK_EURO */
      0x00,   /* 322 SDLK_UNDO */
  };
- 
+
 pp_uint16 toSC(const SDL_keysym& keysym)
 {
 #ifndef NOT_PC_KB
@@ -468,11 +464,11 @@ pp_uint16 toSC(const SDL_keysym& keysym)
 
 	int keycode, v;
 
-    if (keysym.sym > SDLK_LAST) 
+    if (keysym.sym > SDLK_LAST)
 	{
 		keycode = 0;
-	} 
-	else 
+	}
+	else
 	{
         keycode = sdl_keycode_to_pc_keycode[keysym.sym];
 	}

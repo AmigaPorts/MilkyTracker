@@ -38,7 +38,7 @@ class GlobalColorConfig : public PPSingleton<GlobalColorConfig>
 {
 private:
 	PPColor dummy;
-	
+
 public:
 	enum GlobalColors
 	{
@@ -54,7 +54,7 @@ public:
 		ColorCursorLine,
 		// Cursor line in record mode
 		ColorCursorLineHighlighted,
-		
+
 		// Theme color (= desktop in FT2)
 		ColorTheme,
 		// Main text (= white?)
@@ -63,7 +63,7 @@ public:
 		ColorButtons,
 		// PPButton foreground text
 		ColorButtonText,
-		
+
 		// Various
 		ColorSelection,
 		ColorListBoxBackground,
@@ -90,7 +90,12 @@ public:
 	const char* getColorReadableDescription(GlobalColors whichColor) const;
 
 	void setColor(GlobalColors whichColor, const PPColor& color);
-	
+
+	GlobalColorConfig()
+	{
+		dummy.set(0, 0, 0);
+	}
+
 	friend class PPSingleton<GlobalColorConfig>;
 };
 

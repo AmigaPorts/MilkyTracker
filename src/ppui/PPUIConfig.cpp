@@ -44,12 +44,12 @@ PPUIConfig::PPUIConfig()
 	colors[ColorContainer] = PPColor(128, 128, 128);
 	colors[ColorMessageBoxContainer] = PPColor(120, 120, 120);
 	colors[ColorMenuBackground] = PPColor(224, 224, 224);
-	colors[ColorMenuTextDark] = PPColor(0, 0, 0); 
-	colors[ColorMenuTextBright] = PPColor(255, 255, 255); 
+	colors[ColorMenuTextDark] = PPColor(0, 0, 0);
+	colors[ColorMenuTextBright] = PPColor(255, 255, 255);
 	colors[ColorListBoxBorder] = PPColor(192, 192, 192);
 	colors[ColorListBoxBackground] = PPColor(32, 32, 48);
 	colors[ColorScrollBarBackground] = PPColor(32, 48, 64);
-	colors[ColorRadioGroupButton] = PPColor(128, 128, 0); 
-	colors[ColorStaticText] = PPColor(255, 255, 255); 
+	colors[ColorRadioGroupButton] = PPColor(128, 128, 0);
+	colors[ColorStaticText] = PPColor(255, 255, 255);
 }
 

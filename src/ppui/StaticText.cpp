@@ -27,10 +27,10 @@
 #include "Tools.h"
 #include "PPUIConfig.h"
 
-PPStaticText::PPStaticText(pp_int32 id,	PPScreen* parentScreen, EventListenerInterface* eventListener, 
-						   const PPPoint& location, 
-						   const PPString& text, 
-						   bool drawShadow /*= false*/, 
+PPStaticText::PPStaticText(pp_int32 id,	PPScreen* parentScreen, EventListenerInterface* eventListener,
+						   const PPPoint& location,
+						   const PPString& text,
+						   bool drawShadow /*= false*/,
 						   bool drawUnderlined /*= false*/,
 						   bool autoShrink /*= false*/) :
 	PPControl(id, parentScreen, eventListener, location, PPSize(0,0)),
@@ -42,7 +42,7 @@ PPStaticText::PPStaticText(pp_int32 id,	PPScreen* parentScreen, EventListenerInt
 	text(text),
 	extent(-1, -1)
 {
-	font = PPFont::getFont(PPFont::FONT_SYSTEM);		
+	font = PPFont::getFont(PPFont::FONT_SYSTEM);
 
 	calcExtent();
 }
@@ -64,30 +64,30 @@ void PPStaticText::paint(PPGraphicsAbstract* g)
 		g->setRect(location.x, location.y, location.x + size.width, location.y + size.height+1);
 
 	const char* text = this->text;
-	
+
 	char* temp = NULL;
 	if (autoShrink && (signed)font->getStrWidth(text) > extent.width)
 	{
 		pp_uint32 numchars = extent.width / font->getCharWidth();
-		
+
 		temp = new char[numchars+1];
-		
+
 		pp_uint32 i;
 		for (i = 0; i < (numchars / 2); i++)
 			temp[i] = text[i];
-			
+
 		temp[i] = '\xef';
-	
+
 		pp_uint32 j = i+1;
 		for (i = strlen(text)-(numchars / 2); i < strlen(text); i++, j++)
 			temp[j] = text[i];
-			
+
 		temp[j] = '\0';
-		
+
 		text = temp;
 	}
 
-	if (drawShadow)
+	if (!g->needsPalette() && drawShadow)
 	{
 		if (enabled)
 			g->setColor(shadowColor);
@@ -103,7 +103,7 @@ void PPStaticText::paint(PPGraphicsAbstract* g)
 
 		g->drawString(text, location.x+1, location.y+1, underlined);
 	}
-	
+
 	if (enabled)
 		g->setColor(*color);
 	else
@@ -114,13 +114,13 @@ void PPStaticText::paint(PPGraphicsAbstract* g)
 	}
 
 	g->drawString(text, location.x, location.y, underlined);
-	
+
 	if (temp)
 		delete[] temp;
 }
 
 pp_int32 PPStaticText::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (!eventListener)
 		return -1;
 
@@ -130,7 +130,7 @@ pp_int32 PPStaticText::dispatchEvent(PPEvent* event)
 			if (hit(*reinterpret_cast<const PPPoint*>(event->getDataPtr())))
 			{
 				PPEvent e(eCommand);
-				return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e); 
+				return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 			}
 			return 0;
         default:
@@ -147,11 +147,11 @@ void PPStaticText::setText(const PPString& text)
 
 void PPStaticText::setIntValue(pp_int32 value, pp_uint32 numDecDigits/* = 0*/, bool negative/*= false*/)
 {
-	
-	/*char text[15];	
+
+	/*char text[15];
 
 	_itoa(value, text, 10);
-	
+
 	setText(text);*/
 
 	if (numDecDigits == 0)
@@ -175,7 +175,7 @@ void PPStaticText::setIntValue(pp_int32 value, pp_uint32 numDecDigits/* = 0*/, b
 		PPTools::convertToDec(Dec+1, abs(value), numDecDigits-1);
 		if (value < 0)
 			Dec[0] = '-';
-		else	
+		else
 			Dec[0] = '+';
 	}
 	else
@@ -208,7 +208,7 @@ void PPStaticText::setHexValue(pp_int32 value, pp_uint32 numHexDigits/*= 0*/)
 }
 
 void PPStaticText::calcExtent()
-{	
+{
 	size.height = font->getCharHeight()*text.countLines() + (drawShadow?1:0);
-	size.width = font->getStrWidth(text) + (drawShadow?1:0);	
+	size.width = font->getStrWidth(text) + (drawShadow?1:0);
 }

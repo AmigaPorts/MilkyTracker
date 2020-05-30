@@ -43,11 +43,11 @@
 	#define POINTCATCHBOUNDS 5
 #endif
 
-EnvelopeEditorControl::EnvelopeEditorControl(pp_int32 id, 
-											 PPScreen* parentScreen, 
-											 EventListenerInterface* eventListener, 
-											 const PPPoint& location, 
-											 const PPSize& size, 
+EnvelopeEditorControl::EnvelopeEditorControl(pp_int32 id,
+											 PPScreen* parentScreen,
+											 EventListenerInterface* eventListener,
+											 const PPPoint& location,
+											 const PPSize& size,
 											 bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	borderColor(&ourOwnBorderColor),
@@ -69,29 +69,29 @@ EnvelopeEditorControl::EnvelopeEditorControl(pp_int32 id,
 	currentPosition.x = currentPosition.y = -1;
 	xScale = 256;
 
-	showVCenter = false;	
+	showVCenter = false;
 
 	startPos = 0;
 	visibleWidth = size.width - 5;
 	visibleHeight = size.height - SCROLLBARWIDTH - 5;
 
 	adjustScrollbars();
-	
-	caughtControl = NULL;	
+
+	caughtControl = NULL;
 	controlCaughtByLMouseButton = controlCaughtByRMouseButton = false;
 
 	showMarks = new ShowMark[TrackerConfig::maximumPlayerChannels];
 	clearShowMarks();
-	
+
 	// build submenu
 	subMenuAdvanced = new PPContextMenu(5, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain);
 	subMenuAdvanced->setSubMenu(true);
 	subMenuAdvanced->addEntry("Scale X", MenuCommandIDXScale);
 	subMenuAdvanced->addEntry("Scale Y", MenuCommandIDYScale);
-	
+
 	// Context PPMenu
 	editMenuControl = new PPContextMenu(4, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain, true);
-	
+
 	editMenuControl->addEntry("Undo", MenuCommandIDUndo);
 	editMenuControl->addEntry("Redo", MenuCommandIDRedo);
 	editMenuControl->addEntry("\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4", -1);
@@ -102,8 +102,8 @@ EnvelopeEditorControl::EnvelopeEditorControl(pp_int32 id,
 
 	// Create tool handler responder
 	toolHandlerResponder = new ToolHandlerResponder(*this);
-	dialog = NULL;	
-	
+	dialog = NULL;
+
 	resetLastValues();
 }
 
@@ -113,13 +113,13 @@ EnvelopeEditorControl::~EnvelopeEditorControl()
 		envelopeEditor->removeNotificationListener(this);
 
 	delete toolHandlerResponder;
-	delete dialog;	
+	delete dialog;
 
 	delete hScrollbar;
-	
+
 	delete editMenuControl;
 	delete subMenuAdvanced;
-	
+
 	delete[] showMarks;
 }
 
@@ -136,13 +136,13 @@ float EnvelopeEditorControl::calcYScale()
 void EnvelopeEditorControl::updateCurrentPosition(const PPPoint& cp)
 {
 	currentPosition.x = (pp_int32)((cp.x + startPos)*(1.0f / calcXScale()));
-	currentPosition.y = (((pp_int32)((visibleHeight-cp.y)*(1.0f / calcYScale()))) * /*16645*/65536) >> 16;	
-			
+	currentPosition.y = (((pp_int32)((visibleHeight-cp.y)*(1.0f / calcYScale()))) * /*16645*/65536) >> 16;
+
 	if (currentPosition.x < 0)
 		currentPosition.x = 0;
 	if (currentPosition.x > 65535)
 		currentPosition.x = 65535;
-	
+
 	if (currentPosition.y < 0)
 		currentPosition.y = 0;
 	if (currentPosition.y > 256)
@@ -162,7 +162,7 @@ void EnvelopeEditorControl::setScale(pp_int32 scale)
 void EnvelopeEditorControl::paintGrid(PPGraphicsAbstract* g, pp_int32 xOffset, pp_int32 yOffset)
 {
 	pp_int32 i;
-	
+
 	PPColor lineColor = TrackerConfig::colorThemeMain;
 	lineColor.r>>=1;
 	lineColor.g>>=1;
@@ -171,10 +171,10 @@ void EnvelopeEditorControl::paintGrid(PPGraphicsAbstract* g, pp_int32 xOffset, p
 	// Draw grid lines first
 	float scaley = calcYScale();
 	float scalex = calcXScale();
-	
+
 	// horizontal
 	g->setColor(lineColor);
-	
+
 	/*for (i = 0; i <= yMax; i++)
 	{
 		if (!(i & 15))
@@ -189,7 +189,7 @@ void EnvelopeEditorControl::paintGrid(PPGraphicsAbstract* g, pp_int32 xOffset, p
 			}
 		}
 	}*/
-	
+
 	float sy = 0;
 	while (sy < visibleHeight+(pp_int32)(31.0f*scaley))
 	{
@@ -197,24 +197,24 @@ void EnvelopeEditorControl::paintGrid(PPGraphicsAbstract* g, pp_int32 xOffset, p
 		pp_int32 y = location.y + yOffset + visibleHeight - y1;
 		g->drawHLine(location.x + xOffset+1, location.x + xOffset + visibleWidth,y);
 		sy+=32.0f*scaley;
-	}		
-	
+	}
+
 	// vertical
 	float sx = -(float)startPos;
-	
+
 	if (sx < 0)
 	{
 		pp_int32 ink = (pp_int32)((-sx)/(16.0f*scalex)) - 1;
 		sx += ink*(16.0f*scalex);
 	}
-	
+
 	while (sx < visibleWidth)
 	{
 		pp_int32 x1 = (pp_int32)sx;
 		pp_int32 x = x1 + location.x + xOffset;
 		g->drawVLine(location.y+3, location.y + yOffset + visibleHeight,x);
 		sx+=16.0f*scalex;
-	}	
+	}
 
 	g->setColor(255, 255, 255);
 	sx = -(float)startPos;
@@ -235,14 +235,14 @@ void EnvelopeEditorControl::paintGrid(PPGraphicsAbstract* g, pp_int32 xOffset, p
 			g->setPixel(x, location.y + yOffset + visibleHeight+1);
 		sx+=2.0f*scalex;
 		i++;
-	}	
+	}
 }
 
 void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 {
 	if (!isVisible())
 		return;
-	
+
 	pp_int32 xOffset = 2;
 
 	pp_int32 yOffset = 2;
@@ -268,7 +268,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 		g->setFont(font);
 		PPString s("None selected");
 
-		g->drawString(s, location.x + size.width / 2 - font->getStrWidth(s) / 2, location.y + size.height / 2 - font->getCharHeight() / 2); 
+		g->drawString(s, location.x + size.width / 2 - font->getStrWidth(s) / 2, location.y + size.height / 2 - font->getCharHeight() / 2);
 
 		return;
 	}
@@ -283,7 +283,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 	g->setColor(255, 255, 255);
 	// vertical
 	for (i = 0; i <= yMax; i++)
-	{	
+	{
 		if (!(i & 15))
 		{
 			pp_int32 y1 = (pp_int32)(i*scaley);
@@ -296,26 +296,26 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 			}
 		}
 	}
-	
+
 	/*// horizontal
 	for (i = 0; i <= visibleWidth; i++)
 	{
 		pp_int32 i2 = i + startPos;
-	
+
 		pp_int32 x1 = i;
 		pp_int32 x = x1 + location.x + xOffset;
 
 		pp_int32 y1 = location.y + yOffset + visibleHeight - (pp_int32)(128*scaley);
 
 		if (!(i2 & 3))
-		{		
+		{
 			g->setPixel(x, location.y + yOffset + visibleHeight);
-		
+
 			if (!(i2&31))
 			{
 				g->setPixel(x, location.y + yOffset + visibleHeight + 1);
 			}
-		
+
 		}
 	}*/
 
@@ -333,7 +333,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 				g->setColor(128, 128, 128);
 			else
 				g->setColor(64, 64, 64);
-		
+
 			g->setPixel(x, y1);
 		}
 	}
@@ -345,15 +345,15 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 		g->setFont(font);
 		PPString s("No envelope");
 
-		g->drawString(s, location.x + size.width / 2 - font->getStrWidth(s) / 2, location.y + size.height / 2 - font->getCharHeight()); 
+		g->drawString(s, location.x + size.width / 2 - font->getStrWidth(s) / 2, location.y + size.height / 2 - font->getCharHeight());
 	}
 
 	for (i = 0; i < envelope->num - 1; i++)
 	{
-		
+
 		pp_int32 x1 = (pp_int32)(envelope->env[i][0]*scalex);
 		pp_int32 y1 = (pp_int32)(envelope->env[i][1]*scaley);
-		
+
 		pp_int32 x2 = (pp_int32)(envelope->env[i+1][0]*scalex);
 		pp_int32 y2 = (pp_int32)(envelope->env[i+1][1]*scaley);
 
@@ -363,8 +363,11 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 		y1 = location.y + yOffset + visibleHeight - y1;
 		y2 = location.y + yOffset + visibleHeight - y2;
 
-		g->drawAntialiasedLine(x1,y1,x2,y2);
-		//g->drawLine(x1,y1,x2,y2);
+		if(g->needsPalette()) {
+			g->drawLine(x1,y1,x2,y2);
+		} else {
+			g->drawAntialiasedLine(x1,y1,x2,y2);
+		}
 
 		//g->setPixel(location.x + xOffset + x, location.y + yOffset + size.height - 4 - y);
 
@@ -372,7 +375,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 
 	// Showmarks
 	g->setColor(255, 0, 255);
-	
+
 	for (pp_int32 sm = 0; sm < TrackerConfig::maximumPlayerChannels; sm++)
 	{
 		pp_int32 showMark = showMarks[sm].pos;
@@ -380,9 +383,9 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 			continue;
 
 		pp_int32 x = (pp_int32)(showMark*scalex) - startPos;
-		g->drawVLine(location.y + yOffset, location.y + yOffset + visibleHeight + 2, location.x + xOffset + x); 
+		g->drawVLine(location.y + yOffset, location.y + yOffset + visibleHeight + 2, location.x + xOffset + x);
 	}
-	
+
 	for (i = 0; i < envelope->num; i++)
 	{
 		pp_int32 x1 = (pp_int32)(envelope->env[i][0]*scalex);
@@ -396,8 +399,8 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 			g->setColor(TrackerConfig::colorHighLight_1);
 
 			for (pp_int32 j = 0; j < visibleHeight; j+=2)
-				g->setPixel(x1, j + location.y + yOffset);		
-		
+				g->setPixel(x1, j + location.y + yOffset);
+
 			if (i == envelope->loops)
 			{
 				g->setPixel(x1, location.y + yOffset);
@@ -405,7 +408,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 				g->setPixel(x1, location.y + yOffset + 1);
 				g->setPixel(x1+1, location.y + yOffset + 1);
 				g->setPixel(x1-1, location.y + yOffset + 1);
-				
+
 				g->setPixel(x1, location.y + yOffset + 2);
 				g->setPixel(x1+1, location.y + yOffset + 2);
 				g->setPixel(x1-1, location.y + yOffset + 2);
@@ -419,21 +422,21 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 				g->setPixel(x1, location.y + visibleHeight + yOffset - 1);
 				g->setPixel(x1+1, location.y + visibleHeight + yOffset - 1);
 				g->setPixel(x1-1, location.y + visibleHeight + yOffset - 1);
-				
+
 				g->setPixel(x1, location.y + visibleHeight + yOffset - 2);
 				g->setPixel(x1+1, location.y + visibleHeight + yOffset - 2);
 				g->setPixel(x1-1, location.y + visibleHeight + yOffset - 2);
 				g->setPixel(x1+2, location.y + visibleHeight + yOffset - 2);
 				g->setPixel(x1-2, location.y + visibleHeight + yOffset - 2);
 			}
-		
+
 		}
 		if ((envelope->type & 2) && (i == envelope->sustain))
 		{
 			g->setColor(255, 255, 255);
 
 			for (pp_int32 j = 0; j < visibleHeight; j+=2)
-				g->setPixel(x1, j + location.y + yOffset + 1);		
+				g->setPixel(x1, j + location.y + yOffset + 1);
 		}
 
 		/*pp_int32 extent = 1;
@@ -444,20 +447,20 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 			extent = 2;
 		}
 		else*/
-		
+
 		if (i != envelopeEditor->getSelectionIndex())
 		{
 			const pp_int32 extent = 1;
-			
+
 			g->setColor(255, 255, 255);
-			
+
 			for (pp_int32 y = -extent; y <= extent; y++)
 				for (pp_int32 x = -extent; x <= extent; x++)
 					g->setPixel(x1+x, y1+y);
 		}
-		
+
 	}
-	
+
 	// draw selected point always above the other points
 	if (envelopeEditor->getSelectionIndex() != -1)
 	{
@@ -469,9 +472,9 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 		y1 = location.y + yOffset + visibleHeight - y1;
 
 		const pp_int32 extent = 2;
-			
+
 		g->setColor(255, 0, 0);
-			
+
 		for (pp_int32 y = -extent; y <= extent; y++)
 			for (pp_int32 x = -extent; x <= extent; x++)
 				g->setPixel(x1+x, y1+y);
@@ -504,7 +507,7 @@ void EnvelopeEditorControl::paint(PPGraphicsAbstract* g)
 }
 
 pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -526,7 +529,7 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 			}
 			break;
 		}
-		
+
 		case eLMouseDown:
 		{
 			hasDragged = false;
@@ -546,9 +549,9 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 			// Clicked in client area
 			else
 			{
-				
+
 				PPPoint cp = *p;
-				
+
 				translateCoordinates(cp);
 
 				if (cp.x > visibleWidth)
@@ -560,7 +563,7 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 				pp_int32 rx = (pp_int32)(cp.x + startPos);
 				pp_int32 ry = (pp_int32)((visibleHeight - cp.y));
 
-				pp_int32 i = selectEnvelopePoint(rx, ry);				
+				pp_int32 i = selectEnvelopePoint(rx, ry);
 
 				if (i != -1)
 				{
@@ -600,14 +603,14 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 			parentScreen->paintControl(this);
 			break;
 		}
-		
+
 		case eRMouseUp:
 		{
 			controlCaughtByRMouseButton = false;
 			if (caughtControl && !controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
-				caughtControl = NULL;			
+				caughtControl = NULL;
 				break;
 			}
 			break;
@@ -616,7 +619,7 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 		case eLMouseUp:
 			if (envelopeEditor->isSelectionDragging())
 				envelopeEditor->endSelectionDragging();
-			
+
 			controlCaughtByLMouseButton = false;
 
 			if (caughtControl == NULL)
@@ -643,28 +646,28 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 				break;
 
 			PPPoint* p = (PPPoint*)event->getDataPtr();
-			
+
 			PPPoint cp = *p;
 			translateCoordinates(cp);
 
 			setEnvelopePoint(envelopeEditor->getSelectionIndex(), cp.x + startPos, visibleHeight - cp.y);
-			
+
 			updateCurrentPosition(cp);
-			
+
 			adjustScrollbars();
 
 			parentScreen->paintControl(this);
 
 			break;
 		}
-		
+
 		case eLMouseRepeat:
 		{
 			if (caughtControl && controlCaughtByLMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
 				break;
-			}		
+			}
 
 			// for slowing down mouse pressed events
 			selectionTicker++;
@@ -702,7 +705,7 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 		case eMouseWheelMoved:
 		{
 			TMouseWheelEventParams* params = (TMouseWheelEventParams*)event->getDataPtr();
-			
+
 			// Horizontal scrolling takes priority over vertical scrolling (zooming) and is
 			// mutually exclusive so that we are less likely to accidentally zoom while scrolling
 			// For compatibility for mice without horizontal scroll, SHIFT + vertical scroll is
@@ -713,17 +716,17 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 				pp_int32 delta = shiftHeld? params->deltaY : params->deltaX;
 				// Deltas greater than 1 generate multiple events for scroll acceleration
 				PPEvent e = delta > 0 ? PPEvent(eBarScrollDown) : PPEvent(eBarScrollUp);
-				
+
 				delta = abs(delta);
 				delta = delta > 20 ? 20 : delta;
-				
+
 				while (delta)
 				{
 					handleEvent(reinterpret_cast<PPObject*>(hScrollbar), &e);
 					delta--;
 				}
 			}
-			
+
 			else if (params->deltaY)
 			{
 				if (invertMWheelZoom)
@@ -733,11 +736,11 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 				setScale(params->deltaY > 0 ? xScale << 1 : xScale >> 1);
 				parentScreen->paintControl(this);
 			}
-			
-			event->cancel();			
+
+			event->cancel();
 			break;
 		}
-		
+
 		default:
 			if (caughtControl == NULL)
 				break;
@@ -751,7 +754,7 @@ pp_int32 EnvelopeEditorControl::dispatchEvent(PPEvent* event)
 }
 
 pp_int32 EnvelopeEditorControl::handleEvent(PPObject* sender, PPEvent* event)
-{	
+{
 	// Horizontal scrollbar, scroll up (=left)
 	if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 event->getID() == eBarScrollUp)
@@ -786,7 +789,7 @@ pp_int32 EnvelopeEditorControl::handleEvent(PPObject* sender, PPEvent* event)
 		float pos = hScrollbar->getBarPosition()/65536.0f;
 
 		pp_int32 visibleItems = visibleWidth;
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
 
 		if (v < 0.0f)
@@ -803,7 +806,7 @@ pp_int32 EnvelopeEditorControl::handleEvent(PPObject* sender, PPEvent* event)
 	}
 
 	parentScreen->paintControl(this);
-	
+
 	return 0;
 }
 
@@ -828,14 +831,14 @@ void EnvelopeEditorControl::attachEnvelopeEditor(EnvelopeEditor* envelopeEditor)
 
 	this->envelopeEditor = envelopeEditor;
 	envelopeEditor->addNotificationListener(this);
-	adjustScrollbars();	
+	adjustScrollbars();
 }
 
 pp_int32 EnvelopeEditorControl::getMaxWidth()
 {
 	if (envelopeEditor == NULL)
 		return visibleWidth;
-		
+
 	pp_int32 max = envelopeEditor->getHorizontalExtent();
 
 	if (max < 0)
@@ -851,7 +854,7 @@ void EnvelopeEditorControl::adjustScrollbars()
 
 	float olds = hScrollbar->getBarSize() / 65536.0f;
 
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 
 	s = hScrollbar->getBarSize() / 65536.0f;
 
@@ -863,10 +866,10 @@ void EnvelopeEditorControl::adjustScrollbars()
 	pos = hScrollbar->getBarPosition()/65536.0f;
 
 	pp_int32 visibleItems = visibleWidth;
-		
+
 	float v = (float)(getMaxWidth() - visibleItems);
 
-	startPos = (pp_uint32)(v*pos);	
+	startPos = (pp_uint32)(v*pos);
 
 	if (startPos < 0)
 		startPos = 0;
@@ -883,7 +886,7 @@ pp_int32 EnvelopeEditorControl::selectEnvelopePoint(pp_int32 x, pp_int32 y)
 	float scaley = calcYScale();
 	float scalex = calcXScale();
 
-	if (envelopeEditor->getSelectionIndex() >= 0 && 
+	if (envelopeEditor->getSelectionIndex() >= 0 &&
 		envelopeEditor->getSelectionIndex() < envelope->num)
 	{
 		pp_int32 i = envelopeEditor->getSelectionIndex();
@@ -906,7 +909,7 @@ pp_int32 EnvelopeEditorControl::selectEnvelopePoint(pp_int32 x, pp_int32 y)
 			(y - POINTCATCHBOUNDS <= ey) && (y + POINTCATCHBOUNDS >= ey))
 		{
 			return i;
-		}	
+		}
 	}
 
 	return -1;
@@ -914,7 +917,7 @@ pp_int32 EnvelopeEditorControl::selectEnvelopePoint(pp_int32 x, pp_int32 y)
 }
 
 void EnvelopeEditorControl::setEnvelopePoint(pp_int32 index, pp_int32 x, pp_int32 y)
-{	
+{
 	// inverse transformation
 	float scaley = 1.0f / calcYScale();
 	float scalex = 1.0f / calcXScale();
@@ -959,16 +962,16 @@ bool EnvelopeEditorControl::hasShowMarks()
 	}
 	return false;
 }
-	
+
 void EnvelopeEditorControl::invokeContextMenu(PPPoint p)
 {
 	PPPoint cp = p;
-	
+
 	translateCoordinates(cp);
-	
+
 	if (cp.x > visibleWidth || cp.y > visibleHeight)
 		return;
-	
+
 	editMenuControl->setLocation(p);
 	editMenuControl->setState(MenuCommandIDUndo, !envelopeEditor->canUndo());
 	editMenuControl->setState(MenuCommandIDRedo, !envelopeEditor->canRedo());
@@ -992,7 +995,7 @@ void EnvelopeEditorControl::executeMenuCommand(pp_int32 commandId)
 			notifyUpdate();
 			break;
 		}
-		
+
 		// paste
 		case MenuCommandIDPaste:
 			envelopeEditor->pasteCopy();
@@ -1001,11 +1004,11 @@ void EnvelopeEditorControl::executeMenuCommand(pp_int32 commandId)
 		case MenuCommandIDUndo:
 			envelopeEditor->undo();
 			break;
-			
+
 		case MenuCommandIDRedo:
 			envelopeEditor->redo();
 			break;
-			
+
 		case MenuCommandIDXScale:
 			invokeToolParameterDialog(EnvelopeToolTypeScaleX);
 			break;
@@ -1014,7 +1017,7 @@ void EnvelopeEditorControl::executeMenuCommand(pp_int32 commandId)
 			invokeToolParameterDialog(EnvelopeToolTypeScaleY);
 			break;
 	}
-	
+
 }
 
 // ----- some tools for modifying envelopes ----------------------------------
@@ -1025,28 +1028,28 @@ bool EnvelopeEditorControl::invokeToolParameterDialog(EnvelopeEditorControl::Env
 		delete dialog;
 		dialog = NULL;
 	}
-	
+
 	toolHandlerResponder->setEnvelopeToolType(type);
-	
+
 	switch (type)
 	{
 		case EnvelopeToolTypeScaleX:
 			dialog = new DialogWithValues(parentScreen, toolHandlerResponder, PP_DEFAULT_ID, "Scale envelope along x-axis", DialogWithValues::ValueStyleEnterOneValue);
 			static_cast<DialogWithValues*>(dialog)->setValueOneCaption("Enter scale in percent:");
-			static_cast<DialogWithValues*>(dialog)->setValueOneRange(0, 10000.0f, 2); 
+			static_cast<DialogWithValues*>(dialog)->setValueOneRange(0, 10000.0f, 2);
 			static_cast<DialogWithValues*>(dialog)->setValueOne(lastValues.scaleEnvelope != -1.0f ? lastValues.scaleEnvelope : 100.0f);
 			break;
 
 		case EnvelopeToolTypeScaleY:
 			dialog = new DialogWithValues(parentScreen, toolHandlerResponder, PP_DEFAULT_ID, "Scale envelope along y-axis", DialogWithValues::ValueStyleEnterOneValue);
 			static_cast<DialogWithValues*>(dialog)->setValueOneCaption("Enter scale in percent:");
-			static_cast<DialogWithValues*>(dialog)->setValueOneRange(0, 10000.0f, 2); 
+			static_cast<DialogWithValues*>(dialog)->setValueOneRange(0, 10000.0f, 2);
 			static_cast<DialogWithValues*>(dialog)->setValueOne(lastValues.scaleEnvelope != -1.0f ? lastValues.scaleEnvelope : 100.0f);
 			break;
 	}
-	
+
 	dialog->show();
-	
+
 	return true;
 }
 
@@ -1092,22 +1095,22 @@ void EnvelopeEditorControl::editorNotification(EditorBase* sender, EditorBase::E
 		case EnvelopeEditor::NotificationReload:
 		{
 			startPos = 0;
-			clearShowMarks();		
+			clearShowMarks();
 			this->envelope = envelopeEditor->getEnvelope();
 			adjustScrollbars();
 			break;
 		}
-		
+
 		case EnvelopeEditor::NotificationChanges:
 		{
 			notifyUpdate();
 			notifyChanges();
 			break;
 		}
-		
+
 		case EnvelopeEditor::NotificationUndoRedo:
 		{
-			adjustScrollbars();	
+			adjustScrollbars();
 			validate();
 			notifyUpdate();
 			notifyChanges();

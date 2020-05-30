@@ -36,19 +36,19 @@
 
 struct TMixerSettings
 {
-	// Negative values means ignore 
+	// Negative values means ignore
 	pp_int32 mixFreq;
-	// Negative values means ignore 
+	// Negative values means ignore
 	pp_int32 bufferSize;
-	// Negative values means ignore 
+	// Negative values means ignore
 	pp_int32 mixerVolume;
-	// Negative values means ignore 
+	// Negative values means ignore
 	pp_int32 mixerShift;
-	// 0 = false, 1 = true, negative values means ignore 
+	// 0 = false, 1 = true, negative values means ignore
 	pp_int32 powerOfTwoCompensation;
-	// 0 = none, 1 = linear, 2 = lagrange, negative values means ignore 
+	// 0 = none, 1 = linear, 2 = lagrange, negative values means ignore
 	pp_int32 resampler;
-	// 0 = false, 1 = true, negative values means ignore 
+	// 0 = false, 1 = true, negative values means ignore
 	pp_int32 ramping;
 	// NULL means ignore
 	char* audioDriverName;
@@ -73,18 +73,18 @@ struct TMixerSettings
 
 	~TMixerSettings()
 	{
-		delete[] audioDriverName; 
+		delete[] audioDriverName;
 	}
 
 	void setAudioDriverName(const char* name)
 	{
-		delete[] audioDriverName; 
+		delete[] audioDriverName;
 		if (name)
 		{
 			audioDriverName = new char[strlen(name)+1];
 			strcpy(audioDriverName, name);
 		}
-		else 
+		else
 			audioDriverName = NULL;
 	}
 
@@ -114,13 +114,13 @@ struct TMixerSettings
         if (numPlayerChannels != source.numPlayerChannels) {
             return false;
         }
-            
+
 		if (numVirtualChannels != source.numVirtualChannels)
 			return false;
 
 		return strcmp(audioDriverName, source.audioDriverName) == 0;
 	}
-	
+
 	bool operator!=(const TMixerSettings& source)
 	{
 		return !(*this == source);
@@ -131,11 +131,12 @@ struct TMixerSettings
 template<class Type>
 class PPSimpleVector;
 class PlayerController;
+class AudioDriverInterface;
 
 class PlayerMaster
 {
 private:
-	enum 
+	enum
 	{
 		DefaultMaxDevices = 32,
 	};
@@ -143,9 +144,9 @@ private:
 	class MasterMixer* mixer;
 	class MasterMixerNotificationListener* listener;
 	PPSimpleVector<PlayerController>* playerControllers;
-	
+
 	TMixerSettings currentSettings;
-	
+
 	pp_uint32 oldBufferSize;
 	bool forcePowerOfTwoBufferSize;
 
@@ -153,14 +154,14 @@ private:
 
 	bool multiChannelKeyJazz;
 	bool multiChannelRecord;
-	
+
 	void adjustSettings();
 	void applySettingsToPlayerController(PlayerController& playerController, const TMixerSettings& settings);
-	
+
 public:
 	PlayerMaster(pp_uint32 numDevices = DefaultMaxDevices);
 	~PlayerMaster();
-	
+
 	static const char* getPreferredAudioDriverID();
 	static pp_uint32 getPreferredSampleRate();
 	static pp_uint32 getPreferredBufferSize();
@@ -168,20 +169,21 @@ public:
 	static float convertBufferSizeToMillis(pp_uint32 sampleRate, pp_uint32 bufferSize);
 
 	PlayerController* createPlayerController(bool fakeScopes);
-	bool destroyPlayerController(PlayerController* playerController);	
-	
+	bool destroyPlayerController(PlayerController* playerController);
+
 	pp_int32 getNumPlayerControllers() const;
 	PlayerController* getPlayerController(pp_int32 index);
-	
+
 	// Delegating some player functionality
 	bool applyNewMixerSettings(const TMixerSettings& settings, bool allowMixerRestart);
-	
+
 	// Delegating some audio driver enumeration code
 	const char* getFirstDriverName() const;
 	const char* getNextDriverName() const;
+	const AudioDriverInterface * getCurrentDriver() const;
 	const char* getCurrentDriverName() const;
 	bool setCurrentDriverByName(const char* name);
-	
+
 	// this will be delegated to all playercontrollers
 	void reallocateChannels(pp_int32 moduleChannels = 32, pp_int32 virtualChannels = 0);
 	void setUseVirtualChannels(bool useVirtualChannels);
@@ -189,14 +191,14 @@ public:
 	// see above
 	void setMultiChannelKeyJazz(bool b);
 	void setMultiChannelRecord(bool b);
-	
+
 	bool start();
 	bool stop(bool detachPlayers);
-	
+
 	void getCurrentSamplePeak(pp_int32& left, pp_int32& right);
-	
+
 	void resetQueuedPositions();
-	
+
 	friend class MasterMixerNotificationListener;
 };
 

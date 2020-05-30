@@ -62,7 +62,7 @@ void PlayerLogic::playSong(pp_int32 row/* = 0*/)
 	if (stopBackgroundOnPlay)
 		stopAll();
 
-	pp_int32 index = tracker.moduleEditor->getCurrentOrderIndex();				
+	pp_int32 index = tracker.moduleEditor->getCurrentOrderIndex();
 	tracker.playerController->playSong(index, row, tracker.muteChannels);
 }
 
@@ -86,8 +86,8 @@ void PlayerLogic::playPosition(bool rowOnly/* = false*/)
 
 	// when the replay engine is already in row playing mode,
 	// we don't need to restart the song, just update the current position to the cursor
-	if (rowOnly && 
-		tracker.playerController->isPlaying() && 
+	if (rowOnly &&
+		tracker.playerController->isPlaying() &&
 		tracker.playerController->isPlayingRowOnly())
 	{
 		tracker.playerController->setCurrentPatternIndex(tracker.moduleEditor->getCurrentPatternIndex());
@@ -142,16 +142,16 @@ void PlayerLogic::storePosition()
 
 	// indicate if we were editing a pattern different from the one in the orderlist
 	backupIndex |= (tracker.isEditingCurrentOrderlistPattern() ? 0x10000 : 0);
-	
+
 	backupRow = tracker.getPatternEditorControl()->getCurrentRow();
 }
 
 void PlayerLogic::restorePosition()
 {
 	pp_int32 index = backupIndex & 0xFFFF;
-	
+
 	tracker.screen->pauseUpdate(true);
-	
+
 	if (backupIndex & 0x10000)
 	{
 		tracker.setOrderListIndex(index);
@@ -163,9 +163,9 @@ void PlayerLogic::restorePosition()
 	}
 
 	tracker.screen->pauseUpdate(false);
-	
+
 	tracker.getPatternEditorControl()->setRow(backupRow);
-	
+
 	tracker.screen->paint();
 }
 
@@ -176,7 +176,7 @@ void PlayerLogic::playTrace()
 		storePosition();
 
 		tracePlay = true;
-		
+
 		if (tracker.isEditingCurrentOrderlistPattern())
 			playSong(tracker.getPatternEditorControl()->getCurrentRow());
 		else
@@ -187,7 +187,7 @@ void PlayerLogic::playTrace()
 void PlayerLogic::playRow()
 {
 	rowPlay = true;
-	playPosition(true);	
+	playPosition(true);
 	tracker.getPatternEditorControl()->advanceRow(true);
 }
 
@@ -202,7 +202,7 @@ void PlayerLogic::ensureSongStopped(bool bResetMainVolume, bool suspend)
 		tracker.playerController->stopSample();
 		// make sure song is stopped, but don't reset the main volume
 		tracker.playerController->stop(bResetMainVolume);
-	}	
+	}
 }
 
 void PlayerLogic::ensureSongPlaying(bool continuePlaying)
@@ -219,7 +219,7 @@ void PlayerLogic::ensureSongPlaying(bool continuePlaying)
 		tracker.playerController->playPattern(tracker.moduleEditor->getCurrentPatternIndex(), \
 		tracker.moduleEditor->getCurrentOrderIndex(), \
 		0, \
-		tracker.muteChannels); 
+		tracker.muteChannels);
 
 #define CONTINUE \
 	CONTINUEPATTERN \
@@ -238,12 +238,12 @@ void PlayerLogic::continuePlayingPattern()
 		return;
 	}
 
-	if (tracker.playerController->isPlayingPattern() && 
-		!tracker.playerController->isPlayingRowOnly()) 
+	if (tracker.playerController->isPlayingPattern() &&
+		!tracker.playerController->isPlayingRowOnly())
 		tracker.playerController->playPattern(tracker.moduleEditor->getCurrentPatternIndex(),
-											  tracker.moduleEditor->getCurrentOrderIndex(), 
-											  -1, 
-											  tracker.muteChannels); 
+											  tracker.moduleEditor->getCurrentOrderIndex(),
+											  -1,
+											  tracker.muteChannels);
 }
 
 void PlayerLogic::continuePlayingSong()
@@ -271,10 +271,10 @@ void PlayerLogic::finishTraceAndRowPlay()
 	}
 }
 
-void PlayerLogic::playNote(class PlayerController& playerController, 
-						   pp_uint8 chn, 
+void PlayerLogic::playNote(class PlayerController& playerController,
+						   pp_uint8 chn,
 						   pp_int32 note, pp_int32 i, pp_int32 vol/* = -1*/)
 {
 	playerController.playNote(chn, note, i, vol);
 }
-						   
+

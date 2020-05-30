@@ -85,7 +85,7 @@ const PPString TrackerConfig::defaultPredefinedPanningEnvelope("0602030500000000
 
 const PPString TrackerConfig::defaultProTrackerPanning("0000002000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF00");
 
-const PPString TrackerConfig::defaultColorPalette("2B" // Numkeys 
+const PPString TrackerConfig::defaultColorPalette("2B" // Numkeys
 												  "FFFFFF" // ColorPatternNote
 												  "80E0FF" // ColorPatternInstrument
 												  "80FF80" // ColorPatternVolume

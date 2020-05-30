@@ -23,13 +23,13 @@
 /////////////////////////////////////////////////////////////////
 //
 //	PPScreen class
-// ----------------------------------------------------------- 
+// -----------------------------------------------------------
 // The PPScreen object acts as container for controls
 // Each control is a rectangular area on screen.
-// The screen is responsible for drawing the controls if 
+// The screen is responsible for drawing the controls if
 // necessary (although the actual painting is implemented by
 // the control itself)
-// The screen will also send low level events from the OS 
+// The screen will also send low level events from the OS
 // to the affected control(s)
 /////////////////////////////////////////////////////////////////
 #ifndef SCREEN__H
@@ -64,15 +64,15 @@ protected:
 
 	PPSimpleVector<PPControl> controls;
 	PPSimpleVector<PPControl>* timerEventControls;
-	
+
 	bool showDragHilite;
-	
+
 	PPContainer* rootContainer;
 
 private:
 	PPPoint lastMousePoint;
 	PPControl* lastMouseOverControl;
-	
+
 	void paintDragHighlite(PPGraphicsAbstract* g);
 
 	void adjustEventMouseCoordinates(PPEvent* event);
@@ -90,12 +90,12 @@ public:
 	void clear();
 	void paint(bool update = true, bool clean = false);
 	void paintContextMenuControl(PPControl* control, bool update = true);
-	void paintControl(PPControl* control, bool update = true); 
+	void paintControl(PPControl* control, bool update = true);
 	void paintSplash(const pp_uint8* rawData, pp_uint32 width, pp_uint32 height, pp_uint32 pitch, pp_uint32 bpp, pp_int32 intensity = 256);
 
 	void update();
 	void updateControl(PPControl* control);
-	
+
 	void pauseUpdate(bool pause);
 	void enableDisplay(bool enable);
 	bool isDisplayEnabled();
@@ -118,22 +118,22 @@ public:
 
 	void releaseCaughtControls();
 	void setModalControl(PPControl* control, bool repaint = true);
-	
+
 	void setContextMenuControl(PPControl* control, bool repaint = true);
 	void addContextMenuControl(PPControl* control, bool repaint = true);
 	bool removeContextMenuControl(PPControl* control, bool repaint = true);
 	bool removeLastContextMenuControl(bool repaint = true);
-	
+
 	bool hasContextMenu(PPControl* control) const;
-	
+
 	PPControl* getContextMenuControl(pp_int32 index = 0) const
-	{ 
-		return index < contextMenuControls->size() ? contextMenuControls->get(index) : NULL; 
+	{
+		return index < contextMenuControls->size() ? contextMenuControls->get(index) : NULL;
 	}
 
 	PPControl* getLastContextMenuControl() const
-	{ 
-		return contextMenuControls->size() ? contextMenuControls->get(contextMenuControls->size()-1) : NULL; 
+	{
+		return contextMenuControls->size() ? contextMenuControls->get(contextMenuControls->size()-1) : NULL;
 	}
 
 	void setShowDragHilite(bool b);
@@ -144,7 +144,7 @@ public:
 
 	static pp_int32 getDefaultWidth();
 	static pp_int32 getDefaultHeight();
-	
+
 	void setSize(const PPSize& size);
 
 	bool supportsScaling() const;
@@ -152,16 +152,17 @@ public:
 
 	bool goFullScreen(bool b);
 	bool isFullScreen() const;
-	
+
 	PPSize getDisplayResolution() const;
-	
+	PPDisplayDeviceBase * getDisplayDevice() { return displayDevice; }
+
 	void setTitle(const PPSystemString& title);
-	
-	void signalWaitState(bool b, const PPColor& color);	
-	
+
+	void signalWaitState(bool b, const PPColor& color);
+
 	void setMouseCursor(MouseCursorTypes type);
 	MouseCursorTypes getCurrentActiveMouseCursor() const;
-	
+
 	void shutDown();
 };
 

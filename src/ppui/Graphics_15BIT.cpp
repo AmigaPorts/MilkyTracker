@@ -41,9 +41,9 @@ void PPGraphics_15BIT::setPixel(pp_int32 x, pp_int32 y)
 	{
 
 		pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*y+x;
-		
+
 		*buff = _16TO15BIT(color16);
-	}	
+	}
 }
 
 void PPGraphics_15BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
@@ -54,12 +54,12 @@ void PPGraphics_15BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 		pp_uint16 col16 = (((pp_uint16)((color.r)>>3)<<11)+((pp_uint16)((color.g)>>2)<<5)+(pp_uint16)((color.b)>>3));
 		pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*y+x;
 		*buff = _16TO15BIT(col16);
-	}	
+	}
 }
 
 void PPGraphics_15BIT::fill(PPRect rect)
 {
-	
+
 	if (rect.y1 < currentClipRect.y1)
 		rect.y1 = currentClipRect.y1;
 
@@ -79,12 +79,12 @@ void PPGraphics_15BIT::fill(PPRect rect)
 	pp_uint16* dest = (pp_uint16*)buffer+hPitch*rect.y1+rect.x1;
 
 	const pp_int32 width = rect.x2 - rect.x1;
-	const pp_int32 height = rect.y2 - rect.y1; 
-	
+	const pp_int32 height = rect.y2 - rect.y1;
+
 	for (pp_int32 y = 0; y < height; y++)
 	{
 		pp_uint16* buff = dest;
-	
+
 		pp_int32 len = width;
 
 		if (reinterpret_cast<size_t> (buff) & 3)
@@ -96,12 +96,12 @@ void PPGraphics_15BIT::fill(PPRect rect)
 		pp_uint32* buff32 = (pp_uint32*)buff;
 
 		fill_dword(buff32, col32, len>>1);
-		
+
 		if (len&1)
 			*((pp_uint16*)(buff32+(len>>1))) = _16TO15BIT(color16);
-		
+
 		dest+=hPitch;
-	}	
+	}
 
 }
 
@@ -142,7 +142,7 @@ void PPGraphics_15BIT::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
 	pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*y+lx;
 
 	pp_int32 len = rx-lx;
-	
+
 	if (len <= 0)
 		return;
 
@@ -151,11 +151,11 @@ void PPGraphics_15BIT::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
 		*buff++ = _16TO15BIT(color16);
 		len--;
 	}
-	
+
 	pp_uint32* buff32 = (pp_uint32*)buff;
-	
+
 	fill_dword(buff32, col32, len>>1);
-		
+
 	if (len&1)
 		*((pp_uint16*)(buff32+(len>>1))) = _16TO15BIT(color16);
 }
@@ -196,7 +196,7 @@ void PPGraphics_15BIT::drawVLine(pp_int32 y1, pp_int32 y2, pp_int32 x)
 }
 
 void PPGraphics_15BIT::drawLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
-{	
+{
 	__PPGRAPHICSLINETEMPLATE
 }
 
@@ -209,16 +209,16 @@ void PPGraphics_15BIT::blit(const pp_uint8* src, const PPPoint& p, const PPSize&
 {
 	pp_int32 w = size.width;
 	pp_int32 h = size.height;
-	
+
 	const pp_uint32 bytesPerPixel = bpp;
-	
+
 	if (intensity == 256)
 	{
-		pp_uint16* dst = (pp_uint16*)((pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP)); 
+		pp_uint16* dst = (pp_uint16*)((pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP));
 		for (pp_int32 y = 0; y < h; y++)
 		{
 			for (pp_int32 x = 0; x < w; x++)
-			{	
+			{
 				*dst = (((pp_uint16)((src[0])>>3)<<10)+((pp_uint16)((src[1])>>3)<<5)+(pp_uint16)((src[2])>>3));
 				dst++;
 				src+=bytesPerPixel;
@@ -229,11 +229,11 @@ void PPGraphics_15BIT::blit(const pp_uint8* src, const PPPoint& p, const PPSize&
 	}
 	else
 	{
-		pp_uint16* dst = (pp_uint16*)((pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP)); 
+		pp_uint16* dst = (pp_uint16*)((pp_uint8*)buffer+(this->pitch*p.y+p.x*BPP));
 		for (pp_int32 y = 0; y < h; y++)
 		{
 			for (pp_int32 x = 0; x < w; x++)
-			{	
+			{
 				*dst = (((pp_uint16)((src[0]*intensity/256)>>3)<<10)+((pp_uint16)((src[1]*intensity/256)>>3)<<5)+(pp_uint16)((src[2]*intensity/256)>>3));
 				dst++;
 				src+=bytesPerPixel;
@@ -252,7 +252,7 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 
 
 	pp_int32 charWidth = (signed)currentFont->getCharWidth();
-	pp_int32 charHeight = (signed)currentFont->getCharHeight(); 
+	pp_int32 charHeight = (signed)currentFont->getCharHeight();
 	pp_int32 charDim = currentFont->charDim;
 
 	if (x + (signed)charWidth < currentClipRect.x1 ||
@@ -260,7 +260,7 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 		y + (signed)charHeight < currentClipRect.y1 ||
 		y > currentClipRect.y2)
 		return;
-	
+
 	/*pp_uint8 r = (pp_uint8)currentColor.r;
 	pp_uint8 g = (pp_uint8)currentColor.g;
 	pp_uint8 b = (pp_uint8)currentColor.b;
@@ -273,12 +273,12 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 			pp_uint8* buff = (pp_uint8*)buffer + (y+i)*pitch + x*3;
 			for (pp_uint32 j = 0; j < currentFont->charWidth; j++)
 			{
-				
+
 				if (currentFont->getPixelBit(chr, j,i))
 				{
 					buff[0] = b;
 					buff[1] = g;
-					buff[2] = r;					
+					buff[2] = r;
 				}
 				buff+=3;
 			}
@@ -289,18 +289,18 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 		for (pp_uint32 i = 0; i < currentFont->charHeight; i++)
 			for (pp_uint32 j = 0; j < currentFont->charWidth; j++)
 			{
-				
+
 				if (y+(signed)i >= currentClipRect.y1 && y+(signed)i < currentClipRect.y2 &&
 					x+(signed)j >= currentClipRect.x1 && x+(signed)j < currentClipRect.x2 &&
 					currentFont->getPixelBit(chr, j,i))
 				{
-					
+
 					pp_uint8* buff = (pp_uint8*)buffer+((y+i)*pitch+(x+j)*3);
-					
+
 					buff[0] = b;
 					buff[1] = g;
 					buff[2] = r;
-					
+
 				}
 			}
 
@@ -308,15 +308,15 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 	Bitstream* bitstream = currentFont->bitstream;
 	pp_uint8* fontbuffer = bitstream->buffer;
 
-	pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*y+x;	
-	
+	pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*y+x;
+
 	const pp_uint32 cchrDim = chr*charDim;
 	const pp_uint32 incr = (pitch>>1)-(charWidth);
 
 	if (x>= currentClipRect.x1 && x + charWidth < currentClipRect.x2 &&
 		y>= currentClipRect.y1 && y + charHeight < currentClipRect.y2)
 	{
-		
+
 		pp_uint32 yChr = cchrDim;
 		for (pp_uint32 i = 0; i < (unsigned)charHeight; i++)
 		{
@@ -330,7 +330,7 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 				buff++;
 				xChr++;
 			}
-			
+
 			buff+=incr;
 			yChr+=charWidth;
 		}
@@ -343,13 +343,13 @@ void PPGraphics_15BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool under
 			pp_uint32 xChr = yChr;
 			for (pp_uint32 j = 0; j < (unsigned)charWidth; j++)
 			{
-				
+
 				if (y+(signed)i >= currentClipRect.y1 && y+(signed)i < currentClipRect.y2 &&
 					x+(signed)j >= currentClipRect.x1 && x+(signed)j < currentClipRect.x2 &&
 					(fontbuffer[xChr>>3]>>(xChr&7)&1))
 				{
-					
-					pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*(y+i)+(x+j);	
+
+					pp_uint16* buff = (pp_uint16*)buffer+(pitch>>1)*(y+i)+(x+j);
 					*buff = _16TO15BIT(color16);
 				}
 				xChr++;
@@ -375,7 +375,7 @@ void PPGraphics_15BIT::drawString(const char* str, pp_int32 x, pp_int32 y, bool 
 
 	pp_int32 sx = x;
 
-    while (*str) 
+    while (*str)
 	{
 		switch (*str)
 		{
@@ -402,7 +402,7 @@ void PPGraphics_15BIT::drawStringVertical(const char* str, pp_int32 x, pp_int32 
 	pp_int32 charWidth = (signed)currentFont->getCharWidth();
 	pp_int32 charHeight = (signed)currentFont->getCharHeight();
 
-    while (*str) 
+    while (*str)
 	{
 		switch (*str)
 		{

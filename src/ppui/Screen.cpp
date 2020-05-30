@@ -34,15 +34,15 @@ void PPScreen::paintDragHighlite(PPGraphicsAbstract* g)
 	g->drawHLine(0, getWidth(), 0);
 	g->drawHLine(0, getWidth(), 1);
 	g->drawHLine(0, getWidth(), 2);
-	
+
 	g->drawHLine(0, getWidth(), getHeight() - 1);
 	g->drawHLine(0, getWidth(), getHeight() - 2);
 	g->drawHLine(0, getWidth(), getHeight() - 3);
-	
+
 	g->drawVLine(0, getHeight(), 0);
 	g->drawVLine(0, getHeight(), 1);
 	g->drawVLine(0, getHeight(), 2);
-	
+
 	g->drawVLine(0, getHeight(), getWidth() - 1);
 	g->drawVLine(0, getHeight(), getWidth() - 2);
 	g->drawVLine(0, getHeight(), getWidth() - 3);
@@ -50,7 +50,7 @@ void PPScreen::paintDragHighlite(PPGraphicsAbstract* g)
 
 PPScreen::PPScreen(PPDisplayDeviceBase* displayDevice, EventListenerInterface* eventListener /* = NULL */) :
 	displayDevice(displayDevice),
-	eventListener(eventListener),	
+	eventListener(eventListener),
 	focusedControl(NULL),
 	beforeModalFocusedControl(NULL),
 	modalControl(NULL),
@@ -60,9 +60,9 @@ PPScreen::PPScreen(PPDisplayDeviceBase* displayDevice, EventListenerInterface* e
 {
 	contextMenuControls = new PPSimpleVector<PPControl>(16, false);
 	timerEventControls = new PPSimpleVector<PPControl>(16, false);
-	
-	rootContainer = new PPTransparentContainer(-1, this, eventListener, 
-											   PPPoint(0, 0), 
+
+	rootContainer = new PPTransparentContainer(-1, this, eventListener,
+											   PPPoint(0, 0),
 											   PPSize(displayDevice->getSize()));
 }
 
@@ -107,7 +107,7 @@ void PPScreen::raiseEvent(PPEvent* event)
 			PPControl* control = timerEventControls->get(i);
 			if (!control->isVisible() || !control->receiveTimerEvent())
 				continue;
-			
+
 			control->dispatchEvent(event);
 		}
 		return;
@@ -116,24 +116,24 @@ void PPScreen::raiseEvent(PPEvent* event)
 	if (modalControl && modalControl->isVisible())
 	{
 		// listener of the modal control also gets a chance to listen to these events
-		if (modalControl->getEventListener() && 
+		if (modalControl->getEventListener() &&
 			modalControl->getEventListener() != eventListener)
 			modalControl->getEventListener()->handleEvent(reinterpret_cast<PPObject*>(this), event);
-	
+
 		// if the above listener removed the control we're out of here
 		if (!modalControl)
-			return;		
-		
+			return;
+
 		modalControl->dispatchEvent(event);
 		return;
 	}
 
 	// ------- handle context menu -----------------------------------
 	if (contextMenuControls->size())
-	{	
+	{
 		pp_int32 i;
 		bool handled = true;
-		
+
 		bool mouseMoveHandeled = false;
 		if (event->getID() == eMouseMoved || event->getID() == eLMouseDrag)
 		{
@@ -141,7 +141,7 @@ void PPScreen::raiseEvent(PPEvent* event)
 			{
 				PPControl* contextMenuControl = contextMenuControls->get(contextMenuControls->size()-1);
 				PPPoint* p = (PPPoint*)event->getDataPtr();
-						
+
 				if (contextMenuControl->hit(*p) && contextMenuControl->isActive())
 				{
 					contextMenuControl->dispatchEvent(event);
@@ -151,7 +151,7 @@ void PPScreen::raiseEvent(PPEvent* event)
 		}
 		if (mouseMoveHandeled)
 			return;
-		
+
 		for (i = 0; i < contextMenuControls->size(); i++)
 		{
 			PPControl* contextMenuControl = contextMenuControls->get(i);
@@ -163,12 +163,12 @@ void PPScreen::raiseEvent(PPEvent* event)
 					case eRMouseDown:
 					{
 						PPPoint* p = (PPPoint*)event->getDataPtr();
-						
+
 						if (contextMenuControl->hit(*p) && contextMenuControl->isActive())
 						{
 							contextMenuControl->dispatchEvent(event);
 						}
-						else 
+						else
 						{
 							bool inOtherMenu = false;
 							for (pp_int32 j = 0; j < contextMenuControls->size(); j++)
@@ -178,39 +178,39 @@ void PPScreen::raiseEvent(PPEvent* event)
 									inOtherMenu = true;
 									break;
 								}
-							
+
 							if (!inOtherMenu)
 							{
 								if (event->getID() == eRMouseDown ||
 									event->getID() == eLMouseDown)
 									handled = true;
-								
+
 								if (static_cast<PPContextMenu*>(contextMenuControl)->getNotifyParentOnHide())
 								{
 									setContextMenuControl(NULL, false);
 									paint(false);
-	
+
 									EventListenerInterface* listener = contextMenuControl->getEventListener();
-									
+
 									struct MetaData
 									{
 										pp_int32 id;
 										PPPoint p;
 									} metaData;
-									
+
 									metaData.id = event->getID();
 									metaData.p = *p;
-									
+
 									PPEvent e(eRemovedContextMenu, &metaData, sizeof(metaData));
 									listener->handleEvent(reinterpret_cast<PPObject*>(contextMenuControl), &e);
-									
+
 									update();
 								}
 								else
 								{
 									setContextMenuControl(NULL);
 								}
-								
+
 							}
 						}
 						break;
@@ -252,12 +252,14 @@ void PPScreen::clear()
 	g->setRect(0, 0, g->getWidth(), g->getHeight());
 	g->fill();
 
-	displayDevice->close();		
+	displayDevice->close();
 	displayDevice->update();
 }
 
 void PPScreen::paint(bool update/*= true*/, bool clean/*=false*/)
 {
+	pp_int32 i;
+
 	if (displayDevice == NULL)
 		return;
 
@@ -265,64 +267,28 @@ void PPScreen::paint(bool update/*= true*/, bool clean/*=false*/)
 	if (!g)
 		return;
 
-	if (clean)
-	{
+	if (clean) {
 		g->setColor(0,0,0);
-
 		g->setRect(0, 0, g->getWidth(), g->getHeight());
-
 		g->fill();
 	}
 
-	/*g->setColor(255, 255, 255);
-
-	pp_int32 step = 0;
-	for (pp_int32 y = 0; y < sizeof(characters)/sizeof(pp_uint16); y++)
-	{
-	
-		for (pp_int32 x = 0; x < 4; x++)
-		{
-		
-			if ((characters[y]>>((3-x)<<2))&1)
-			{
-				g->setPixel(x+32,y+32+step);
-			}
-		
-		}
-
-		step += ((y%5)==4)*2;
-
-	}*/
-
-	//g->setFont(PPFont::getFont(PPFont::FONT_SYSTEM));
-	//g->setColor(255, 255, 255);
-	//g->drawChar('A',0,0);
-
-	pp_int32 i;
-	
-	/*for (i = 0; i < controls.size(); i++)
-	{
-		PPControl* control = controls.get(i);
-		if (control->isVisible())
-			controls.get(i)->paint(g);	
-	}*/
-	
 	// modal control overlapping everything
-	if (!(modalControl && modalControl->isVisible() && 
+	if (!(modalControl && modalControl->isVisible() &&
 		  modalControl->getLocation().x == 0 &&
 		  modalControl->getLocation().y == 0 &&
 		  modalControl->getSize().width == getWidth() &&
 		  modalControl->getSize().height == getHeight()))
 	{
 		rootContainer->paint(g);
-		
+
 		for (i = 0; i < contextMenuControls->size(); i++)
 		{
 			PPControl* control = contextMenuControls->get(i);
-			control->paint(g);	
+			control->paint(g);
 		}
 	}
-	
+
 	if (modalControl)
 		modalControl->paint(g);
 
@@ -330,7 +296,7 @@ void PPScreen::paint(bool update/*= true*/, bool clean/*=false*/)
 		paintDragHighlite(g);
 
 	displayDevice->close();
-	
+
 	if (update)
 		displayDevice->update();
 }
@@ -349,7 +315,7 @@ void PPScreen::paintContextMenuControl(PPControl* control, bool update/* = true*
 		PPControl* ctrl = contextMenuControls->get(i);
 		ctrl->paint(g);
 	}
-		
+
 	if (modalControl)
 	{
 		PPControl* ctrl = modalControl;
@@ -361,7 +327,7 @@ void PPScreen::paintContextMenuControl(PPControl* control, bool update/* = true*
 	if (update)
 	{
 		PPRect rect = control->getBoundingRect();
-		
+
 		rect.x1--;
 		if (rect.x1 < 0) rect.x1 = 0;
 		rect.y1--;
@@ -371,14 +337,14 @@ void PPScreen::paintContextMenuControl(PPControl* control, bool update/* = true*
 		if (rect.x2 > getWidth()) rect.x2 = getWidth();
 		rect.y2++;
 		if (rect.y2 > getHeight()) rect.y2 = getHeight();
-		
+
 		displayDevice->update(rect);
 	}
 
 }
 
 void PPScreen::paintControl(PPControl* control, bool update/*= true*/)
-{	
+{
 	if (displayDevice == NULL || !control->isVisible())
 		return;
 
@@ -394,9 +360,9 @@ void PPScreen::paintControl(PPControl* control, bool update/*= true*/)
 		modalControl->getSize().height == getHeight())
 	{
 		// see whether the control we shall paint is a child of the modal control
-		// if it's not, we don't need to paint it, because the modal control overlaps us 
-		PPControl* parent = control->getOwnerControl();		
-		
+		// if it's not, we don't need to paint it, because the modal control overlaps us
+		PPControl* parent = control->getOwnerControl();
+
 		bool isModalControlChild = (parent == NULL);
 
 		while (parent != NULL)
@@ -406,18 +372,18 @@ void PPScreen::paintControl(PPControl* control, bool update/*= true*/)
 				isModalControlChild = true;
 				break;
 			}
-			
+
 			control = parent;
 			parent = control->getOwnerControl();
 		}
-		
+
 		if (!isModalControlChild)
 			return;
 	}
-	
-	control->paint(g);	
-	
-	bool paintContextMenus = false; 
+
+	control->paint(g);
+
+	bool paintContextMenus = false;
 	for (pp_int32 i = 0; i < contextMenuControls->size(); i++)
 	{
 		PPControl* ctrl = contextMenuControls->get(i);
@@ -428,7 +394,7 @@ void PPScreen::paintControl(PPControl* control, bool update/*= true*/)
 			break;
 		}
 	}
-	
+
 	if (paintContextMenus)
 	{
 		for (pp_int32 i = 0; i < contextMenuControls->size(); i++)
@@ -437,7 +403,7 @@ void PPScreen::paintControl(PPControl* control, bool update/*= true*/)
 			ctrl->paint(g);
 		}
 	}
-	
+
 	if (modalControl)
 	{
 		// if the modal control hits the control to draw we also need to refresh the modal control
@@ -463,34 +429,34 @@ void PPScreen::paintSplash(const pp_uint8* rawData, pp_uint32 width, pp_uint32 h
 	PPPoint p;
 	p.x = g->getWidth() / 2 - width / 2;
 	p.y = g->getHeight() / 2 - height / 2;
-	
+
 	PPSize s;
 	s.width = width; s.height = height;
 	g->blit(rawData, p, s, pitch, bpp, intensity);
 
 	displayDevice->close();
-	
-	displayDevice->update();	
+
+	displayDevice->update();
 }
 
 void PPScreen::update()
 {
-	if (displayDevice) 
+	if (displayDevice)
 	{
 		if (showDragHilite)
 		{
 			PPGraphicsAbstract* g = displayDevice->open();
-			paintDragHighlite(g);		
+			paintDragHighlite(g);
 			displayDevice->close();
 		}
-		displayDevice->update(); 
+		displayDevice->update();
 	}
 }
 
 void PPScreen::updateControl(PPControl* control)
 {
 	PPRect rect = control->getBoundingRect();
-	
+
 	rect.x1--;
 	if (rect.x1 < 0) rect.x1 = 0;
 	rect.y1--;
@@ -500,7 +466,7 @@ void PPScreen::updateControl(PPControl* control)
 	if (rect.x2 > getWidth()) rect.x2 = getWidth();
 	rect.y2++;
 	if (rect.y2 > getHeight()) rect.y2 = getHeight();
-	
+
 	displayDevice->update(rect);
 }
 
@@ -519,10 +485,10 @@ void PPScreen::setFocus(PPControl* control, bool repaint/* = true*/)
 		ctrl = control;
 		chain.add(ctrl);
 	}
-	
+
 	if (ctrl == NULL)
 		return;
-	
+
 	while (ctrl->getOwnerControl())
 	{
 		PPControl* parent = ctrl->getOwnerControl();
@@ -530,7 +496,7 @@ void PPScreen::setFocus(PPControl* control, bool repaint/* = true*/)
 		if (ctrl->isContainer())
 			chain.add(ctrl);
 	}
-	
+
 	for (pp_int32 i = chain.size()-1; i > 0; i--)
 	{
 		if (chain.get(i)->isContainer())
@@ -548,14 +514,14 @@ PPControl* PPScreen::getFocusedControl() const
 	{
 		parent = static_cast<PPContainer*>(parent)->getFocusedControl();
 	}
-	
+
 	// if this is still a container this is not what we want => NULL
 	return parent->isContainer() ? NULL : parent;
 }
 
 bool PPScreen::hasFocus(PPControl* control) const
-{ 
-	// if the client is asking for container focus we first need to find the control 
+{
+	// if the client is asking for container focus we first need to find the control
 	// which is at the end of the focus hierarchy (see above)
 	PPControl* parent = control;
 	while (parent->isContainer() && static_cast<PPContainer*>(parent)->getFocusedControl())
@@ -567,8 +533,8 @@ bool PPScreen::hasFocus(PPControl* control) const
 	return getFocusedControl() == parent;
 }
 
-void PPScreen::addControl(PPControl* control) 
-{ 
+void PPScreen::addControl(PPControl* control)
+{
 	rootContainer->addControl(control);
 }
 
@@ -579,8 +545,8 @@ bool PPScreen::removeControl(PPControl* control)
 
 void PPScreen::addTimerEventControl(PPControl* control)
 {
-	if (control->receiveTimerEvent() && !control->isContainer()) 
-		timerEventControls->add(control); 
+	if (control->receiveTimerEvent() && !control->isContainer())
+		timerEventControls->add(control);
 }
 
 bool PPScreen::removeTimerEventControl(PPControl* control)
@@ -594,7 +560,7 @@ bool PPScreen::removeTimerEventControl(PPControl* control)
 			res = true;
 		}
 	}
-	
+
 	return res;
 }
 
@@ -608,7 +574,7 @@ void PPScreen::releaseCaughtControls()
 {
 	// uncatch controls within containers
 	PPControl* parent = rootContainer;
-	while (parent->isContainer() && 
+	while (parent->isContainer() &&
 		   static_cast<PPContainer*>(parent)->caughtControl &&
 		   static_cast<PPContainer*>(parent)->currentlyPressedMouseButtons != 0)
 	{
@@ -620,7 +586,7 @@ void PPScreen::releaseCaughtControls()
 }
 
 void PPScreen::setModalControl(PPControl* control, bool repaint/* = true*/)
-{ 
+{
 	// Hide open menus first
 	setContextMenuControl(NULL, false);
 
@@ -634,7 +600,7 @@ void PPScreen::setModalControl(PPControl* control, bool repaint/* = true*/)
 	if (control)
 	{
 		// uncatch controls within containers
-		releaseCaughtControls();		
+		releaseCaughtControls();
 		PPEvent event(eFocusGainedNoRepaint);
 		control->dispatchEvent(&event);
 		control->show(true);
@@ -645,23 +611,23 @@ void PPScreen::setModalControl(PPControl* control, bool repaint/* = true*/)
 		focusedControl->dispatchEvent(&event);
 	}
 
-	modalControl = control; 
-	
+	modalControl = control;
+
 	if (repaint)
-		paint(); 
+		paint();
 }
 
 
-void PPScreen::setContextMenuControl(PPControl* control, bool repaint/* = true*/) 
-{ 
+void PPScreen::setContextMenuControl(PPControl* control, bool repaint/* = true*/)
+{
 	if (control == NULL && !contextMenuControls->size())
 		return;
 
 	PPEvent event(eFocusLost);
 	PPEvent event2(eFocusGained);
-	
+
 	for (pp_int32 i = 0; i < contextMenuControls->size(); i++)
-		contextMenuControls->get(i)->dispatchEvent(&event);						
+		contextMenuControls->get(i)->dispatchEvent(&event);
 
 	delete contextMenuControls;
 	contextMenuControls = new PPSimpleVector<PPControl>(16, false);
@@ -669,28 +635,28 @@ void PPScreen::setContextMenuControl(PPControl* control, bool repaint/* = true*/
 	if (control)
 	{
 		// uncatch controls within containers
-		releaseCaughtControls();		
+		releaseCaughtControls();
 		control->dispatchEvent(&event2);
-		contextMenuControls->add(control); 		
+		contextMenuControls->add(control);
 	}
-	
+
 	if (repaint)
-		paint(); 
+		paint();
 }
 
-void PPScreen::addContextMenuControl(PPControl* control, bool repaint/* = true*/) 
-{ 
+void PPScreen::addContextMenuControl(PPControl* control, bool repaint/* = true*/)
+{
 	PPEvent event(eFocusLost);
 	PPEvent event2(eFocusGained);
 
 	if (control)
 	{
 		control->dispatchEvent(&event2);
-		contextMenuControls->add(control); 		
+		contextMenuControls->add(control);
 	}
-	
+
 	if (repaint)
-		paint(); 
+		paint();
 }
 
 bool PPScreen::removeContextMenuControl(PPControl* control, bool repaint/* = true*/)
@@ -707,7 +673,7 @@ bool PPScreen::removeContextMenuControl(PPControl* control, bool repaint/* = tru
 		}
 
 	if (res && repaint)
-		paint(); 
+		paint();
 
 	return res;
 }
@@ -719,11 +685,11 @@ bool PPScreen::removeLastContextMenuControl(bool repaint/* = true*/)
 		contextMenuControls->remove(contextMenuControls->size()-1);
 
 		if (repaint)
-			paint(); 
-			
+			paint();
+
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -731,26 +697,26 @@ bool PPScreen::hasContextMenu(PPControl* control) const
 {
 	if (!contextMenuControls->size())
 		return false;
-		
+
 	for (pp_int32 i = 0; i < contextMenuControls->size(); i++)
 		if (contextMenuControls->get(i) == control)
 			return true;
-			
+
 	return false;
 }
 
 void PPScreen::setShowDragHilite(bool b)
 {
-	showDragHilite = b; 
-	
+	showDragHilite = b;
+
 	if (!b)
 	{
 		PPGraphicsAbstract* g = displayDevice->open();
 		paintDragHighlite(g);
 		displayDevice->close();
 	}
-	
-	paint(); 
+
+	paint();
 }
 
 pp_int32 PPScreen::getWidth() const
@@ -784,12 +750,12 @@ void PPScreen::setTitle(const PPSystemString& title)
 	if (displayDevice)
 		displayDevice->setTitle(title);
 }
-	
+
 void PPScreen::setSize(const PPSize& size)
 {
 	if (displayDevice)
 		displayDevice->setSize(size);
-		
+
 	rootContainer->setSize(size);
 }
 
@@ -797,7 +763,7 @@ bool PPScreen::supportsScaling() const
 {
 	if (displayDevice)
 		return displayDevice->supportsScaling();
-		
+
 	return false;
 }
 
@@ -814,7 +780,7 @@ bool PPScreen::goFullScreen(bool b)
 {
 	if (displayDevice)
 		return displayDevice->goFullScreen(b);
-		
+
 	return false;
 }
 
@@ -822,17 +788,18 @@ bool PPScreen::isFullScreen() const
 {
 	if (displayDevice)
 		return displayDevice->isFullScreen();
-		
+
 	return false;
 }
 
 PPSize PPScreen::getDisplayResolution() const
 {
 	PPSize size(-1, -1);
-	
+
+
 	if (displayDevice)
 		size = displayDevice->getDisplayResolution();
-		
+
 	return size;
 }
 

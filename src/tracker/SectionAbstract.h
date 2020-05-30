@@ -49,12 +49,12 @@ protected:
 
 	class PPDialogBase* dialog;
 	class DialogResponder* responder;
-	
+
 protected:
 	virtual void showSection(bool bShow) = 0;
 
 	void showMessageBox(pp_uint32 id, const PPString& text, bool yesnocancel = false);
-	
+
 public:
 	SectionAbstract(Tracker& theTracker, PPDialogBase* dialog = NULL, DialogResponder* responder = NULL) :
 		lastFocusedControl(NULL),
@@ -64,14 +64,14 @@ public:
 		responder(responder)
 	{
 	}
-	
+
 	virtual ~SectionAbstract();
 
 	// PPEvent listener
 	virtual pp_int32 handleEvent(PPObject* sender, PPEvent* event) = 0;
-	
+
 	virtual void init() = 0;
-	
+
 	virtual void init(pp_int32 x, pp_int32 y) = 0;
 	virtual void show(bool bShow)
 	{
@@ -82,13 +82,15 @@ public:
 			tracker.screen->setFocus(lastFocusedControl);
 #endif
 	}
-	
+
 	virtual void update(bool repaint = true) = 0;
-	
+
 	virtual void notifyInstrumentSelect(pp_int32 index) {}
 	virtual void notifySampleSelect(pp_int32 index) {}
 	virtual void notifyTabSwitch() {}
-	
+
+	virtual const Tracker& getTracker() const { return tracker; }
+
 	friend class Tracker;
 
 #ifdef __LOWRES__

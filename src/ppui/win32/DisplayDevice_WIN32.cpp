@@ -42,17 +42,17 @@ PPDisplayDevice::PPDisplayDevice(HWND hWnd, pp_int32 width, pp_int32 height, pp_
 	m_BitmapInfo.biYPelsPerMeter = 0;
 	m_BitmapInfo.biClrUsed = 0;
 	m_BitmapInfo.biClrImportant = 0;
-	
+
 	HDC hScreenDC = ::GetWindowDC(NULL);
-	
-	m_hBitmap = ::CreateDIBSection(hScreenDC, 
-								   (LPBITMAPINFO)&m_BitmapInfo, 
+
+	m_hBitmap = ::CreateDIBSection(hScreenDC,
+								   (LPBITMAPINFO)&m_BitmapInfo,
 								   DIB_RGB_COLORS,
-								   (LPVOID *)&m_pBits, 
-								   NULL, 
-								   0); 
-	
-	::ReleaseDC(NULL,hScreenDC);				    
+								   (LPVOID *)&m_pBits,
+								   NULL,
+								   0);
+
+	::ReleaseDC(NULL,hScreenDC);
 
 	m_hWnd = hWnd;
 
@@ -64,15 +64,15 @@ PPDisplayDevice::PPDisplayDevice(HWND hWnd, pp_int32 width, pp_int32 height, pp_
 }
 
 PPDisplayDevice::~PPDisplayDevice()
-{	
+{
 	delete currentGraphics;
 }
 
 PPGraphicsAbstract* PPDisplayDevice::open()
 {
 	if (!isEnabled())
-		return NULL;		
-		
+		return NULL;
+
 	currentGraphics->lock = false;
 
 	return currentGraphics;
@@ -81,12 +81,12 @@ PPGraphicsAbstract* PPDisplayDevice::open()
 void PPDisplayDevice::blit(HWND hWnd, HDC pDC, pp_int32 x, pp_int32 y, pp_int32 width, pp_int32 height)
 {
 	RECT r;
- 
+
 	GetClientRect(hWnd,&r);
-  
+
 	HDC hBitmapDC = ::CreateCompatibleDC(NULL);
 	HBITMAP hOldBitmap = (HBITMAP)::SelectObject(hBitmapDC, m_hBitmap);
- 
+
 	if (scaleFactor == 1)
 		::BitBlt(pDC, x, y, width, height, hBitmapDC, x, y, SRCCOPY);
 	else
@@ -105,9 +105,9 @@ void PPDisplayDevice::update()
 {
 	if (m_hDC != NULL)
 		return;
-	
+
 	if (!isUpdateAllowed() || !isEnabled())
-		return;	
+		return;
 
 	m_hDC = ::GetDC(m_hWnd);
 
@@ -122,10 +122,10 @@ void PPDisplayDevice::update(const PPRect& r)
 {
 	if (m_hDC != NULL)
 		return;
-	
+
 	if (!isUpdateAllowed() || !isEnabled())
-		return;	
-	
+		return;
+
 	m_hDC = ::GetDC(m_hWnd);
 
 	blit(m_hWnd, m_hDC, r.x1, r.y1, r.width(), r.height());
@@ -146,7 +146,7 @@ void PPDisplayDevice::setTitle(const PPSystemString& title)
 
 void PPDisplayDevice::setSize(const PPSize& size)
 {
-	// Important note: Save this size before the window 
+	// Important note: Save this size before the window
 	// is actually resized using SetWindowPos (below)
 	this->size = size;
 
@@ -158,10 +158,10 @@ void PPDisplayDevice::setSize(const PPSize& size)
 	rc.bottom = rc.top + size.height * scaleFactor;
 	::AdjustWindowRect(&rc, GetWindowLong(m_hWnd, GWL_STYLE), false);
 
-	::SetWindowPos(m_hWnd, 
-				   NULL, 
-				   rc.left, 
-				   rc.top, 
+	::SetWindowPos(m_hWnd,
+				   NULL,
+				   rc.left,
+				   rc.top,
 				   rc.right - rc.left,
 				   rc.bottom - rc.top,
 				   SWP_SHOWWINDOW | SWP_NOZORDER);
@@ -222,15 +222,15 @@ bool PPDisplayDevice::goFullScreen(bool b)
 			::SetWindowLong(m_hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 
 			::ShowWindow(m_hWnd, SW_SHOWMAXIMIZED);
-		    
-            ::SetWindowPos(m_hWnd, HWND_TOPMOST, 
-                           0, 
-					       0, 
+
+            ::SetWindowPos(m_hWnd, HWND_TOPMOST,
+                           0,
+					       0,
 					       0, 0, SWP_NOSIZE);
-			
+
 			bFullScreen = true;
 		}
-		else 
+		else
 		{
 			bFullScreen = false;
 			return false;
@@ -239,15 +239,15 @@ bool PPDisplayDevice::goFullScreen(bool b)
 	else
 	{
 		::ChangeDisplaySettings(NULL, 0);
-		
+
 		::SetWindowLong(m_hWnd, GWL_STYLE, m_lastWindowStyle);
 		::SetWindowLong(m_hWnd, GWL_EXSTYLE, m_lastWindowExStyle);
 
-		::SetWindowPos(m_hWnd, 
-					   HWND_NOTOPMOST, 
-					   m_lastRect.left, 
-					   m_lastRect.top, 
-					   m_lastRect.right - m_lastRect.left, 
+		::SetWindowPos(m_hWnd,
+					   HWND_NOTOPMOST,
+					   m_lastRect.left,
+					   m_lastRect.top,
+					   m_lastRect.right - m_lastRect.left,
 					   m_lastRect.bottom - m_lastRect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 
 		bFullScreen = false;
@@ -268,8 +268,8 @@ DWORD WINAPI PPDisplayDevice::UpdateWindowThreadProc(LPVOID lpParameter)
 	while (true)
 	{
 		if (thisDisplayDevice->m_waitWindowVisible)
-			WaitWindow::getInstance()->update(); 
-	
+			WaitWindow::getInstance()->update();
+
 		System::msleep(100);
 	}
 
@@ -281,7 +281,7 @@ DWORD WINAPI PPDisplayDevice::UpdateWindowThreadProc(LPVOID lpParameter)
 void PPDisplayDevice::signalWaitState(bool b, const PPColor& color)
 {
 	waitBarColor = color;
-	
+
 	if (b)
 	{
 		RECT bounds;
@@ -289,19 +289,19 @@ void PPDisplayDevice::signalWaitState(bool b, const PPColor& color)
 
 		WaitWindow::getInstance()->move(bounds.left + ((bounds.right-bounds.left) >> 1) - (WaitWindow::getInstance()->getWidth()>>1),
 										bounds.top + ((bounds.bottom-bounds.top) >> 1) - (WaitWindow::getInstance()->getHeight()>>1));
-		
+
 		WaitWindow::getInstance()->setColor(color);
-		
+
 		WaitWindow::getInstance()->show();
 
 		m_waitWindowVisible = true;
 
 		if (!m_hThread)
 		{
-			m_hThread = CreateThread(NULL, 
-								     0, 
-									 &UpdateWindowThreadProc, 
-								     (void*)this, 
+			m_hThread = CreateThread(NULL,
+								     0,
+									 &UpdateWindowThreadProc,
+								     (void*)this,
 								     0,
 								     &m_threadID);
 		}
@@ -316,13 +316,13 @@ void PPDisplayDevice::signalWaitState(bool b, const PPColor& color)
 void PPDisplayDevice::setMouseCursor(MouseCursorTypes type)
 {
 	currentCursorType = type;
-	
+
 	switch (type)
 	{
 		case MouseCursorTypeStandard:
 			::SetCursor(g_cursorStandard);
 			break;
-			
+
 		case MouseCursorTypeResizeLeft:
 			::SetCursor(g_cursorResizeWE);
 			break;

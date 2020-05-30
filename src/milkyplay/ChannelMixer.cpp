@@ -43,7 +43,7 @@
 #include "ResamplerMacros.h"
 #include "AudioDriverManager.h"
 #include <math.h>
- 
+
 // Ramp out will last (THEBEATLENGTH*RAMPDOWNFRACTION)>>8 samples
 #define RAMPDOWNFRACTION 256
 
@@ -76,19 +76,63 @@ void ChannelMixer::panToVol (ChannelMixer::TMixerChannel *chn, mp_sint32 &volL, 
 		volL = volR = 0;
 }
 
+void ChannelMixer::ResamplerBase::directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sword* buffer, mp_sint32 beatNum, mp_sint32 beatlength)
+{
+	ChannelMixer::TMixerChannel* chn = &mixer->channel[c];
+	ChannelMixer::TMixerChannel* newChannel = mixer->newChannel;
+
+	chn->index = c;
+
+	if (!(chn->flags & MP_SAMPLE_PLAY))
+		return;
+
+	switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
+	{
+		case MP_SAMPLE_FADEOFF:
+		{
+			chn->flags&=~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
+			return;
+		}
+
+		case MP_SAMPLE_FADEOUT:
+		{
+			chn->sample = newChannel[c].sample;
+			chn->smplen = newChannel[c].smplen;
+			chn->loopstart = newChannel[c].loopstart;
+			chn->loopend = newChannel[c].loopend;
+			chn->smppos = newChannel[c].smppos;
+			chn->smpposfrac = newChannel[c].smpposfrac;
+			chn->flags = newChannel[c].flags;
+			chn->loopendcopy = newChannel[c].loopendcopy;
+			chn->fixedtime = newChannel[c].fixedtimefrac;
+			chn->fixedtimefrac = newChannel[c].fixedtimefrac;
+			// break is missing here intentionally!!!
+		}
+		default:
+		{
+			mixer->panToVol(chn, chn->finalvoll, chn->finalvolr);
+			break;
+		}
+	}
+
+	// direct out here
+	if ((chn->flags&MP_SAMPLE_PLAY))
+		directOutBlockFull((buffer), chn, (beatlength));
+}
+
 void ChannelMixer::ResamplerBase::addChannelsNormal(ChannelMixer* mixer, mp_uint32 numChannels, mp_sint32* buffer32,mp_sint32 beatNum, mp_sint32 beatlength)
 {
 	ChannelMixer::TMixerChannel* channel = mixer->channel;
 	ChannelMixer::TMixerChannel* newChannel = mixer->newChannel;
-	
-	for (mp_uint32 c=0;c<numChannels;c++) 
+
+	for (mp_uint32 c=0;c<numChannels;c++)
 	{
 		ChannelMixer::TMixerChannel* chn = &channel[c];
 		chn->index = c;		// For Amiga resampler
 
 		if (!(chn->flags & MP_SAMPLE_PLAY))
 			continue;
-	
+
 		switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
 		{
 			case MP_SAMPLE_FADEOFF:
@@ -117,10 +161,10 @@ void ChannelMixer::ResamplerBase::addChannelsNormal(ChannelMixer* mixer, mp_uint
 				break;
 			}
 		}
-		
+
 		// mix here
 		addChannel(chn, buffer32, beatlength, beatlength);
-		
+
 	}
 }
 
@@ -128,52 +172,52 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 {
 	ChannelMixer::TMixerChannel* channel = mixer->channel;
 	ChannelMixer::TMixerChannel* newChannel = mixer->newChannel;
-	
-	for (mp_uint32 c=0;c<numChannels;c++) 
-	{	
+
+	for (mp_uint32 c=0;c<numChannels;c++)
+	{
 		ChannelMixer::TMixerChannel* chn = &channel[c];
 		chn->index = c;		// For Amiga resampler
-		
+
 		if (!(chn->flags & MP_SAMPLE_PLAY))
 			continue;
-		
+
 		switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
 		{
 			case MP_SAMPLE_FADEOFF:
 			{
 				mp_sint32 maxramp = (beatlength*RAMPDOWNFRACTION)>>8;
-				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp; 
+				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp;
 
 				if (beatl > maxramp || beatl <= 0)
 					beatl = maxramp;
-				
-				chn->rampFromVolStepL = (-chn->finalvoll)/beatl; 
-				chn->rampFromVolStepR = (-chn->finalvolr)/beatl; 
-				
+
+				chn->rampFromVolStepL = (-chn->finalvoll)/beatl;
+				chn->rampFromVolStepR = (-chn->finalvolr)/beatl;
+
 				if (beatl)
 					addChannel(chn, buffer32, beatl, beatlength);
 				chn->flags&=~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
 				continue;
 			}
-		
+
 			case MP_SAMPLE_FADEIN:
 			{
 				chn->flags = (chn->flags&~(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN))/*|MP_SAMPLE_FADEIN*/;
 
 				//mp_sint32 beatl = (beatlength*RAMPDOWNFRACTION)>>8;
-				
+
 				mp_sint32 maxramp = (beatlength*RAMPDOWNFRACTION)>>8;
-				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp; 
+				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp;
 
 				if (beatl > maxramp || beatl <= 0)
 					beatl = maxramp;
 
 				mp_sint32 volL, volR;
 				mixer->panToVol(chn, volL, volR);
-				
-				chn->rampFromVolStepL = (volL-chn->finalvoll)/beatl;				
+
+				chn->rampFromVolStepL = (volL-chn->finalvoll)/beatl;
 				chn->rampFromVolStepR = (volR-chn->finalvolr)/beatl;
-				
+
 				// mix here
 				if (beatl)
 					addChannel(chn, buffer32, beatl, beatlength);
@@ -181,38 +225,38 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 				//chn->finalvoll = volL;
 				//chn->finalvolr = volR;
 
-				chn->rampFromVolStepL = 0;				
+				chn->rampFromVolStepL = 0;
 				chn->rampFromVolStepR = 0;
-				
+
 				mp_sint32 offset = beatl;
-				
+
 				beatl = beatlength - beatl;
-				
+
 				if (beatl)
 					addChannel(chn, buffer32+offset*MP_NUMCHANNELS, beatl, beatlength);
 				break;
 			}
-			
+
 			case MP_SAMPLE_FADEOUT:
 			{
 				mp_sint32 maxramp = (beatlength*RAMPDOWNFRACTION)>>8;
-				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp; 
+				mp_sint32 beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp;
 
 				if (beatl > maxramp || beatl <= 0)
 					beatl = maxramp;
-				
-				chn->rampFromVolStepL = (0-chn->finalvoll)/beatl;				
+
+				chn->rampFromVolStepL = (0-chn->finalvoll)/beatl;
 				chn->rampFromVolStepR = (0-chn->finalvolr)/beatl;
-				
+
 				chn->flags = (chn->flags&~(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN))/*|MP_SAMPLE_FADEIN*/;
-				
+
 				// for the last active sample we need to retrieve the last active sample rate
 				// which is temporarly stored in newChannel[c]
 				// get it, fill it in and restore the original value later
 				mp_sint32 tmpsmpadd = chn->smpadd;
 				mp_sint32 tmprsmpadd = chn->rsmpadd;
-				mp_sint32 tmpcurrsample = chn->currsample; 
-				mp_sint32 tmpprevsample = chn->prevsample;					
+				mp_sint32 tmpcurrsample = chn->currsample;
+				mp_sint32 tmpprevsample = chn->prevsample;
 				mp_sint32 tmpa = chn->a;
 				mp_sint32 tmpb = chn->b;
 				mp_sint32 tmpc = chn->c;
@@ -222,13 +266,13 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 				chn->prevsample = newChannel[c].prevsample;
 				chn->a = newChannel[c].a;
 				chn->b = newChannel[c].b;
-				chn->c = newChannel[c].c;				
+				chn->c = newChannel[c].c;
 				if (beatl)
 					addChannel(chn, buffer32, beatl, beatlength);
 				chn->smpadd = tmpsmpadd;
 				chn->rsmpadd = tmprsmpadd;
-				chn->currsample = tmpcurrsample; 
-				chn->prevsample = tmpprevsample;					
+				chn->currsample = tmpcurrsample;
+				chn->prevsample = tmpprevsample;
 				chn->a = tmpa;
 				chn->b = tmpb;
 				chn->c = tmpc;
@@ -238,22 +282,22 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 				chn->smplen = newChannel[c].smplen;
 				chn->loopstart = newChannel[c].loopstart;
 				chn->loopend = newChannel[c].loopend;
-				chn->smppos = newChannel[c].smppos;				
+				chn->smppos = newChannel[c].smppos;
 				chn->smpposfrac = newChannel[c].smpposfrac;
 				chn->flags = newChannel[c].flags;
 				chn->loopendcopy = newChannel[c].loopendcopy;
 				chn->fixedtime = newChannel[c].fixedtimefrac;
 				chn->fixedtimefrac = newChannel[c].fixedtimefrac;
 
-				beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp; 
+				beatl = (!(chn->flags & 3)) ? (ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1) : maxramp;
 
 				if (beatl > maxramp || beatl <= 0)
 					beatl = maxramp;
-				
+
 				mp_sint32 volL, volR;
 				mixer->panToVol(chn, volL, volR);
 
-				chn->rampFromVolStepL = volL/beatl;				
+				chn->rampFromVolStepL = volL/beatl;
 				chn->rampFromVolStepR = volR/beatl;
 
 				chn->finalvoll = chn->finalvolr = 0;
@@ -261,35 +305,35 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 				if (beatl)
 					addChannel(chn, buffer32, beatl, beatlength);
 
-				chn->rampFromVolStepL = 0;				
+				chn->rampFromVolStepL = 0;
 				chn->rampFromVolStepR = 0;
-				
+
 				mp_sint32 offset = beatl;
-				
+
 				beatl = beatlength - beatl;
-				
+
 				if (beatl)
 					addChannel(chn, buffer32+offset*MP_NUMCHANNELS, beatl, beatlength);
-				
+
 				continue;
 			}
 			default:
 			{
 				mp_sint32 volL, volR;
 				mixer->panToVol(chn, volL, volR);
-				
-				chn->rampFromVolStepL = (volL-chn->finalvoll)/beatlength;				
+
+				chn->rampFromVolStepL = (volL-chn->finalvoll)/beatlength;
 				chn->rampFromVolStepR = (volR-chn->finalvolr)/beatlength;
-				
+
 				// mix here
 				addChannel(chn, buffer32, beatlength, beatlength);
-	
+
 				//chn->finalvoll = volL;
-				//chn->finalvolr = volR;	
+				//chn->finalvolr = volR;
 				break;
 			}
 		}
-		
+
 	}
 }
 
@@ -306,173 +350,173 @@ void ChannelMixer::ResamplerBase::addChannels(ChannelMixer* mixer, mp_uint32 num
 
 void ChannelMixer::ResamplerBase::addChannel(TMixerChannel* chn, mp_sint32* buffer32, const mp_sint32 beatlength, const mp_sint32 beatSize)
 {
-	if ((chn->flags&MP_SAMPLE_PLAY)) 
-	{ 
-		/* check for computational work */ 
-		mp_sint32 d = ChannelMixer::fixedmul((chn->loopend - chn->loopstart)<<4,chn->rsmpadd); 
-		/* just a threshold value: */ 
-		/* if distance between loopend and loopstart is very small and sample */ 
-		/* step is "big" we need to many divisions to compute remaining sample */ 
-		/* packets so add a full checked channel */ 
-		if ((d<128 && supportsFullChecking()) || (supportsFullChecking() && !supportsNoChecking())) 
-		{ 
+	if ((chn->flags&MP_SAMPLE_PLAY))
+	{
+		/* check for computational work */
+		mp_sint32 d = ChannelMixer::fixedmul((chn->loopend - chn->loopstart)<<4,chn->rsmpadd);
+		/* just a threshold value: */
+		/* if distance between loopend and loopstart is very small and sample */
+		/* step is "big" we need to many divisions to compute remaining sample */
+		/* packets so add a full checked channel */
+		if ((d<128 && supportsFullChecking()) || (supportsFullChecking() && !supportsNoChecking()))
+		{
 			addBlockFull((buffer32), chn, (beatlength));
-		} 
-		else 
-		{ 
-			mp_sint32* tempBuffer32 = (buffer32); 
-			mp_sint32 todo = (beatlength); 
+		}
+		else
+		{
+			mp_sint32* tempBuffer32 = (buffer32);
+			mp_sint32 todo = (beatlength);
 			bool limit = false;
-			while (todo>0) 
-			{ 
-				if (chn->flags&MP_SAMPLE_BACKWARD) 
-				{ 
-					mp_sint32 pos = ((todo*-chn->smpadd - chn->smpposfrac)>>16)+chn->smppos; 
-					if (pos>chn->loopstart) 
-					{ 
-						addBlockNoCheck(tempBuffer32,chn,todo); 
-						break; 
-					} 
-					else 
-					{ 
-						mp_sint32 length = MP_FP_CEIL(ChannelMixer::fixedmul((((chn->smppos-chn->loopstart)<<16)+chn->smpposfrac),chn->rsmpadd)); 
-						
-						if (!length) length++; 
-						if (length>todo) 
+			while (todo>0)
+			{
+				if (chn->flags&MP_SAMPLE_BACKWARD)
+				{
+					mp_sint32 pos = ((todo*-chn->smpadd - chn->smpposfrac)>>16)+chn->smppos;
+					if (pos>chn->loopstart)
+					{
+						addBlockNoCheck(tempBuffer32,chn,todo);
+						break;
+					}
+					else
+					{
+						mp_sint32 length = MP_FP_CEIL(ChannelMixer::fixedmul((((chn->smppos-chn->loopstart)<<16)+chn->smpposfrac),chn->rsmpadd));
+
+						if (!length) length++;
+						if (length>todo)
 						{
 							// Final mixing length is limited by the remaining buffer size
-							length = todo; 
+							length = todo;
 							// Mark that we're limited
 							limit = true;
 						}
-						/* sample is going to stop => fade out because of ending clicks*/ 
-						else if ((chn->flags & 3) == 0) 
-						{ 
+						/* sample is going to stop => fade out because of ending clicks*/
+						else if ((chn->flags & 3) == 0)
+						{
 							mp_sint32 maxramp = (beatSize*RAMPDOWNFRACTION)>>8;
-							mp_sint32 rampl = ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1; 
+							mp_sint32 rampl = ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1;
 
 							if (rampl > maxramp || rampl <= 0)
 								rampl = maxramp;
-								
+
 							if (rampl < length)
 							{
 								length = length-rampl;
-								addBlockNoCheck(tempBuffer32,chn,length); 
-								tempBuffer32+=length*MP_NUMCHANNELS; 
+								addBlockNoCheck(tempBuffer32,chn,length);
+								tempBuffer32+=length*MP_NUMCHANNELS;
 								length = rampl;
 							}
 
-							chn->rampFromVolStepL = (-chn->finalvoll)/length; 
-							chn->rampFromVolStepR = (-chn->finalvolr)/length; 
-						} 
+							chn->rampFromVolStepL = (-chn->finalvoll)/length;
+							chn->rampFromVolStepR = (-chn->finalvolr)/length;
+						}
 						addBlockNoCheck(tempBuffer32, chn, length);
-						// Only stop when we're not limited, otherwise the sample will continue playing  
-						if ((chn->flags & 3) == 0 && !limit) 
-						{ 
-							if (chn->flags & MP_SAMPLE_ONESHOT) 
-							{ 
-								chn->flags &= ~MP_SAMPLE_ONESHOT; 
-								chn->flags |= 1; 
+						// Only stop when we're not limited, otherwise the sample will continue playing
+						if ((chn->flags & 3) == 0 && !limit)
+						{
+							if (chn->flags & MP_SAMPLE_ONESHOT)
+							{
+								chn->flags &= ~MP_SAMPLE_ONESHOT;
+								chn->flags |= 1;
 								chn->loopstart = chn->loopendcopy;
-								chn->smppos = chn->smplen - myMod(chn->smplen - chn->smppos, chn->loopend-chn->loopstart); 
-							} 
-							else 
-								chn->flags&=~MP_SAMPLE_PLAY; 
-							break; 
-						} 
-						else if ((chn->flags & 3) == 1) 
-						{ 
+								chn->smppos = chn->smplen - myMod(chn->smplen - chn->smppos, chn->loopend-chn->loopstart);
+							}
+							else
+								chn->flags&=~MP_SAMPLE_PLAY;
+							break;
+						}
+						else if ((chn->flags & 3) == 1)
+						{
 							// Is this correct looping??
-							chn->smppos = chn->loopend - myMod(chn->loopend - chn->smppos, chn->loopend-chn->loopstart); 
-						} 
+							chn->smppos = chn->loopend - myMod(chn->loopend - chn->smppos, chn->loopend-chn->loopstart);
+						}
 						// Check if we went out of ping-pong loop bounds
 						else if (chn->smppos < chn->loopstart)
-						{ 
-							// Invert
-							chn->flags&=~MP_SAMPLE_BACKWARD; 
-							BIDIR_REPOSITION(16, chn->smppos, chn->smpposfrac, chn->loopstart, chn->loopend);
-						} 
-						tempBuffer32+=length*MP_NUMCHANNELS; 
-						todo-=length; 
-					} 
-				} 
-				else 
-				{ 
-					mp_sint32 pos = ((todo*chn->smpadd + chn->smpposfrac)>>16)+chn->smppos; 
-					if (pos<chn->loopend) 
-					{ 
-						addBlockNoCheck(tempBuffer32,chn,todo); 
-						break; 
-					} 
-					else 
-					{ 
-						mp_sint32 length = MP_FP_CEIL(ChannelMixer::fixedmul((((chn->loopend-chn->smppos)<<16)-chn->smpposfrac),chn->rsmpadd)); 
-						if (!length) length++; 
-						if (length>todo) 
 						{
-							length = todo; 
+							// Invert
+							chn->flags&=~MP_SAMPLE_BACKWARD;
+							BIDIR_REPOSITION(16, chn->smppos, chn->smpposfrac, chn->loopstart, chn->loopend);
+						}
+						tempBuffer32+=length*MP_NUMCHANNELS;
+						todo-=length;
+					}
+				}
+				else
+				{
+					mp_sint32 pos = ((todo*chn->smpadd + chn->smpposfrac)>>16)+chn->smppos;
+					if (pos<chn->loopend)
+					{
+						addBlockNoCheck(tempBuffer32,chn,todo);
+						break;
+					}
+					else
+					{
+						mp_sint32 length = MP_FP_CEIL(ChannelMixer::fixedmul((((chn->loopend-chn->smppos)<<16)-chn->smpposfrac),chn->rsmpadd));
+						if (!length) length++;
+						if (length>todo)
+						{
+							length = todo;
 							limit = true;
 						}
-						/* sample is going to stop => fade out because of ending clicks */ 
-						else if ((chn->flags & 3) == 0) 
-						{ 
+						/* sample is going to stop => fade out because of ending clicks */
+						else if ((chn->flags & 3) == 0)
+						{
 							mp_sint32 maxramp = (beatSize*RAMPDOWNFRACTION)>>8;
-							mp_sint32 rampl = ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1; 
+							mp_sint32 rampl = ChannelMixer::fixedmul(chn->loopend,chn->rsmpadd) >> 1;
 
 							if (rampl > maxramp || rampl <= 0)
 								rampl = maxramp;
-								
+
 							if (rampl < length)
 							{
 								length = length-rampl;
-								addBlockNoCheck(tempBuffer32,chn,length); 
-								tempBuffer32+=length*MP_NUMCHANNELS; 
+								addBlockNoCheck(tempBuffer32,chn,length);
+								tempBuffer32+=length*MP_NUMCHANNELS;
 								length = rampl;
 							}
-							
-							chn->rampFromVolStepL = (-chn->finalvoll)/length; 
-							chn->rampFromVolStepR = (-chn->finalvolr)/length; 
-						} 
-						addBlockNoCheck(tempBuffer32,chn,length); 
-						if ((chn->flags & 3) == 0 && !limit) 
-						{ 
+
+							chn->rampFromVolStepL = (-chn->finalvoll)/length;
+							chn->rampFromVolStepR = (-chn->finalvolr)/length;
+						}
+						addBlockNoCheck(tempBuffer32,chn,length);
+						if ((chn->flags & 3) == 0 && !limit)
+						{
 							if (chn->flags & MP_SAMPLE_ONESHOT)
-							{ 
-								chn->flags &= ~MP_SAMPLE_ONESHOT; 
-								chn->flags |= 1; 
-								chn->loopend = chn->loopendcopy; 
+							{
+								chn->flags &= ~MP_SAMPLE_ONESHOT;
+								chn->flags |= 1;
+								chn->loopend = chn->loopendcopy;
 								/*ASSERT(chn->loopend-chn->loopstart > 0);*/
-								chn->smppos = ((chn->smppos - chn->smplen)%(chn->loopend-chn->loopstart))+chn->loopstart; 
-							} 
-							else 
-								chn->flags&=~MP_SAMPLE_PLAY; 
-							break; 
-						} 
-						else if ((chn->flags & 3) == 1) 
-						{ 
+								chn->smppos = ((chn->smppos - chn->smplen)%(chn->loopend-chn->loopstart))+chn->loopstart;
+							}
+							else
+								chn->flags&=~MP_SAMPLE_PLAY;
+							break;
+						}
+						else if ((chn->flags & 3) == 1)
+						{
 							/*ASSERT(chn->loopend-chn->loopstart > 0);*/
-							chn->smppos = ((chn->smppos - chn->loopstart)%(chn->loopend-chn->loopstart))+chn->loopstart; 
-							/* correct if pre-calculation was a little bit incorrect*/ 
-							if (chn->smppos < 0) 
-								chn->smppos = 0; 
-						} 
+							chn->smppos = ((chn->smppos - chn->loopstart)%(chn->loopend-chn->loopstart))+chn->loopstart;
+							/* correct if pre-calculation was a little bit incorrect*/
+							if (chn->smppos < 0)
+								chn->smppos = 0;
+						}
 						else if (chn->smppos >= chn->loopend)
-						{ 						
+						{
 							// Invert
 							chn->flags|=MP_SAMPLE_BACKWARD;
 							BIDIR_REPOSITION(16, chn->smppos, chn->smpposfrac, chn->loopstart, chn->loopend);
-						} 
-						tempBuffer32+=length*MP_NUMCHANNELS; 
-						todo-=length; 
-					} 
-				} 
-			} 
-		} 
-	} 
+						}
+						tempBuffer32+=length*MP_NUMCHANNELS;
+						todo-=length;
+					}
+				}
+			}
+		}
+	}
 }
 
-void ChannelMixer::muteChannel(mp_sint32 c, bool m) 
-{ 
+void ChannelMixer::muteChannel(mp_sint32 c, bool m)
+{
 	channel[c].flags&=~MP_SAMPLE_MUTE;
 	if (m) channel[c].flags|=MP_SAMPLE_MUTE;
 }
@@ -490,20 +534,26 @@ void ChannelMixer::setFrequency(mp_sint32 frequency)
 	mixFrequency = frequency;
 	rMixFrequency = 0x7FFFFFFF / frequency;
 
-	beatPacketSize = (MP_BEATLENGTH*frequency)/MP_BASEFREQ;	
-	
+	beatPacketSize = (MP_BEATLENGTH*frequency)/MP_BASEFREQ;
+
 	if (mixbuffBeatPacket)
 	{
 		delete[] mixbuffBeatPacket;
 		mixbuffBeatPacket = NULL;
 	}
-	
+
 	mixbuffBeatPacket = new mp_sint32[beatPacketSize*MP_NUMCHANNELS];
-	
+
+	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
+		if (mixbuffBeatPackets[i])
+			delete[] mixbuffBeatPackets[i];
+		mixbuffBeatPackets[i] = new mp_sword[beatPacketSize];
+	}
+
 	// channels contain information based on beatPacketSize so this might
 	// have been changed
 	reallocChannels();
-	
+
 	if (resamplerType != MIXER_INVALID && resamplerTable[resamplerType])
 		resamplerTable[resamplerType]->setFrequency(frequency);
 }
@@ -514,19 +564,19 @@ void ChannelMixer::reallocChannels()
 	if (mixerNumAllocatedChannels != mixerLastNumAllocatedChannels)
 	{
 		delete[] channel;
-		channel = new TMixerChannel[mixerNumAllocatedChannels];	
-		
+		channel = new TMixerChannel[mixerNumAllocatedChannels];
+
 		delete[] newChannel;
 		newChannel = new TMixerChannel[mixerNumAllocatedChannels];
-		
+
 		clearChannels();
 	}
-	
+
 #if defined(MILKYTRACKER) || defined (__MPTIMETRACKING__)
 	for (mp_uint32 i = 0; i < mixerNumAllocatedChannels; i++)
 		channel[i].reallocTimeRecord(getNumBeatPackets()+1);
-#endif	
-	
+#endif
+
 	mixerLastNumAllocatedChannels = mixerNumAllocatedChannels;
 
 	if (resamplerType != MIXER_INVALID && resamplerTable[resamplerType])
@@ -558,15 +608,19 @@ ChannelMixer::ChannelMixer(mp_uint32 numChannels,
 	allowFilters(false),
 	initialized(false),
 	sampleCounter(0)
-{	
+{
 	memset(resamplerTable, 0, sizeof(resamplerTable));
 
+	// Helper structures for direct output
+	mixbuffBeatPackets = new mp_sword*[MAX_DIRECTOUT_CHANNELS];
+
+	// Set initial frequency
 	setFrequency(frequency);
 
 	// full volume
 	masterVolume = 256;
 	panningSeparation = 256;
-	
+
 	for (mp_sint32 i = 0; i < NUMRESAMPLERTYPES; i++)
 	{
 		setFreqFuncTable[i]	= &ChannelMixer::setChannelFrequency;
@@ -593,52 +647,64 @@ ChannelMixer::~ChannelMixer()
 	if (mixbuffBeatPacket)
 		delete[] mixbuffBeatPacket;
 
-	if (channel) 
+	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
+		if(mixbuffBeatPackets[i]) {
+			delete[] mixbuffBeatPackets[i];
+		}
+	}
+	delete[] mixbuffBeatPackets;
+
+	if (channel)
 		delete[] channel;
-	
-	if (newChannel) 
+
+	if (newChannel)
 		delete[] newChannel;
-	
+
 	for (mp_uint32 i = 0; i < sizeof(resamplerTable) / sizeof(ResamplerBase*); i++)
 		delete resamplerTable[i];
 }
 
+void ChannelMixer::startMixer()
+{
+	lastBeatRemainder = 0;
+}
+
 void ChannelMixer::resetChannelsWithoutMuting()
-{	
+{
 	mp_ubyte* isMuted = new mp_ubyte[mixerNumAllocatedChannels];
-	
+
 	// save muting
 	mp_uint32 i;
 	for (i = 0; i < mixerNumAllocatedChannels; i++)
 		isMuted[i] = (mp_ubyte)isChannelMuted(i);
-	
+
 	clearChannels();
 
 	for (i = 0; i < mixerNumAllocatedChannels; i++)
 		muteChannel(i, isMuted[i] == 1);
-	
+
 	delete[] isMuted;
-	
+
 	lastBeatRemainder = 0;
 }
 
 void ChannelMixer::resetChannelsFull()
-{	
+{
 	clearChannels();
 
 	lastBeatRemainder = 0;
 }
 
-void ChannelMixer::setResamplerType(ResamplerTypes type) 
+void ChannelMixer::setResamplerType(ResamplerTypes type)
 {
 	if (resamplerTable[type] == NULL)
 		resamplerTable[type] = ResamplerFactory::createResampler(type);
-	
-	resamplerType = type; 
+
+	resamplerType = type;
 
 	if (resamplerType != MIXER_INVALID && resamplerTable[resamplerType])
 	{
-		resamplerTable[resamplerType]->setFrequency(mixFrequency);				
+		resamplerTable[resamplerType]->setFrequency(mixFrequency);
 		resamplerTable[resamplerType]->setNumChannels(mixerNumAllocatedChannels);
 	}
 }
@@ -662,27 +728,27 @@ void ChannelMixer::setNumChannels(mp_uint32 num)
 }
 
 void ChannelMixer::setActiveChannels(mp_uint32 num)
-{ 
+{
 	if (num > mixerNumAllocatedChannels)
 	{
 		mixerNumAllocatedChannels = num;
-		
+
 		reallocChannels();
 		resetChannelsFull();
 	}
 
-	mixerNumActiveChannels = num; 
+	mixerNumActiveChannels = num;
 }
 
 // Default lo precision calculations
 void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f)
 {
-	channel[c].smpadd = ((mp_sint32)(((mp_int64)((mp_int64)f*(mp_int64)rMixFrequency))>>15))<<0; 
-	
+	channel[c].smpadd = ((mp_sint32)(((mp_int64)((mp_int64)f*(mp_int64)rMixFrequency))>>15))<<0;
+
 	if (channel[c].smpadd)
 		channel[c].rsmpadd = 0xFFFFFFFF/channel[c].smpadd;
 	else
-		channel[c].rsmpadd = 0;			
+		channel[c].rsmpadd = 0;
 }
 
 void ChannelMixer::setFilterAttributes(mp_sint32 chn, mp_sint32 cutoff, mp_sint32 resonance)
@@ -691,21 +757,21 @@ void ChannelMixer::setFilterAttributes(mp_sint32 chn, mp_sint32 cutoff, mp_sint3
 		(channel[chn].cutoff == cutoff &&
 		 channel[chn].resonance == resonance))
 		return;
-	
+
 	channel[chn].cutoff = cutoff;
 	channel[chn].resonance = resonance;
-	
+
 	if (cutoff == MP_INVALID_VALUE || resonance == MP_INVALID_VALUE)
 		return;
 
-	// Thanks to DUMB for the filter coefficient computations	
+	// Thanks to DUMB for the filter coefficient computations
 	const float LOG10 = 2.30258509299f;
 	const mp_sint32 IT_ENVELOPE_SHIFT = 8;
-	
+
 	float a, b, c;
 	{
 		float sampfreq = this->mixFrequency;
-	
+
 		float inv_angle = (float)(sampfreq * pow(0.5, 0.25 + cutoff*(1.0/(24<<IT_ENVELOPE_SHIFT))) * (1.0/(2*3.14159265358979323846*110.0)));
 		float loss = (float)exp(resonance*(-LOG10*1.2/128.0));
 		float d, e;
@@ -727,7 +793,7 @@ void ChannelMixer::setFilterAttributes(mp_sint32 chn, mp_sint32 cutoff, mp_sint3
 		b = 1.0f - a - c;
 #endif
 	}
-	
+
 	channel[chn].a = (mp_sint32)(a * (1 << (MP_FILTERPRECISION+16)));
 	channel[chn].b = (mp_sint32)(b * (1 << (MP_FILTERPRECISION+16)));
 	channel[chn].c = (mp_sint32)(c * (1 << (MP_FILTERPRECISION+16)));
@@ -736,18 +802,18 @@ void ChannelMixer::setFilterAttributes(mp_sint32 chn, mp_sint32 cutoff, mp_sint3
 void ChannelMixer::playSample(mp_sint32 c, // channel
 							  mp_sbyte* smp, // sample buffer
 							  mp_sint32 smplen, // sample size
-							  mp_sint32 smpoffs, // sample offset 
+							  mp_sint32 smpoffs, // sample offset
 							  mp_sint32 smpoffsfrac,
 							  bool smpOffsetWrap,
 							  mp_sint32 lstart, // loop start
 							  mp_sint32 len, // loop end
 							  mp_sint32 flags,
-							  bool ramp/* = true*/) 
+							  bool ramp/* = true*/)
 {
 	// doesn't play
 	if (smp == NULL)
 		return;
-	
+
 	// disable looping when loopstart = loopend
 	if (lstart == len)
 	{
@@ -755,16 +821,16 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 		lstart = 0;
 		len = smplen;
 	}
-	
+
 	// this is not allowed, assume bidir loop when both forward and biloop settings are made
 	if ((flags & 3) == 3) flags &= ~1;
-	
+
 	// stupid check if artists are to stupid to use a valid sampleoffset
 	// seems to be correct
 	// treat bidir looped samples as normal samples
 	if (((flags & 3) == 2) || !(flags&3))
 	{
-		if (smpoffs >= len) 
+		if (smpoffs >= len)
 		{
 			if (smpOffsetWrap)
 				return;
@@ -792,14 +858,14 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 		}
 		else
 		{
-			if (smpoffs >= len) 
+			if (smpoffs >= len)
 			{
 				stopSample(c);
 				return;
 			}
 		}
 	}
-	
+
 	// play sample but don't ramp volume
 	if (!ramp)
 	{
@@ -807,18 +873,18 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 		channel[c].smplen = smplen;
 		channel[c].loopstart=lstart;
 		channel[c].loopend=len;
-		
+
 		if (flags & MP_SAMPLE_BACKWARD)
 			channel[c].smppos = smplen - smpoffs;
 		else
 			channel[c].smppos = smpoffs;
-		
-		channel[c].smpposfrac = smpoffsfrac;						
+
+		channel[c].smpposfrac = smpoffsfrac;
 		channel[c].flags&=~MP_SAMPLE_FADEOFF;
 		channel[c].flags=flags|MP_SAMPLE_PLAY|(channel[c].flags&MP_SAMPLE_MUTE);
 
 		channel[c].currsample = channel[c].prevsample = 0;
-		
+
 		channel[c].fixedtime = 0;
 		channel[c].fixedtimefrac = smpoffsfrac;
 	}
@@ -829,19 +895,19 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 		channel[c].smplen = smplen;
 		channel[c].loopstart=lstart;
 		channel[c].loopend=len;
-		
+
 		if (flags & MP_SAMPLE_BACKWARD)
 			channel[c].smppos = smplen - smpoffs;
 		else
 			channel[c].smppos = smpoffs;
-		
+
 		channel[c].smpposfrac = smpoffsfrac;
 		channel[c].flags&=~MP_SAMPLE_FADEOFF;
 		channel[c].flags=flags|MP_SAMPLE_PLAY|(channel[c].flags&MP_SAMPLE_MUTE)|MP_SAMPLE_FADEIN;
 		// if a new sample is played, its volume is ramped from zero to current volume
 		channel[c].finalvoll = 0;
 		channel[c].finalvolr = 0;
-		
+
 		// one shot looping sample?
 		if (flags & 32)
 		{
@@ -859,9 +925,9 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 				channel[c].loopend = channel[c].smplen;
 			}
 		}
-	
+
 		channel[c].currsample = channel[c].prevsample = 0;
-		
+
 		channel[c].fixedtime = 0;
 		channel[c].fixedtimefrac = smpoffsfrac;
 	}
@@ -873,12 +939,12 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 		newChannel[c].smplen = smplen;
 		newChannel[c].loopstart = lstart;
 		newChannel[c].loopend = len;
-		
+
 		if (flags & MP_SAMPLE_BACKWARD)
 			newChannel[c].smppos = smplen - smpoffs;
 		else
 			newChannel[c].smppos = smpoffs;
-		
+
 		newChannel[c].smpposfrac = smpoffsfrac;
 		newChannel[c].flags=flags|MP_SAMPLE_PLAY|(channel[c].flags&MP_SAMPLE_MUTE);
 		// if a new sample is played, its volume is ramped from zero to current volume
@@ -887,10 +953,10 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 
 		newChannel[c].fixedtime = 0;
 		newChannel[c].fixedtimefrac = smpoffsfrac;
-		
+
 		// "fade off" current sample
 		channel[c].flags = (channel[c].flags&~(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))|MP_SAMPLE_FADEOUT;
-		
+
 		// one shot looping sample?
 		if (flags & 32)
 		{
@@ -907,10 +973,10 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 			{
 				newChannel[c].loopendcopy = newChannel[c].loopend;
 				newChannel[c].loopend = newChannel[c].smplen;
-			}						
+			}
 		}
 	}
-	
+
 }
 
 static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel* chn)
@@ -941,23 +1007,113 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 			else
 				chn->timeRecord[nb].loopend = chn->loopend;
 			chn->timeRecord[nb].loopstart = chn->loopstart;
-			chn->timeRecord[nb].fixedtime = chn->fixedtime;			
+			chn->timeRecord[nb].fixedtime = chn->fixedtime;
 			chn->timeRecord[nb].fixedtimefrac = chn->fixedtimefrac;
 		}
 	}
 }
 
-void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
+void ChannelMixer::directOut(mp_uint32 numChannels, mp_sword** buffers)
+{
+	if (!paused)
+	{
+		mp_uint32 nChannels = mixerNumActiveChannels < numChannels ? mixerNumActiveChannels : numChannels;
+
+		mp_sint32 beatLength = beatPacketSize;
+		mp_sint32 mixSize = mixBufferSize;
+		mp_sint32 done = 0;
+		mp_uint32 c;
+
+		if (lastBeatRemainder) {
+			mp_sint32 todo = lastBeatRemainder;
+			if (lastBeatRemainder > mixBufferSize) {
+				todo = mixBufferSize;
+				mp_uint32 pos = beatLength - lastBeatRemainder;
+				for(c = 0; c < nChannels; c++) {
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+				}
+				done = mixBufferSize;
+				lastBeatRemainder -= done;
+			} else {
+				mp_uint32 pos = beatLength - lastBeatRemainder;
+				for(c = 0; c < nChannels; c++) {
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+					buffers[c] += lastBeatRemainder;
+				}
+				mixSize -= lastBeatRemainder;
+				done = lastBeatRemainder;
+				lastBeatRemainder = 0;
+			}
+		}
+
+		if (done < (mp_sint32)mixBufferSize) {
+			const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
+			mp_sint32 nb;
+
+			done += numbeats * beatLength;
+
+			for (nb = 0; nb < numbeats; nb++) {
+				timer(nb);
+
+				if (!disableMixing) {
+					for(c = 0; c < nChannels; c++) {
+						storeTimeRecordData(nb, &channel[c]);
+						if(resamplerTable[MIXER_NORMAL] != NULL) {
+							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, buffers[c] + nb * beatLength, nb, beatLength);
+						}
+					}
+				}
+			}
+
+			for(c = 0; c < nChannels; c++) {
+				buffers[c] += numbeats * beatLength;
+			}
+
+			if (done < (mp_sint32)mixBufferSize) {
+				for(c = 0; c < nChannels; c++) {
+					memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
+				}
+
+				timer(numbeats);
+
+				if (!disableMixing) {
+					for(c = 0; c < nChannels; c++) {
+						storeTimeRecordData(nb, &channel[c]);
+						if(resamplerTable[MIXER_NORMAL] != NULL) {
+							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixbuffBeatPackets[c], nb, beatLength);
+						}
+					}
+				}
+
+				mp_sint32 todo = mixBufferSize - done;
+				if (todo) {
+					for(c = 0; c < nChannels; c++) {
+						memcpy(buffers[c], mixbuffBeatPackets[c], todo * sizeof(mp_sword));
+					}
+					lastBeatRemainder = beatLength - todo;
+				}
+			}
+		}
+	}
+}
+
+void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize, mp_uint32 numChannels /* = 0 */, mp_sword** buffers /* = 0 */)
 {
 	updateSampleCounter(bufferSize);
-	
+
 	if (!isPlaying())
 		return;
+
+	// Direct out to channels for machines with multi-channel hardware
+	if (numChannels > 0) {
+		directOut(numChannels, buffers);
+		return;
+	}
 
 	if (!paused)
 	{
 		mp_sint32* buffer = mixbuff32;
-		
+
 		mp_sint32 beatLength = beatPacketSize;
 		mp_sint32 mixSize = mixBufferSize;
 
@@ -970,7 +1126,7 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 			{
 				todo = mixBufferSize;
 				mp_uint32 pos = beatLength - lastBeatRemainder;
-				//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));				
+				//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
 				const mp_sint32* src = mixbuffBeatPacket + pos*MP_NUMCHANNELS;
 				mp_sint32* dst = buffer;
 				for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
@@ -1003,7 +1159,7 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 
 			const bool isRamping = this->isRamping();
 
-			for (nb=0;nb<numbeats;nb++) 
+			for (nb=0;nb<numbeats;nb++)
 			{
 				if (isRamping)
 				{
@@ -1014,15 +1170,15 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 					{
 						// this is crucial for volume ramping, store current
 						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples			
+						// and also filter coefficients	and last samples
 						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
 						{
 							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd; 
+							dst->rsmpadd = src->rsmpadd;
 
-							dst->a = src->a; 
-							dst->b = src->b; 
-							dst->c = src->c; 
+							dst->a = src->a;
+							dst->b = src->b;
+							dst->c = src->c;
 							dst->currsample = src->currsample;
 							dst->prevsample = src->prevsample;
 						}
@@ -1031,11 +1187,11 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 					{
 						// this is crucial for volume ramping, store current
 						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples			
+						// and also filter coefficients	and last samples
 						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
 						{
 							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd; 
+							dst->rsmpadd = src->rsmpadd;
 						}
 					}
 				}
@@ -1044,14 +1200,14 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 
 				if (!disableMixing)
 				{
-					// do some in between state recording 
+					// do some in between state recording
 					// to be able to show smooth updates even if the buffer is large
-					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++) 
+					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
 						storeTimeRecordData(nb, &channel[c]);
 
-					mixBeatPacket(mixerNumActiveChannels, buffer+nb*beatLength*MP_NUMCHANNELS, nb, beatLength);	
+					mixBeatPacket(mixerNumActiveChannels, buffer+nb*beatLength*MP_NUMCHANNELS, nb, beatLength);
 				}
-			}		
+			}
 
 			buffer+=numbeats*beatLength*MP_NUMCHANNELS;
 
@@ -1068,15 +1224,15 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 					{
 						// this is crucial for volume ramping, store current
 						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples			
+						// and also filter coefficients	and last samples
 						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
 						{
 							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd; 
+							dst->rsmpadd = src->rsmpadd;
 
-							dst->a = src->a; 
-							dst->b = src->b; 
-							dst->c = src->c; 
+							dst->a = src->a;
+							dst->b = src->b;
+							dst->c = src->c;
 							dst->currsample = src->currsample;
 							dst->prevsample = src->prevsample;
 						}
@@ -1085,11 +1241,11 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 					{
 						// this is crucial for volume ramping, store current
 						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples			
+						// and also filter coefficients	and last samples
 						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
 						{
 							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd; 
+							dst->rsmpadd = src->rsmpadd;
 						}
 					}
 				}
@@ -1098,12 +1254,12 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 
 				if (!disableMixing)
 				{
-					// do some in between state recording 
+					// do some in between state recording
 					// to be able to show smooth updates even if the buffer is large
-					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++) 
+					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
 						storeTimeRecordData(nb, &channel[c]);
 
-					mixBeatPacket(mixerNumActiveChannels, mixbuffBeatPacket, numbeats, beatLength);	
+					mixBeatPacket(mixerNumActiveChannels, mixbuffBeatPacket, numbeats, beatLength);
 				}
 
 				mp_sint32 todo = mixBufferSize - done;
@@ -1120,11 +1276,11 @@ void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
 			}
 		}
 	}
-	
+
 }
 
 mp_sint32 ChannelMixer::initDevice()
-{	
+{
 	resetChannelsWithoutMuting();
 
 	initialized = true;
@@ -1136,7 +1292,7 @@ void ChannelMixer::stop()
 {
 	// stop playing
 	startPlay = false;
-	
+
 	paused = false;
 }
 
@@ -1144,8 +1300,8 @@ mp_sint32 ChannelMixer::closeDevice()
 {
 	if (initialized)
 	{
-		paused = false; 
-	
+		paused = false;
+
 		// finish playing
 		stop();
 
@@ -1199,16 +1355,17 @@ mp_sint32 ChannelMixer::setBufferSize(mp_uint32 bufferSize)
 		return MP_OK;
 
 	this->mixBufferSize = bufferSize;
-	
+	printf("%s\nMix Buffer Size: %ld\n", __PRETTY_FUNCTION__, this->mixBufferSize);
+
 	// channels contain information depending up the buffer size
 	// update those too
 	reallocChannels();
-	
+
 	return MP_OK;
 }
 
 mp_sint32 ChannelMixer::getNumActiveChannels()
-{	
+{
 	mp_sint32 i = 0;
 
 	for (mp_uint32 j = 0; j < mixerNumActiveChannels; j++)
@@ -1249,7 +1406,7 @@ mp_sint32 ChannelMixer::getBeatIndexFromSamplePos(mp_uint32 smpPos) const
 		position -= mixBufferSize;
 		position = mixBufferSize-1-position;
 	}
-	
+
 	mp_sint32 val = (mp_sword)mixbuff32[position*MP_NUMCHANNELS+channel];
 	if (val < -32768)
 		val = -32768;
@@ -1264,17 +1421,17 @@ mp_sint32 ChannelMixer::getCurrentSamplePeak(mp_sint32 position,mp_sint32 channe
 	if (audioDriver->supportsTimeQuery())
 	{
 		mp_sword peak = 0;
-		
+
 		for (mp_sint32 p = position-mixBufferSize; p <= position; p++)
 		{
 			mp_sword s = getCurrentSample(p, channel);
 			if (s > peak)
 				peak = s;
 			if (-s > peak)
-				peak = -s;				
+				peak = -s;
 		}
 		return peak;
-	}	
+	}
 	else
 	{
 		mp_sword peak = 0;
@@ -1289,8 +1446,8 @@ mp_sint32 ChannelMixer::getCurrentSamplePeak(mp_sint32 position,mp_sint32 channe
 				peak = s;
 			if (-s > peak)
 				peak = -s;
-		}	
-		
+		}
+
 		return peak;
 	}
 }*/
@@ -1298,7 +1455,7 @@ mp_sint32 ChannelMixer::getCurrentSamplePeak(mp_sint32 position,mp_sint32 channe
 mp_uint32 ChannelMixer::getSyncSampleCounter()
 {
 	/*return audioDriver->getNumPlayedSamples();*/
-	
+
 	return 0;
 }
 
@@ -1352,22 +1509,22 @@ public:
 };
 
 
-void ChannelMixer::mixData(mp_sint32 c, 
-					mp_sint32* buffer, 
-					mp_sint32 count, 
+void ChannelMixer::mixData(mp_sint32 c,
+					mp_sint32* buffer,
+					mp_sint32 count,
 					mp_sint32 sampleShift,
-					mp_sint32 fMul/* = 0*/, 
-					mp_sint32 bufferIndex/* = -1*/, 
+					mp_sint32 fMul/* = 0*/,
+					mp_sint32 bufferIndex/* = -1*/,
 					mp_sint32 packetIndex/* = -1*/) const
 {
 	if (fMul == 0)
 		fMul = count;
 	if (packetIndex < 0)
 		packetIndex = 0;
-	
+
 	const ChannelMixer::TMixerChannel* tempchn = &channel[c];
 	ChannelMixer::TMixerChannel channel;
-	
+
 	channel.flags = tempchn->timeRecord[packetIndex].flags;
 	channel.sample = tempchn->timeRecord[packetIndex].sample;
 	channel.smppos = tempchn->timeRecord[packetIndex].smppos;
@@ -1378,14 +1535,14 @@ void ChannelMixer::mixData(mp_sint32 c,
 	channel.loopstart = tempchn->timeRecord[packetIndex].loopstart;
 	channel.vol = tempchn->timeRecord[packetIndex].volPan & 0xFFFF;
 	channel.pan = tempchn->timeRecord[packetIndex].volPan >> 16;
-	
+
 	ChannelMixer::TMixerChannel* chn = &channel;
-	
+
 	if (startPlay && (chn->flags & MP_SAMPLE_PLAY))
 	{
 		chn->smpadd = (chn->smpadd*fMul) / (count ? count : 1);
-		mp_sint32 vol = (chn->vol*masterVolume) >> (8 + sampleShift);	
-		
+		mp_sint32 vol = (chn->vol*masterVolume) >> (8 + sampleShift);
+
 		ResamplerDummy resampler(vol);
 		resampler.addBlockFull(buffer, chn, count);
 	}

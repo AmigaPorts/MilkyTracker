@@ -62,8 +62,8 @@ public:
 		DefaultRadioWidth = 14
 	};
 
-	PPRadioGroup(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
-				 const PPPoint& location, const PPSize& size, 
+	PPRadioGroup(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
+				 const PPPoint& location, const PPSize& size,
 				 pp_uint32 spacerHeight = DefaultSpacerHeight);
 
 	virtual ~PPRadioGroup();
@@ -84,10 +84,10 @@ public:
 	pp_uint32 getChoice() const { return choice; }
 
 	virtual void paint(PPGraphicsAbstract* graphics);
-	
+
 	virtual pp_int32 dispatchEvent(PPEvent* event);
 
-	void fitSize(); 
+	void fitSize();
 };
 
 #endif

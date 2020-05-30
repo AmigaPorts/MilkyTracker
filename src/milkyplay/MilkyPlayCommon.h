@@ -29,7 +29,7 @@
 
 /*
  *  MilkyPlayCommon.h
- *  MilkyPlay 
+ *  MilkyPlay
  *
  *  Created by Peter Barth on 23.12.04.
  *
@@ -59,7 +59,7 @@
 #else
 	#include <assert.h>
 	#define ASSERT assert
-	
+
 	#include <string.h>
 	#include <stdio.h>
 	#include <stdlib.h>
@@ -99,6 +99,8 @@
 	#define DRIVER_PSP
 #elif defined(__HAIKU__) && !defined(__FORCE_SDL_AUDIO__)
 	#define DRIVER_HAIKU
+#elif defined(__AMIGA__) && !defined(__FORCE_SDL_AUDIO__)
+	#define DRIVER_AMIGA
 #else
 	#define DRIVER_SDL
 #endif

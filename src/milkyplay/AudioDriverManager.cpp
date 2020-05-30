@@ -101,8 +101,8 @@ AudioDriverManager::AudioDriverManager() :
 	// On Windows Vista we set the DS driver to be the default
 	if (IsWindowsVistaOrGreater())
 		defaultDriverIndex = i-2;
-#endif	
-	
+#endif
+
 #endif
 #if !defined(_WIN32_WCE) && defined(__WASAPI__)
 	driverList[i++] = new AudioDriver_PORTAUDIO();
@@ -121,7 +121,7 @@ AudioDriverManager::AudioDriverManager() :
 	mp_uint32 deviceCount = 0;
 	AudioObjectID* deviceIDs = NULL;
 	OSStatus err = AudioDriver_COREAUDIO::getAudioDevices(deviceCount, deviceIDs);
-	
+
 	if (err)
 		fprintf(stderr, "Core Audio: Error while enumerating devices (%d)\n", err);
 
@@ -129,14 +129,14 @@ AudioDriverManager::AudioDriverManager() :
 
 	// First device: system default output
 	driverList[0] = new AudioDriver_COREAUDIO();
-	
+
 	// List all output devices
 	int i;
 	for (i = 0; i < deviceCount; i++)
 	{
 		driverList[i + 1] = new AudioDriver_COREAUDIO(deviceIDs[i]);
 	}
-		
+
 	if (deviceIDs)
 		delete[] deviceIDs;
 }
@@ -212,6 +212,24 @@ AudioDriverManager::AudioDriverManager() :
 {
 	ALLOC_DRIVERLIST(1);
 	driverList[0] = new AudioDriver_Haiku();
+}
+
+#elif defined(DRIVER_AMIGA)
+//////////////////////////////////////////////////////////////////
+//					Amiga implementations
+//////////////////////////////////////////////////////////////////
+#include "AudioDriver_Amiga.h"
+#include "AudioDriver_Paula.h"
+#include "AudioDriver_Pamela.h"
+#include <exec/exec.h>
+#include <proto/exec.h>
+
+AudioDriverManager::AudioDriverManager() :
+	defaultDriverIndex(0)
+{
+	ALLOC_DRIVERLIST(2);
+	driverList[0] = new AudioDriver_Paula();
+	driverList[1] = new AudioDriver_Pamela();
 }
 
 #endif

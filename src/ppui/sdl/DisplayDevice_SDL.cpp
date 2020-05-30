@@ -59,9 +59,9 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 
 		w = getDefaultWidth();
 		h = getDefaultHeight();
-		
+
 		theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL | flags);
-		
+
 		if (theWindow == NULL)
 		{
 			fprintf(stderr, "SDL: SDL_CreateWindow (width: %d, height: %d) failed: %s\n", w, h, SDL_GetError());
@@ -72,7 +72,7 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 
 	SDL_GLContext ctx = SDL_GL_CreateContext(theWindow);
 	SDL_GL_MakeCurrent(theWindow, ctx);
-	
+
 	glGetStringAPI = (PFNGLGETSTRINGPROC)SDL_GL_GetProcAddress("glGetString");
 
 	fprintf(stdout, "Available Renderers: %s\n", rendername);
@@ -95,24 +95,26 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 SDL_Surface* PPDisplayDevice::CreateScreen(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags)
 {
 	SDL_Surface *screen;
-	
+
+	printf("%ld %ld %ld %ld\n", w, h, bpp, flags);
+
 	/* Set the video mode */
 	screen = SDL_SetVideoMode(w, h, bpp, flags);
-	if (screen == NULL) 
+	if (screen == NULL)
 	{
 		fprintf(stderr, "Couldn't set display mode: %s\n", SDL_GetError());
 		fprintf(stderr, "Retrying with default size...");
 
 		w = getDefaultWidth();
 		h = getDefaultHeight();
-		
+
 		screen = SDL_SetVideoMode(w, h, bpp, flags);
-		
-		if (screen == NULL) 
+
+		if (screen == NULL)
 		{
 			fprintf(stderr, "Couldn't set display mode: %s\n", SDL_GetError());
 			fprintf(stderr, "Giving up.");
-			
+
 			return NULL;
 		}
 	}
@@ -123,13 +125,13 @@ SDL_Surface* PPDisplayDevice::CreateScreen(pp_int32& w, pp_int32& h, pp_int32& b
 
 PPDisplayDevice::PPDisplayDevice(
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-								 SDL_Surface*& screen, 
+								 SDL_Surface*& screen,
 #endif
-								 pp_int32 width, 
-								 pp_int32 height, 
+								 pp_int32 width,
+								 pp_int32 height,
 								 pp_int32 scaleFactor,
 								 pp_int32 bpp,
-								 bool fullScreen, 
+								 bool fullScreen,
 								 Orientations theOrientation/* = ORIENTATION_NORMAL*/) :
 	PPDisplayDeviceBase(width, height, scaleFactor),
 	realWidth(width), realHeight(height),
@@ -146,7 +148,7 @@ PPDisplayDevice::PPDisplayDevice(
 }
 
 PPDisplayDevice::~PPDisplayDevice()
-{	
+{
 	delete currentGraphics;
 }
 
@@ -156,7 +158,7 @@ void PPDisplayDevice::adjust(pp_int32& x, pp_int32& y)
 	{
 		case ORIENTATION_NORMAL:
 			break;
-			
+
 		case ORIENTATION_ROTATE90CCW:
 		case ORIENTATION_ROTATE90CW:
 		{
@@ -165,8 +167,8 @@ void PPDisplayDevice::adjust(pp_int32& x, pp_int32& y)
 			y = h;
 			break;
 		}
-	}	
-	
+	}
+
 	x *= scaleFactor;
 	y *= scaleFactor;
 }
@@ -179,13 +181,13 @@ void PPDisplayDevice::transform(pp_int32& x, pp_int32& y)
 	{
 		case ORIENTATION_NORMAL:
 			break;
-			
+
 		case ORIENTATION_ROTATE90CW:
 			h = x;
 			x = y;
 			y = realWidth - 1 - h;
 			break;
-			
+
 		case ORIENTATION_ROTATE90CCW:
 			h = x;
 			x = realHeight - 1 - y;
@@ -202,13 +204,13 @@ void PPDisplayDevice::transformInverse(pp_int32& x, pp_int32& y)
 	{
 		case ORIENTATION_NORMAL:
 			break;
-			
+
 		case ORIENTATION_ROTATE90CW:
 			h = x;
 			x = realWidth - y;
 			y = h;
 			break;
-			
+
 		case ORIENTATION_ROTATE90CCW:
 			h = x;
 			x = y;
@@ -219,18 +221,18 @@ void PPDisplayDevice::transformInverse(pp_int32& x, pp_int32& y)
 
 void PPDisplayDevice::transformInverse(PPRect& r)
 {
-	transformInverse((pp_int32&)r.x1, (pp_int32&)r.y1);	
-	transformInverse((pp_int32&)r.x2, (pp_int32&)r.y2);	
+	transformInverse((pp_int32&)r.x1, (pp_int32&)r.y1);
+	transformInverse((pp_int32&)r.x2, (pp_int32&)r.y2);
 
 	pp_int32 h;
 	if (r.x2 < r.x1)
 	{
 		h = r.x1; r.x1 = r.x2; r.x2 = h;
-	}	
+	}
 	if (r.y2 < r.y1)
 	{
 		h = r.y1; r.y1 = r.y2; r.y2 = h;
-	}	
+	}
 }
 
 void PPDisplayDevice::setTitle(const PPSystemString& title)
@@ -243,9 +245,9 @@ void PPDisplayDevice::setTitle(const PPSystemString& title)
 }
 
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-void PPDisplayDevice::setSize(const PPSize& size)	
-{	
-	theSurface = SDL_SetVideoMode(size.width, size.height, theSurface->format->BitsPerPixel, theSurface->flags);	
+void PPDisplayDevice::setSize(const PPSize& size)
+{
+	theSurface = SDL_SetVideoMode(size.width, size.height, theSurface->format->BitsPerPixel, theSurface->flags);
 }
 #endif
 
@@ -261,13 +263,13 @@ bool PPDisplayDevice::goFullScreen(bool b)
 	}
 #else
 	SDL_Surface* screen = SDL_GetVideoSurface();
-	if (SDL_WM_ToggleFullScreen(screen)) 
+	if (SDL_WM_ToggleFullScreen(screen))
 	{
 		bFullScreen = !bFullScreen;
 		return true;
 	}
 #endif
-	
+
 	return false;
 }
 
@@ -305,13 +307,13 @@ void PPDisplayDevice::shutDown()
 void PPDisplayDevice::setMouseCursor(MouseCursorTypes type)
 {
 	currentCursorType = type;
-	
+
 	switch (type)
 	{
 		case MouseCursorTypeStandard:
 			SDL_SetCursor(cursorStandard);
 			break;
-#if SDL_VERSION_ATLEAST(2, 0, 0)			
+#if SDL_VERSION_ATLEAST(2, 0, 0)
 		case MouseCursorTypeResizeLeft:
 		case MouseCursorTypeResizeRight:
 			SDL_SetCursor(cursorResizeHoriz);
@@ -324,7 +326,7 @@ void PPDisplayDevice::setMouseCursor(MouseCursorTypes type)
 		case MouseCursorTypeResizeRight:
 			SDL_SetCursor(cursorResizeRight);
 			break;
-#endif	
+#endif
 		case MouseCursorTypeHand:
 			SDL_SetCursor(cursorHand);
 			break;

@@ -1,0 +1,5 @@
+find_program(LHA_EXECUTABLE lha)
+if(LHA_EXECUTABLE)
+  set(CPACK_LHA_COMMAND "\"${LHA_EXECUTABLE}\" -P \"<ARCHIVE>\" @<FILELIST>")
+  set(CPACK_LHA_NEED_QUOTES TRUE)
+endif()

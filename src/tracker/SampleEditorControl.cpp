@@ -59,11 +59,11 @@ void SampleEditorControl::signalWaitState(bool b)
 	//	parentScreen->paint();
 }
 
-SampleEditorControl::SampleEditorControl(pp_int32 id, 
-										 PPScreen* parentScreen, 
-										 EventListenerInterface* eventListener, 
-										 const PPPoint& location, 
-										 const PPSize& size, 
+SampleEditorControl::SampleEditorControl(pp_int32 id,
+										 PPScreen* parentScreen,
+										 EventListenerInterface* eventListener,
+										 const PPPoint& location,
+										 const PPSize& size,
 										 bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	border(border),
@@ -73,7 +73,7 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	sampleEditor(NULL),
 	xScale(1.0f),
 	minScale(1.0f),
-	
+
 	selectionStartNew(-1),
 	selectionEndNew(-1),
 
@@ -99,7 +99,7 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	visibleHeight = size.height - SCROLLBARWIDTH - 4;
 
 	scrollDist = (3298*visibleWidth) >> 16;
-	
+
 	adjustScrollbars();
 
 	showMarks = new ShowMark[TrackerConfig::maximumPlayerChannels];
@@ -155,7 +155,7 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	subMenuGenerators->addEntry("Triangle" PPSTR_PERIODS, MenuCommandIDGenerateTriangle);
 	subMenuGenerators->addEntry("Sawtooth" PPSTR_PERIODS, MenuCommandIDGenerateSawtooth);
 	subMenuGenerators->addEntry("Silence" PPSTR_PERIODS, MenuCommandIDGenerateSilence);
-	
+
 	// build context menu
 	editMenuControl = new PPContextMenu(4, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain, true);
 	editMenuControl->addEntry("New" PPSTR_PERIODS, MenuCommandIDNew);
@@ -176,8 +176,8 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 
 	// Create tool handler responder
 	toolHandlerResponder = new ToolHandlerResponder(*this);
-	dialog = NULL;	
-	
+	dialog = NULL;
+
 	resetLastValues();
 }
 
@@ -187,14 +187,14 @@ SampleEditorControl::~SampleEditorControl()
 		sampleEditor->removeNotificationListener(this);
 
 	delete dialog;
-		
+
 	delete toolHandlerResponder;
 
 	delete[] showMarks;
 
 	delete hScrollbar;
-	
-	delete editMenuControl;	
+
+	delete editMenuControl;
 	delete subMenuAdvanced;
 	delete subMenuXPaste;
 	delete subMenuPT;
@@ -221,7 +221,7 @@ void SampleEditorControl::drawLoopMarker(PPGraphicsAbstract* g, pp_int32 x, pp_i
 					g->setColor(dColor);
 				else
 					g->setColor(j == 0 ? bColor : *borderColor);
-				
+
 				g->setPixel(x+i+j,y+j);
 			}
 	}
@@ -236,42 +236,42 @@ void SampleEditorControl::drawLoopMarker(PPGraphicsAbstract* g, pp_int32 x, pp_i
 					g->setColor(dColor);
 				else
 					g->setColor(j == 0 ? dColor : *borderColor);
-				
+
 				g->setPixel(x+i+j,y+size-j);
 			}
 	}
 
 }
 
-pp_uint32 SampleEditorControl::getRepeatStart() const 
-{ 
-	if (selecting > 0) 
+pp_uint32 SampleEditorControl::getRepeatStart() const
+{
+	if (selecting > 0)
 	{
 		if (currentRepeatStart < 0)
 			return 0;
 		else if (currentRepeatStart > sampleEditor->getSampleLen())
 			return sampleEditor->getSampleLen();
-			
+
 		return currentRepeatStart;
 	}
-	
-	return sampleEditor->getRepeatStart(); 
+
+	return sampleEditor->getRepeatStart();
 }
 
-pp_uint32 SampleEditorControl::getRepeatLength() const 
-{ 
-	if (selecting > 0)  
+pp_uint32 SampleEditorControl::getRepeatLength() const
+{
+	if (selecting > 0)
 	{
 		pp_int32 loopend = currentRepeatStart + currentRepeatLength;
 		if (loopend < 0)
 			return 0;
 		else if (loopend > sampleEditor->getSampleLen())
 			return sampleEditor->getSampleLen() - currentRepeatStart;
-			
+
 		return currentRepeatLength;
 	}
 
-	return sampleEditor->getRepeatLength(); 
+	return sampleEditor->getRepeatLength();
 }
 
 void SampleEditorControl::formatMillis(char* buffer, size_t size, pp_uint32 millis)
@@ -286,7 +286,7 @@ void SampleEditorControl::formatMillis(char* buffer, size_t size, pp_uint32 mill
 			secs %= 60;
 			snprintf(buffer, size, "%im%02i.%03is", mins, secs, millis);
 		}
-		else		
+		else
 			snprintf(buffer, size, "%i.%03is", secs, millis);
 	}
 	else
@@ -320,7 +320,7 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 {
 	if (!isVisible())
 		return;
-	
+
 	PPColor bColor = *borderColor, dColor = *borderColor;
 	// adjust dark color
 	dColor.scaleFixed(32768);
@@ -345,9 +345,9 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 
 	if (sample && sample->sample)
 	{
-		
+
 		if (sEnd >= 0)
-		{		
+		{
 			if (sEnd >= (signed)sample->samplen)
 				sEnd = sample->samplen;
 
@@ -360,26 +360,26 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 				{
 					if (x1 < 0)
 						x1 = 0;
-					
+
 					if (x2 > visibleWidth)
 						x2 = visibleWidth;
 
-					g->setRect(location.x + xOffset + x1, 
+					g->setRect(location.x + xOffset + x1,
 						location.y + yOffset - 1,
-						location.x + xOffset + x2, 
+						location.x + xOffset + x2,
 						location.y + yOffset + visibleHeight);
-					
+
 					PPColor destColor(PPUIConfig::getInstance()->getColor(PPUIConfig::ColorSelection));
 					PPColor sourceColor(destColor.r>>1,destColor.g>>1,destColor.b>>1);
-					
+
 					PPRect rect(location.x + xOffset + x1, location.y + yOffset - 1, location.x + xOffset + x2, location.y + yOffset - 1 + visibleHeight/2);
-				
-					g->fillVerticalShaded(rect, sourceColor, destColor, false);
-					
+
+					g->fillVerticalShaded(rect, sourceColor, destColor, false, destColor);
+
 					rect.y1+=visibleHeight/2;
 					rect.y2+=visibleHeight/2;
-					
-					g->fillVerticalShaded(rect, sourceColor, destColor, true);					
+
+					g->fillVerticalShaded(rect, sourceColor, destColor, true, destColor);
 				}
 			}
 		}
@@ -390,14 +390,14 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 	if (border)
 	{
 		drawBorder(g, *borderColor);
-		
+
 		// Add some more lines to surround scroll bar
 		g->setColor(dColor);
 		g->drawHLine(location.x + 1, location.x + size.width - 1, location.y + size.height - 3 - SCROLLBARWIDTH);
 		g->setColor(bColor);
 		g->drawHLine(location.x, location.x + size.width, location.y + size.height - 2 - SCROLLBARWIDTH);
 	}
-	
+
 	hScrollbar->paint(g);
 
 	g->setRect(location.x + 2, location.y + 2, location.x + 2 + visibleWidth, location.y + 2 + visibleHeight);
@@ -414,15 +414,15 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 
 	bool sel = (sEnd >= 0 || sStart >= 0);
 
-	float scale = (sample->type & 16) ? 
+	float scale = (sample->type & 16) ?
 		1.0f/(32768.0f / ((visibleHeight-4)/2)) :
-		1.0f/(128.0f / ((visibleHeight-4)/2));	
-	
+		1.0f/(128.0f / ((visibleHeight-4)/2));
+
 	mp_sint32 lasty = -(pp_int32)(sample->getSampleValue((pp_int32)(startPos*xScale))*scale);
-	
+
 	g->setColor(*borderColor);
 	g->setPixel(xOffset, yOffset);
-	
+
 	for (mp_sint32 x = 1; x < visibleWidth; x++)
 	{
 		if ((pp_int32)((startPos+x)*xScale) < getVisibleLength())
@@ -439,26 +439,26 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 				g->setPixel(xOffset + x, yOffset);
 				g->setColor(TrackerConfig::colorSampleEditorWaveform);
 			}
-			
+
 			float findex = ((startPos+x)*xScale);
 			pp_int32 index = (pp_int32)(floor(findex));
 			pp_int32 index2 = index+1;
 			if (index2 >= (signed)sample->samplen)
 				index2 = sample->samplen-1;
 			float t = findex - index;
-			
-			mp_sint32 y1 = -(mp_sint32)((sample->getSampleValue(index))*scale); 
-			mp_sint32 y2 = -(mp_sint32)((sample->getSampleValue(index2))*scale); 
-			
-			mp_sint32 y = (mp_sint32)((1.0f-t) * y1 + t * y2);				
-			
-			g->drawLine(xOffset + x-1, yOffset + lasty, 
+
+			mp_sint32 y1 = -(mp_sint32)((sample->getSampleValue(index))*scale);
+			mp_sint32 y2 = -(mp_sint32)((sample->getSampleValue(index2))*scale);
+
+			mp_sint32 y = (mp_sint32)((1.0f-t) * y1 + t * y2);
+
+			g->drawLine(xOffset + x-1, yOffset + lasty,
 						xOffset + x, yOffset + y);
 			lasty = y;
-			
-		}	
+
+		}
 	}
-	
+
 	for (pp_int32 sm = 0; sm < TrackerConfig::maximumPlayerChannels; sm++)
 	{
 		pp_int32 showMark = showMarks[sm].pos;
@@ -472,10 +472,10 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 			pp_int32 x = (pp_int32)((showMark/xScale)-startPos);
 
 			g->setColor((255*shade)>>8, ((255-panning)*shade)>>8, (panning*shade)>>8);
-			g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x); 
+			g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x);
 		}
 	}
-	
+
 	if (sample->type & 3)
 	{
 		float myxScale = xScale/*(xScale*sample->samplen) / (float)(sample->samplen-1)*/;
@@ -487,7 +487,7 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 		pp_int32 x2 = (pp_int32)((loopstart+looplen)/myxScale)-startPos/* - 1*/;
 
 		g->setColor(255, 128, 64);
-		g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x); 
+		g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x);
 
 		if (x2 < x)
 			x2 = x;
@@ -497,15 +497,15 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 		if (xOffset+x2 >= location.x + size.width-2 && xOffset+x2 <= location.x + size.width)
 			x2 = visibleWidth-1;
 
-		g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x2); 
+		g->drawVLine(yOffset - (visibleHeight>>1), yOffset + (visibleHeight>>1)-2, xOffset+x2);
 
 		drawLoopMarker(g, xOffset+x - 6, yOffset - (visibleHeight>>1), true, 6);
-		drawLoopMarker(g, xOffset+x2 - 6, yOffset + (visibleHeight>>1) - 9, false, 6);		
+		drawLoopMarker(g, xOffset+x2 - 6, yOffset + (visibleHeight>>1) - 9, false, 6);
 	}
 
 	// loop markers beneath range text
 	char buffer[32];
-	
+
 	if (offsetFormat == OffsetFormatHex)
 		sprintf(buffer, "%x", (mp_sint32)ceil(startPos*xScale));
 	else if (offsetFormat == OffsetFormatDec)
@@ -558,7 +558,7 @@ void SampleEditorControl::paint(PPGraphicsAbstract* g)
 	g->drawString(buffer, location.x + 3 + visibleWidth - font->getStrWidth(buffer), location.y + 3);
 	g->setColor(255, 0, 255);
 	g->drawString(buffer, location.x + 2 + visibleWidth - font->getStrWidth(buffer), location.y + 2);
-	
+
 	// Draw sample offset cursor is nearest to
 	if ((::getKeyModifier() & KeyModifierCTRL) && currentPosition.x >= 0 && currentPosition.y >= 0)
 	{
@@ -616,7 +616,7 @@ bool SampleEditorControl::hitsLoopend(const PPPoint* p)
 {
 	pp_int32 cx2 = (pp_int32)(location.x + (sampleEditor->getRepeatEnd()/xScale)-startPos);
 	pp_int32 cy2 = (pp_int32)(location.y + 2 + visibleHeight - 6);
-	
+
 	return (p->x >= cx2 - 7 && p->x <= cx2 + 7 &&
 			p->y >= cy2 - 5 && p->y <= cy2 + 5 &&
 			sampleEditor->getLoopType());
@@ -647,19 +647,19 @@ void SampleEditorControl::startMarkerDragging(const PPPoint* p)
 				selecting = 0;
 				resizing = 0;
 				break;
-				
+
 			case MouseCursorTypeResizeLeft:
 				selectionStartNew = positionToSample(*p);
 				selecting = -1;
 				resizing = 1;
 				break;
-				
+
 			case MouseCursorTypeResizeRight:
 				selectionEndNew = positionToSample(*p);
 				selecting = -1;
 				resizing = 2;
 				break;
-				
+
 			case MouseCursorTypeHand:
 				selectionStartNew = sampleEditor->getSelectionStart();
 				selectionEndNew = sampleEditor->getSelectionEnd();
@@ -671,7 +671,7 @@ void SampleEditorControl::startMarkerDragging(const PPPoint* p)
 				break;
 		}
 	}
-	
+
 	if (selecting >= 0)
 	{
 		currentRepeatStart = sampleEditor->getRepeatStart();
@@ -684,15 +684,15 @@ void SampleEditorControl::endMarkerDragging()
 	if (resizing)
 		parentScreen->setMouseCursor(MouseCursorTypeStandard);
 	else
-	{	
+	{
 		if (selectionStartNew != -1)
 			sampleEditor->setSelectionStart(selectionStartNew);
 		if (selectionEndNew != -1)
 			sampleEditor->setSelectionEnd(selectionEndNew);
 	}
-	
+
 	// see if something has been changed after the loop markers have been dragged around
-	if (selecting >= 0 && 
+	if (selecting >= 0 &&
 		(currentRepeatStart != (signed)sampleEditor->getRepeatStart() ||
 		 currentRepeatLength != (signed)sampleEditor->getRepeatLength()))
 	{
@@ -700,13 +700,13 @@ void SampleEditorControl::endMarkerDragging()
 		sampleEditor->setRepeatLength(currentRepeatLength);
 		notifyChanges();
 	}
-	
+
 	selecting = -1;
 	resizing = 0;
 }
 
 pp_int32 SampleEditorControl::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -733,7 +733,7 @@ invokeContextMenuLabel:
 
 			break;
 		}
-			
+
 		case eLMouseDown:
 		{
 			hasDragged = false;
@@ -759,25 +759,25 @@ invokeContextMenuLabel:
 			else
 			{
 				selectionTicker = 0;
-				
+
 				if (!sampleEditor->isEditableSample())
 				{
 					selecting = -1;
 					break;
 				}
-				
+
 				// start drawing
 				if (drawMode || (::getKeyModifier() == KeyModifierSHIFT))
 				{
 					PPPoint* p = (PPPoint*)event->getDataPtr();
-					
+
 					sampleEditor->startDrawing();
-					
+
 					drawSample(*p);
-					notifyUpdate();					
+					notifyUpdate();
 					break;
 				}
-				
+
 				startMarkerDragging(p);
 			}
 
@@ -790,7 +790,7 @@ invokeContextMenuLabel:
 			if (caughtControl && !controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
-				caughtControl = NULL;			
+				caughtControl = NULL;
 				break;
 			}
 			break;
@@ -799,7 +799,7 @@ invokeContextMenuLabel:
 		case eLMouseUp:
 		{
 			selectionTicker = -1;
-						
+
 			controlCaughtByLMouseButton = false;
 			if (caughtControl && !controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
@@ -819,12 +819,12 @@ invokeContextMenuLabel:
 					sampleEditor->endDrawing();
 					break;
 				}
-				
+
 				endMarkerDragging();
-				
+
 				validate(false);
-				
-				notifyUpdate();				
+
+				notifyUpdate();
 			}
 
 			selectionStartNew = selectionEndNew = -1;
@@ -839,7 +839,7 @@ invokeContextMenuLabel:
 			{
 				caughtControl->dispatchEvent(event);
 				break;
-			}		
+			}
 
 			PPPoint* p = (PPPoint*)event->getDataPtr();
 			currentPosition = *p;
@@ -857,7 +857,7 @@ invokeContextMenuLabel:
 				selectionTicker = -1;
 				goto invokeContextMenuLabel;
 			}
-			
+
 			// now check other stuff
 			pp_int32 ldist = p->x - (location.x+2);
 			pp_int32 rdist = (location.x + size.width) - p->x;
@@ -865,36 +865,36 @@ invokeContextMenuLabel:
 			if (rdist < scrollDist)
 			{
 				pp_int32 visibleItems = visibleWidth;
-				
+
 				startPos += (visibleWidth>>6);
-				
+
 				if (startPos + visibleItems > (signed)getMaxWidth())
 					startPos = getMaxWidth()-visibleItems;
-				
+
 				if (startPos < 0)
 					startPos = 0;
-				
+
 				float v = (float)(getMaxWidth() - visibleItems);
-				
+
 				hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
-			
+
 				goto selectingAndResizing;
 			}
 			else if (ldist < scrollDist)
 			{
 				pp_int32 visibleItems = visibleWidth;
-				
+
 				startPos -= (visibleWidth>>6);
 				if (startPos < 0)
 					startPos = 0;
-				
+
 				float v = (float)(getMaxWidth() - visibleItems);
-				
+
 				hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
-				
+
 				goto selectingAndResizing;
 			}
-			
+
 			break;
 		}
 
@@ -908,14 +908,14 @@ invokeContextMenuLabel:
 
 			hasDragged = true;
 			selectionTicker = -1;
-			
+
 			if (drawMode || (sampleEditor->isDrawing() && (::getKeyModifier() & KeyModifierSHIFT)))
 			{
 				drawSample(*(PPPoint*)event->getDataPtr());
 				notifyUpdate();
 				break;
 			}
-			
+
 			// apply new start / end
 			if (selectionStartNew != -1)
 			{
@@ -984,7 +984,7 @@ selectingAndResizing:
 						parentScreen->setMouseCursor(MouseCursorTypeResizeLeft);
 						sampleEditor->setSelectionStart(positionToSample(*(PPPoint*)event->getDataPtr()));
 						break;
-						
+
 					case 2:
 						parentScreen->setMouseCursor(MouseCursorTypeResizeRight);
 						sampleEditor->setSelectionEnd(positionToSample(*(PPPoint*)event->getDataPtr()));
@@ -994,10 +994,10 @@ selectingAndResizing:
 					{
 						parentScreen->setMouseCursor(MouseCursorTypeHand);
 						mp_sint32 delta = selectionDragPivot - positionToSample(*(PPPoint*)event->getDataPtr());
-						
+
 						sampleEditor->getSelectionEnd() -= delta;
 						sampleEditor->getSelectionStart() -= delta;
-						
+
 						selectionDragPivot = positionToSample(*(PPPoint*)event->getDataPtr());
 						break;
 					}
@@ -1019,7 +1019,7 @@ selectingAndResizing:
 				caughtControl->dispatchEvent(event);
 			break;
 		}
-		
+
 		case eRMouseRepeat:
 		{
 			if (caughtControl && controlCaughtByRMouseButton)
@@ -1042,17 +1042,17 @@ selectingAndResizing:
 				pp_int32 delta = shiftHeld? params->deltaY : params->deltaX;
 				// Deltas greater than 1 generate multiple events for scroll acceleration
 				PPEvent e = delta > 0 ? PPEvent(eBarScrollDown) : PPEvent(eBarScrollUp);
-				
+
 				delta = abs(delta);
 				delta = delta > 20 ? 20 : delta;
-				
+
 				while (delta)
 				{
 					handleEvent(reinterpret_cast<PPObject*>(hScrollbar), &e);
 					delta--;
 				}
 			}
-			
+
 			else if (params->deltaY)
 			{
 				if (invertMWheelZoom)
@@ -1061,8 +1061,8 @@ selectingAndResizing:
 				}
 				params->deltaY > 0 ? scrollWheelZoomOut(&params->pos) : scrollWheelZoomIn(&params->pos);
 			}
-			
-			event->cancel();			
+
+			event->cancel();
 			break;
 		}
 
@@ -1080,28 +1080,28 @@ selectingAndResizing:
 				type = MouseCursorTypeHand;
 			}
 			else if (hitsLoopend(p) &&
-					 ::getKeyModifier() == KeyModifierALT) 
+					 ::getKeyModifier() == KeyModifierALT)
 			{
 				type = MouseCursorTypeHand;
 			}
 			else
 			{
 				type = MouseCursorTypeStandard;
-			
+
 				if (hasValidSelection())
 				{
 					pp_int32 sStart = sampleEditor->getLogicalSelectionStart();
 					pp_int32 sEnd = sampleEditor->getLogicalSelectionEnd();
-					
+
 					pp_int32 x1 = (pp_int32)((sStart)/xScale)-startPos + location.x + 2;
 					pp_int32 x2 = (pp_int32)((sEnd)/xScale)-startPos + location.x + 2;
-					
+
 					pp_int32 minDist = (scrollDist>>4);
 					if (minDist < 1) minDist = 1;
-					
+
 					pp_int32 sDist1 = abs(x1 - p->x);
 					pp_int32 sDist2 = abs(p->x - x2);
-					
+
 					if (sDist1 >= 0 && sDist1 <= minDist && (::getKeyModifier() == KeyModifierCTRL))
 					{
 						type = MouseCursorTypeResizeLeft;
@@ -1116,10 +1116,10 @@ selectingAndResizing:
 					}
 				}
 			}
-			
+
 			if (type != parentScreen->getCurrentActiveMouseCursor())
 				parentScreen->setMouseCursor(type);
-			
+
 			parentScreen->paintControl(this);
 			break;
 		}
@@ -1133,7 +1133,7 @@ selectingAndResizing:
 			currentPosition.x = currentPosition.y = -1;
 			currentOffset = -1;
 			parentScreen->paintControl(this);
-			break;		
+			break;
 
 		default:
 			if (caughtControl == NULL)
@@ -1148,7 +1148,7 @@ selectingAndResizing:
 }
 
 pp_int32 SampleEditorControl::handleEvent(PPObject* sender, PPEvent* event)
-{	
+{
 	// Horizontal scrollbar, scroll up (=left)
 	if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 event->getID() == eBarScrollUp)
@@ -1190,7 +1190,7 @@ pp_int32 SampleEditorControl::handleEvent(PPObject* sender, PPEvent* event)
 		float pos = hScrollbar->getBarPosition()/65536.0f;
 
 		pp_int32 visibleItems = visibleWidth;
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
 
 		startPos = (pp_uint32)(v*pos);
@@ -1207,7 +1207,7 @@ pp_int32 SampleEditorControl::handleEvent(PPObject* sender, PPEvent* event)
 	}
 
 	parentScreen->paintControl(this);
-	
+
 	return 0;
 }
 
@@ -1239,7 +1239,7 @@ void SampleEditorControl::adjustScrollbars()
 
 	float olds = hScrollbar->getBarSize() / 65536.0f;
 
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 
 	s = hScrollbar->getBarSize() / 65536.0f;
 
@@ -1251,10 +1251,10 @@ void SampleEditorControl::adjustScrollbars()
 	pos = hScrollbar->getBarPosition()/65536.0f;
 
 	pp_int32 visibleItems = visibleWidth;
-		
+
 	float v = (float)(getMaxWidth() - visibleItems);
 
-	startPos = (pp_uint32)(v*pos);	
+	startPos = (pp_uint32)(v*pos);
 
 	if (startPos < 0)
 	{
@@ -1272,10 +1272,10 @@ pp_int32 SampleEditorControl::positionToSample(PPPoint cp)
 		cp.y = visibleHeight - 1;
 
 	pp_int32 smppos = (pp_int32)((cp.x + startPos)*xScale);
-	
+
 	if (smppos < 0)
 		smppos = 0;
-	
+
 	if (smppos > sampleEditor->getSampleLen())
 		smppos = sampleEditor->getSampleLen();
 
@@ -1291,7 +1291,7 @@ void SampleEditorControl::drawSample(const PPPoint& p)
 
 	if (sampleIndex < 0)
 		sampleIndex = 0;
-	
+
 	if (sampleIndex > sampleEditor->getSampleLen())
 		sampleIndex = sampleEditor->getSampleLen();
 
@@ -1299,7 +1299,7 @@ void SampleEditorControl::drawSample(const PPPoint& p)
 	if (y < 0)
 		y = 0;
 	if (y >= visibleHeight)
-		y = visibleHeight - 1;	
+		y = visibleHeight - 1;
 
 	float fy = -(((float)y / (float)(visibleHeight - 1)) - 0.5f);
 
@@ -1310,7 +1310,7 @@ void SampleEditorControl::validate(bool repositionBars/* = true*/, bool rescaleB
 {
 	if (!sampleEditor->validate())
 		return;
-	
+
 	if (repositionBars)
 	{
 		if (rescaleBars)
@@ -1325,16 +1325,16 @@ void SampleEditorControl::validate(bool repositionBars/* = true*/, bool rescaleB
 			adjustScrollbars();
 		}
 		float origPos = startPos * xScale;
-		
+
 		bool recalibBar = false;
 		if (origPos + visibleWidth*xScale >= getVisibleLength())
 		{
 			origPos -= (origPos + visibleWidth*xScale-getVisibleLength());
 			if (origPos < 0.0f)
-				origPos = 0.0f;				
+				origPos = 0.0f;
 			recalibBar = true;
-		}		
-		
+		}
+
 		if (origPos == 0.0f && (getVisibleLength()/xScale) < visibleWidth)
 		{
 			xScale = calcScale();
@@ -1344,13 +1344,13 @@ void SampleEditorControl::validate(bool repositionBars/* = true*/, bool rescaleB
 				xScale = minScale;
 			recalibBar = true;
 		}
-		
+
 		if (recalibBar)
 		{
 			startPos = (pp_int32)(origPos/xScale);
 			pp_int32 visibleItems = visibleWidth;
 			float s = (float)visibleWidth / (float)getMaxWidth();
-			hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+			hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 			float v = (float)(getMaxWidth() - visibleItems);
 			hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 		}
@@ -1360,7 +1360,7 @@ void SampleEditorControl::validate(bool repositionBars/* = true*/, bool rescaleB
 void SampleEditorControl::attachSampleEditor(SampleEditor* sampleEditor)
 {
 	if (this->sampleEditor)
-		this->sampleEditor->removeNotificationListener(this);	
+		this->sampleEditor->removeNotificationListener(this);
 
 	this->sampleEditor = sampleEditor;
 	this->sampleEditor->addNotificationListener(this);
@@ -1368,7 +1368,7 @@ void SampleEditorControl::attachSampleEditor(SampleEditor* sampleEditor)
 	if (sampleEditor->isEditableSample())
 	{
 		xScale = calcScale();
-		
+
 		minScale = 0.05f;
 
 		if (xScale < minScale)
@@ -1383,13 +1383,13 @@ void SampleEditorControl::attachSampleEditor(SampleEditor* sampleEditor)
 		showMarks[i].intensity = 0;
 		showMarks[i].panning = 128;
 	}
-	
+
 	adjustScrollbars();
 }
 
-bool SampleEditorControl::hasValidSelection() 
-{ 
-	return sampleEditor->hasValidSelection() || resizing; 
+bool SampleEditorControl::hasValidSelection()
+{
+	return sampleEditor->hasValidSelection() || resizing;
 }
 
 void SampleEditorControl::showRange()
@@ -1402,7 +1402,7 @@ void SampleEditorControl::showRange()
 
 	bool sel = (sEnd >= 0 && sStart >= 0);
 
-	if (!sel) 
+	if (!sel)
 		return;
 
 	xScale = (float)(sEnd - sStart)/(float)visibleWidth;
@@ -1417,13 +1417,13 @@ void SampleEditorControl::showRange()
 		if (origPos < 0.0f)
 			origPos = 0.0f;
 	}
-	
+
 	startPos = (pp_int32)(origPos/xScale);
 
 	pp_int32 visibleItems = visibleWidth;
-	
+
 	float s = (float)visibleWidth / (float)getMaxWidth();
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 
 	float v = (float)(getMaxWidth() - visibleItems);
 	hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
@@ -1432,7 +1432,7 @@ void SampleEditorControl::showRange()
 void SampleEditorControl::rangeAll(bool updateNotify/* = false*/)
 {
 	sampleEditor->selectAll();
-	
+
 	if (updateNotify)
 		notifyUpdate();
 }
@@ -1440,7 +1440,7 @@ void SampleEditorControl::rangeAll(bool updateNotify/* = false*/)
 void SampleEditorControl::rangeClear(bool updateNotify/* = false*/)
 {
 	sampleEditor->resetSelection();
-	
+
 	if (updateNotify)
 		notifyUpdate();
 }
@@ -1449,7 +1449,7 @@ void SampleEditorControl::increaseRangeStart()
 {
 	if (sampleEditor->getSelectionStart() == -1 || sampleEditor->getSelectionEnd() == -1)
 		return;
-		
+
 	sampleEditor->getSelectionStart()++;
 
 	validate(false);
@@ -1462,7 +1462,7 @@ void SampleEditorControl::decreaseRangeStart()
 
 	if (sampleEditor->getSelectionStart() > 0)
 		sampleEditor->getSelectionStart()--;
-	
+
 	validate(false);
 }
 
@@ -1475,7 +1475,7 @@ void SampleEditorControl::increaseRangeEnd()
 
 	validate(false);
 }
-	
+
 void SampleEditorControl::decreaseRangeEnd()
 {
 	if (sampleEditor->getSelectionStart() == -1 || sampleEditor->getSelectionEnd() == -1)
@@ -1529,7 +1529,7 @@ void SampleEditorControl::zoomOut(float factor/* = 2.0f*/, pp_int32 center/* = -
 	startPos = (pp_int32)(origPos/xScale);
 	pp_int32 visibleItems = visibleWidth;
 	float s = (float)visibleWidth / (float)getMaxWidth();
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 	float v = (float)(getMaxWidth() - visibleItems);
 	hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 }
@@ -1567,7 +1567,7 @@ void SampleEditorControl::zoomIn(float factor/* = 0.5f*/, pp_int32 center/* = -1
 	startPos = (pp_int32)(origPos/xScale);
 	pp_int32 visibleItems = visibleWidth;
 	float s = (float)visibleWidth / (float)getMaxWidth();
-	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);	
+	hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 	float v = (float)(getMaxWidth() - visibleItems);
 	hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 }
@@ -1643,19 +1643,19 @@ bool SampleEditorControl::contextMenuVisible()
 void SampleEditorControl::invokeContextMenu(const PPPoint& p, bool translatePoint/* = true*/)
 {
 	PPPoint cp = p;
-	
+
 	if (translatePoint)
 	{
 		translateCoordinates(cp);
-	
+
 		if (cp.x > visibleWidth || cp.y > visibleHeight)
 			return;
 	}
-	
+
 	editMenuControl->setLocation(p);
-	
+
 	const bool isEmptySample = sampleEditor->isEmptySample();
-	
+
 	// update menu states
 	editMenuControl->setState(MenuCommandIDUndo, !sampleEditor->canUndo());
 	editMenuControl->setState(MenuCommandIDRedo, !sampleEditor->canRedo());
@@ -1664,7 +1664,7 @@ void SampleEditorControl::invokeContextMenu(const PPPoint& p, bool translatePoin
 	editMenuControl->setState(MenuCommandIDCut, !hasValidSelection());
 	editMenuControl->setState(MenuCommandIDCrop, !hasValidSelection());
 	editMenuControl->setState(MenuCommandIDSelectAll, isEmptySample);
-	
+
 	// update submenu states
 	subMenuAdvanced->setState(MenuCommandIDNormalize, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDVolumeFade, isEmptySample);
@@ -1719,7 +1719,7 @@ void SampleEditorControl::executeMenuCommand(pp_int32 commandId)
 		case MenuCommandIDCopy:
 			sampleEditor->copy();
 			break;
-		
+
 		// paste
 		case MenuCommandIDPaste:
 			sampleEditor->paste();
@@ -1753,13 +1753,13 @@ void SampleEditorControl::executeMenuCommand(pp_int32 commandId)
 		// crop
 		case MenuCommandIDCrop:
 			sampleEditor->cropSample();
-			break;		
+			break;
 
 		// undo
 		case MenuCommandIDUndo:
 			sampleEditor->undo();
 			break;
-		
+
 		// redo
 		case MenuCommandIDRedo:
 			sampleEditor->redo();
@@ -1769,7 +1769,7 @@ void SampleEditorControl::executeMenuCommand(pp_int32 commandId)
 		case MenuCommandIDSelectAll:
 			rangeAll(true);
 			break;
-					
+
 		// Invoke tools
 		case MenuCommandIDNew:
 			invokeToolParameterDialog(ToolHandlerResponder::SampleToolTypeNew);
@@ -1875,32 +1875,32 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 			sampleEditor = NULL;
 			break;
 		}
-	
+
 		case SampleEditor::NotificationReload:
 		{
 			if (!sampleEditor->isEmptySample())
 			{
 				xScale = calcScale();
-				
+
 				minScale = 0.05f;
-				
+
 				if (xScale < minScale)
 					xScale = minScale;
 			}
 			else
 				xScale = 1.0f;
-			
+
 			for (pp_int32 i = 0; i < TrackerConfig::maximumPlayerChannels; i++)
 			{
 				showMarks[i].pos = -1;
 				showMarks[i].intensity = 0;
 				showMarks[i].panning = 128;
 			}
-			
-			adjustScrollbars();			
+
+			adjustScrollbars();
 			break;
 		}
-	
+
 		case SampleEditor::NotificationPrepareLengthy:
 			signalWaitState(true);
 			break;
@@ -1908,7 +1908,7 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 		case SampleEditor::NotificationUnprepareLengthy:
 			signalWaitState(false);
 			break;
-	
+
 		case SampleEditor::NotificationChangesValidate:
 		{
 			switch (sampleEditor->getLastOperation())
@@ -1917,27 +1917,27 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 					showAll();
 					break;
 				case SampleEditor::OperationCut:
-					// adjust everything 
+					// adjust everything
 					validate(true, true);
 					break;
 				default:
 					// adjust everything according to whether size has changed
-					validate(sampleEditor->getLastOperationDidChangeSize(), 
-							 sampleEditor->getLastOperationDidChangeSize());					
+					validate(sampleEditor->getLastOperationDidChangeSize(),
+							 sampleEditor->getLastOperationDidChangeSize());
 			}
 			break;
 		}
-				
+
 		case SampleEditor::NotificationChanges:
 		{
 			bool lazyUpdateNotifications = sampleEditor->getLazyUpdateNotifications();
-			
+
 			if (lazyUpdateNotifications)
 			{
 				notifyChanges();
 				break;
 			}
-			
+
 			notifyChanges();
 			notifyUpdate();
 			break;
@@ -1945,10 +1945,10 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 
 		case SampleEditor::NotificationFeedUndoData:
 		{
-			undoInfo = UndoInfo(xScale, 
+			undoInfo = UndoInfo(xScale,
 								minScale,
-								startPos, 
-								hScrollbar->getBarPosition(), 
+								startPos,
+								hScrollbar->getBarPosition(),
 								hScrollbar->getBarSize());
 			sampleEditor->setUndoUserData(&undoInfo, sizeof(undoInfo));
 			break;
@@ -1956,10 +1956,10 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 
 		case SampleEditor::NotificationFetchUndoData:
 		{
-			undoInfo = UndoInfo(xScale, 
+			undoInfo = UndoInfo(xScale,
 								minScale,
-								startPos, 
-								hScrollbar->getBarPosition(), 
+								startPos,
+								hScrollbar->getBarPosition(),
 								hScrollbar->getBarSize());
 			if (sizeof(undoInfo) == sampleEditor->getUndoUserDataLen())
 			{
@@ -1971,11 +1971,11 @@ void SampleEditorControl::editorNotification(EditorBase* sender, EditorBase::Edi
 					hScrollbar->setBarPosition(undoInfo.barPos);
 				if (undoInfo.barScale != -1)
 					hScrollbar->setBarPosition(undoInfo.barScale);
-				
-				validate();	
-				//adjustScrollbars();	
+
+				validate();
+				//adjustScrollbars();
 				notifyUpdate();
-			}	
+			}
 			break;
 		}
 

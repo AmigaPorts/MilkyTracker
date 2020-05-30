@@ -139,20 +139,34 @@ if(APPLE)
     )
     message(STATUS "Enabled Core Audio support")
 elseif(AROS OR AMIGA)
+    enable_language(ASM_VASM)
+
     target_sources(milkyplay
         PRIVATE
             # Sources
             drivers/sdl/AudioDriver_SDL.cpp
+            drivers/amiga/AudioDriver_Amiga.cpp
+            drivers/amiga/AudioDriver_Pamela.cpp
+            drivers/amiga/AudioDriver_Paula.cpp
+
+            # VASM
+            drivers/amiga/AudioDriver_Pamela.s
+
             # Headers
             drivers/sdl/AudioDriver_SDL.h
+            drivers/amiga/AudioDriver_Amiga.h
+            drivers/amiga/AudioDriver_Pamela.h
+            drivers/amiga/AudioDriver_Paula.h
         )
     target_include_directories(milkyplay PRIVATE
             drivers/sdl
+            drivers/amiga
             ${SDL_INCLUDE_DIR}
         )
     target_link_libraries(milkyplay PUBLIC ${SDL_LIBRARY})
 
     message(STATUS "Enabled AHI")
+    message(STATUS "Enabled Pamela")
 elseif(WIN32)
     # Basic WaveOut support
     target_sources(milkyplay

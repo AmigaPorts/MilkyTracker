@@ -43,13 +43,13 @@ mp_sint32 PlayerBase::kick()
 	// if the player hasn't been initialized until now => DO IT
 	if (!isInitialized())
 	{
-		mp_sint32 err = initDevice();		
+		mp_sint32 err = initDevice();
 		if (err != MP_OK)
 		{
 			return err;
 		}
 	}
-	
+
 	// - configure player: --------------
 	// playing => song is not paused yet
 	paused = false;
@@ -57,60 +57,60 @@ mp_sint32 PlayerBase::kick()
 	halted = false;
 	// set idle mode
 	setIdle(idle);
-	
+
 	// - configure mixer: ---------------
 	// mixer reset
 	resetChannelsWithoutMuting();
-	
+
 	// start playing (mixer flag)
 	startPlay = true;
-	
+
 	// mix buffers
 	startMixer();
-	
+
 	// reset sample counters
 	sampleCounter = 0;
 	return MP_OK;
 }
 
-PlayerBase::PlayerBase(mp_uint32 frequency) : 
+PlayerBase::PlayerBase(mp_uint32 frequency) :
 	ChannelMixer(32, frequency),
 	timeRecord(NULL)
 {
 	module = NULL;
-	
+
 	initialNumChannels = 8;
-	
+
 	mainVolume	= 255;
-	
+
 	rowcnt		= 0;				// counts through each row in a pattern
 	poscnt		= 0;				// counts through each index the pattern index table
 	synccnt		= 0;
 	lastUnvisitedPos = 0;
-	
+
 	startPlay						= false;
 	paused							= false;
 	halted							= false;
 	idle							= false;
 	resetOnStopFlag					= false;
 	resetMainVolumeOnStartPlayFlag	= true;
-	
+
 	adder = BPMCounter = 0;
 
 	patternIndexToPlay = -1;
-	
-	playMode = PlayMode_Auto;	
-	
+
+	playMode = PlayMode_Auto;
+
 	reallocTimeRecord();
 }
 
 PlayerBase::~PlayerBase()
-{ 
+{
 	//if (isPlaying())
 	//	stopPlaying();
-	
-	ChannelMixer::closeDevice(); 
-	
+
+	ChannelMixer::closeDevice();
+
 	delete[] timeRecord;
 }
 
@@ -119,16 +119,16 @@ mp_sint32 PlayerBase::adjustFrequency(mp_uint32 frequency)
 	mp_uint32 lastNumBeatPackets = getNumBeatPackets()+1;
 
 	mp_sint32 res = ChannelMixer::adjustFrequency(frequency);
-	
+
 	if (res < 0)
 		return res;
-	
+
 	// nothing has changed
 	if (lastNumBeatPackets == getNumBeatPackets()+1)
 		return MP_OK;
-				
+
 	reallocTimeRecord();
-	
+
 	return MP_OK;
 }
 
@@ -137,22 +137,22 @@ mp_sint32 PlayerBase::setBufferSize(mp_uint32 bufferSize)
 	mp_uint32 lastNumBeatPackets = getNumBeatPackets()+1;
 
 	mp_sint32 res = ChannelMixer::setBufferSize(bufferSize);
-	
+
 	if (res < 0)
 		return res;
-		
+
 	// nothing has changed
 	if (lastNumBeatPackets == getNumBeatPackets()+1)
 		return MP_OK;
 
 	reallocTimeRecord();
-	
+
 	return MP_OK;
 }
 
 void PlayerBase::restart(mp_uint32 startPosition/* = 0*/, mp_uint32 startRow/* = 0*/, bool resetMixer/* = true*/, const mp_ubyte* customPanningTable/* = NULL*/, bool playOneRowOnly /* = false*/)
 {
-	if (module == NULL) 
+	if (module == NULL)
 		return;
 
 	if (resetMixer)
@@ -160,14 +160,14 @@ void PlayerBase::restart(mp_uint32 startPosition/* = 0*/, mp_uint32 startRow/* =
 
 	// initialise crappy global variables
 	baseBpm = 125;
-	
+
 	halted = false;
-	
+
 	synccnt = 0;
 	rowcnt = startRow;
 	poscnt = startPosition;
 	lastUnvisitedPos = poscnt;
-	
+
 	synccnt			= 0;
 
 	this->playOneRowOnly = playOneRowOnly;
@@ -184,7 +184,7 @@ void PlayerBase::restart(mp_uint32 startPosition/* = 0*/, mp_uint32 startRow/* =
 //////////////////////////////////////////////////////
 mp_sint32 PlayerBase::startPlaying(XModule *module,
 							   bool repeat /* = false*/,
-							   mp_uint32 startPosition /* = 0*/, 
+							   mp_uint32 startPosition /* = 0*/,
 							   mp_uint32 startRow /* = 0*/,
 							   mp_sint32 numChannels /* = -1*/,
 							   const mp_ubyte* customPanningTable /* = NULL*/,
@@ -193,19 +193,19 @@ mp_sint32 PlayerBase::startPlaying(XModule *module,
 							   bool playOneRowOnly /* = false*/)
 {
 	this->module = module;
-	
+
 	if (numChannels == -1)
 		initialNumChannels = module->header.channum;
 	else
 		initialNumChannels = numChannels;
 
-	ChannelMixer::setNumChannels(initialNumChannels);	
+	ChannelMixer::setNumChannels(initialNumChannels);
 
 	this->idle = idle;
 	this->repeat = repeat;
-	
+
 	mp_sint32 res = allocateStructures();
-	
+
 	if (res != MP_OK)
 		return res;
 
@@ -213,17 +213,17 @@ mp_sint32 PlayerBase::startPlaying(XModule *module,
 
 	restart(startPosition, startRow, true, customPanningTable, playOneRowOnly);
 
-	return PlayerBase::kick();	
+	return PlayerBase::kick();
 }
 
 mp_sint32 PlayerBase::stopPlaying()
 {
 	stop();
-	
+
 	mp_sint32 err = closeDevice();
-	
+
 	module = NULL;
-	
+
 	return err;
 }
 
@@ -232,7 +232,7 @@ mp_sint32 PlayerBase::pausePlaying()
 	if (!paused)
 	{
 		ChannelMixer::pause();
-		
+
 		paused = true;
 	}
 	return MP_OK;
@@ -245,10 +245,10 @@ mp_sint32 PlayerBase::resumePlaying(bool unpause/* = true*/)
 		paused = false;
 		return resume();
 	}
-	
-	if (module) 
+
+	if (module)
 	{
-		
+
 		// if the player hasn't been initialized until now => DO IT
 		if (!isInitialized())
 		{
@@ -258,26 +258,26 @@ mp_sint32 PlayerBase::resumePlaying(bool unpause/* = true*/)
 				return err;
 			}
 		}
-		
+
 		startMixer();
-		
+
 		startPlay = true;
-		
+
 	}
-	
+
 	return MP_OK;
 }
 
 void PlayerBase::nextPattern()
 {
-	if (!module) 
+	if (!module)
 		return;
 
 	if (startPlay && !paused)
 	{
 		if (poscnt<module->header.ordnum-1)
 		{
-			ChannelMixer::resetChannelsWithoutMuting();			
+			ChannelMixer::resetChannelsWithoutMuting();
 			rowcnt = 0;
 			poscnt++;
 			lastUnvisitedPos = poscnt;
@@ -289,7 +289,7 @@ void PlayerBase::nextPattern()
 
 void PlayerBase::lastPattern()
 {
-	if (!module) 
+	if (!module)
 		return;
 
 	if (startPlay && !paused)
@@ -308,8 +308,8 @@ void PlayerBase::lastPattern()
 
 void PlayerBase::setPatternPos(mp_uint32 pos, mp_uint32 row/* = 0*/, bool resetChannels/* = true*/, bool resetFXMemory/* = true*/)
 {
-	
-	if (!module) 
+
+	if (!module)
 		return;
 
 	if (startPlay && !paused && (pos < module->header.ordnum))
@@ -321,9 +321,9 @@ void PlayerBase::setPatternPos(mp_uint32 pos, mp_uint32 row/* = 0*/, bool resetC
 		poscnt = pos;
 		rowcnt = row;
 		lastUnvisitedPos = poscnt;
-		
+
 		updateTimeRecord();
-		
+
 		if (resetFXMemory)
 			clearEffectMemory();
 	}
@@ -332,10 +332,10 @@ void PlayerBase::setPatternPos(mp_uint32 pos, mp_uint32 row/* = 0*/, bool resetC
 
 void PlayerBase::timerHandler(mp_sint32 currentBeatPacket)
 {
-	timeRecord[currentBeatPacket] = TimeRecord(poscnt, 
-											   rowcnt, 
-											   bpm, 
-											   tickSpeed, 
+	timeRecord[currentBeatPacket] = TimeRecord(poscnt,
+											   rowcnt,
+											   bpm,
+											   tickSpeed,
 											   mainVolume,
 											   ticker);
 }

@@ -27,10 +27,10 @@
 #include "Font.h"
 #include "PPUIConfig.h"
 
-PPButton::PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
-				   const PPPoint& location, const PPSize& size, 
-				   bool border/*= true*/, 
-				   bool clickable/*= true*/, 
+PPButton::PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
+				   const PPPoint& location, const PPSize& size,
+				   bool border/*= true*/,
+				   bool clickable/*= true*/,
 				   bool update/*=true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	color(&PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButton)),
@@ -47,7 +47,7 @@ PPButton::PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* 
 {
 	// default colors
 	pressed = false;
-	
+
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);
 }
 
@@ -74,7 +74,7 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		{
 			// adjust not so dark color
 			nsdColor.scaleFixed(flat ? 65536 : 40000);
-			
+
 			// adjust bright color
 			nsbColor.scaleFixed(flat ? 65536 : 80000);
 		}
@@ -82,12 +82,12 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		{
 			// adjust not so dark color
 			nsdColor.scaleFixed(flat ? 65536 : 30000);
-			
+
 			// adjust bright color
 			nsbColor.scaleFixed(flat ? 65536 : 60000);
 		}
-		
-		g->fillVerticalShaded(nsbColor, nsdColor, invertShading);
+
+		g->fillVerticalShaded(nsbColor, nsdColor, invertShading, *color);
 
 	}
 
@@ -96,12 +96,12 @@ void PPButton::paint(PPGraphicsAbstract* g)
 	g->setFont(font);
 
 	if (!pressed)
-	{			
+	{
 		// adjust bright color
 		bColor.scaleFixed(87163);
-		
+
 		g->setColor(bColor);
-		
+
 		g->drawHLine(location.x, location.x + size.width, location.y);
 		g->drawVLine(location.y, location.y + size.height, location.x);
 
@@ -110,10 +110,10 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		bColor.scaleFixed(20000);
 
 		g->setColor(bColor);
-		
+
 		g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
 		g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
-		
+
 		if (text)
 		{
 			PPColor tColor = *textColor;
@@ -123,7 +123,7 @@ void PPButton::paint(PPGraphicsAbstract* g)
 				tColor.g = (tColor.g + color->g)>>1;
 				tColor.b = (tColor.b + color->b)>>1;
 			}
-			
+
 			g->setColor(tColor);
 
 			if (!verticalText)
@@ -145,19 +145,19 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		// adjust dark color
 		bColor = *color;
 		bColor.scaleFixed(32768);
-		
+
 		g->setColor(bColor);
-		
+
 		g->drawHLine(location.x, location.x + size.width, location.y);
 		g->drawVLine(location.y, location.y + size.height, location.x);
 
 		g->setColor(bColor.r>>1,bColor.g>>1,bColor.b>>1);
 		g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
 		g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
-		
+
 		//g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
 		//g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
-		
+
 		if (text)
 		{
 			g->setColor(*textColor);
@@ -180,11 +180,11 @@ void PPButton::paint(PPGraphicsAbstract* g)
 	if (border && enabled)
 	{
 		bColor.r = bColor.g = bColor.b = 0;
-		
+
 		g->setColor(bColor);
-	
+
 		g->setRect(location.x-1, location.y-1, location.x + size.width+1, location.y + size.height+1);
-		
+
 		g->drawHLine(location.x, location.x + size.width, location.y-1);
 		g->drawVLine(location.y, location.y + size.height, location.x-1);
 		g->drawHLine(location.x, location.x + size.width, location.y + size.height);
@@ -194,7 +194,7 @@ void PPButton::paint(PPGraphicsAbstract* g)
 }
 
 pp_int32 PPButton::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -227,7 +227,7 @@ pp_int32 PPButton::dispatchEvent(PPEvent* event)
 		case eLMouseUp:
 			handleButtonRelease(lMouseDown, rMouseDown, event, eCommand);
 			break;
-			
+
 		case eRMouseDown:
 			handleButtonPress(rMouseDown, lMouseDown);
 			break;
@@ -241,7 +241,7 @@ pp_int32 PPButton::dispatchEvent(PPEvent* event)
 			if (clickable && pressed)
 			{
 				PPEvent e(eCommandRepeat);
-				eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e); 
+				eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 			}
 			break;
 		default:
@@ -250,16 +250,16 @@ pp_int32 PPButton::dispatchEvent(PPEvent* event)
 	return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), event);
 }
 
-void PPButton::setText(const PPString& text) 
-{ 
+void PPButton::setText(const PPString& text)
+{
 	bool lastCharIsPeriod = text.length() ? (text[text.length()-1] == '.') : false;
-	
-	this->text = text; 
-	
+
+	this->text = text;
+
 	// Fall back to tiny font if string doesn't fit with current font
 	if (autoSizeFont &&
 		font != PPFont::getFont(PPFont::FONT_TINY) &&
-		!verticalText && 
+		!verticalText &&
 		((signed)font->getStrWidth(text) > size.width - (lastCharIsPeriod ? -6 : 2) ||
 		 (signed)font->getCharHeight() > size.height))
 	{
@@ -293,16 +293,16 @@ void PPButton::handleButtonRelease(bool& lMouseDown, bool& rMouseDown, PPEvent* 
 	if (clickable && !rMouseDown && pressed)
 	{
 		pressed = false;
-		
+
 		if (update)
-			parentScreen->paintControl(this);			
-		
+			parentScreen->paintControl(this);
+
 		if (hit(*reinterpret_cast<const PPPoint*>(event->getDataPtr())))
 		{
 			PPEvent e(postEvent);
-			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e); 
+			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 		}
-		
+
 	}
 }
 
