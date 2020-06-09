@@ -95,7 +95,7 @@ public:
 	bool resumeDevice(Mixable* device);
 	bool isDevicePaused(Mixable* device);
 		
-	void mixerHandler(mp_sword* buffer);
+	void mixerHandler(mp_sword* buffer, mp_uint32 numChannels = 0, mp_sword** buffers = 0);
 	
 	// allows to control the loudness of the resulting output stream
 	// by bit-shifting the output *right* (dividing by 2^shift)

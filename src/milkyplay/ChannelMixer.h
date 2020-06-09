@@ -300,6 +300,7 @@ public:
 		
 		void addChannels(ChannelMixer* mixer, mp_uint32 numChannels, mp_sint32* buffer32,mp_sint32 beatNum, mp_sint32 beatlength);
 		void addChannel(TMixerChannel* chn, mp_sint32* buffer32, const mp_sint32 beatlength, const mp_sint32 beatSize);		
+		void directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sword* buffer, mp_sint32 beatNum, mp_sint32 beatlength);
 		
 		// walk along the sample
 		// intpart is the 32 bit integer part of the position
@@ -334,6 +335,11 @@ public:
 			ASSERT(false);	
 		}
 		
+		// see above for comments
+		virtual void directOutBlockFull(mp_sword* buffer, TMixerChannel* chn, mp_uint32 count)
+		{
+		}
+
 		// in case the resampler needs to get hold of the current mixing frequency
 		virtual void setFrequency(mp_sint32 frequency) { }
 
@@ -352,6 +358,7 @@ private:
 	mp_uint32	rMixFrequency;				// 0x7FFFFFFF/mixFrequency
 	
 	mp_sint32*  mixbuffBeatPacket;
+	mp_sword** 	mixbuffBeatPackets;
 	mp_uint32	mixBufferSize;				// this is the resulting buffer size in 16 bit words
 
 	mp_uint32	beatPacketSize;				// size of 1/250 of a second in samples
@@ -397,7 +404,8 @@ public:
 	virtual			~ChannelMixer();
 	
 	mp_uint32		getMixBufferSize() const { return mixBufferSize; }	
-	void			mix(mp_sint32* buffer, mp_uint32 numSamples);	
+	void			directOut(mp_uint32 numChannels, mp_sword** buffers);
+	void			mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sword** buffers = 0);
 	void			updateSampleCounter(mp_sint32 numSamples) { sampleCounter+=numSamples; }
 	void			resetSampleCounter() { sampleCounter=0; }
 	
@@ -453,10 +461,7 @@ protected:
 
 	mp_int64		sampleCounter;			// number of samples played (per song)
 
-	void			startMixer() 
-	{
-		lastBeatRemainder = 0;
-	}
+	void			startMixer();
 
 	void			setNumChannels(mp_uint32 num);
 

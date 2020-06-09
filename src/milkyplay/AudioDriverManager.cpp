@@ -214,6 +214,30 @@ AudioDriverManager::AudioDriverManager() :
 	driverList[0] = new AudioDriver_Haiku();
 }
 
+#elif defined(DRIVER_AMIGA)
+//////////////////////////////////////////////////////////////////
+//					Amiga implementations
+//////////////////////////////////////////////////////////////////
+#include "AudioDriver_SDL.h"
+#include "AudioDriver_Paula.h"
+#include "AudioDriver_Arne.h"
+#include <exec/exec.h>
+#include <proto/exec.h>
+
+extern bool hasAMMX;
+
+AudioDriverManager::AudioDriverManager() :
+	defaultDriverIndex(0)
+{
+	ALLOC_DRIVERLIST(2);
+	if(hasAMMX) {
+		driverList[0] = new AudioDriver_Arne();
+	} else {
+		driverList[0] = new AudioDriver_Paula();
+	}
+	driverList[1] = new AudioDriver_SDL();
+}
+
 #endif
 
 AudioDriverInterface* AudioDriverManager::getPreferredAudioDriver()

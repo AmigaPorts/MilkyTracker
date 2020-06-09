@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.10)
-project(MilkyTracker)
+project(MilkyTracker C CXX ASM)
 
 # Set C++ standard to C++98
 set(CMAKE_CXX_STANDARD 98)
@@ -186,8 +186,10 @@ elseif(WIN32)
     add_subdirectory(src/midi)
 elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
-elseif(AMIGA)
+elseif(AMIGA OR SDL12)
     find_package(SDL 1.2 REQUIRED)
+
+    add_definitions(-DAMIGA_DIRECTOUT)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
     # https://bugzilla.libsdl.org/show_bug.cgi?id=3295

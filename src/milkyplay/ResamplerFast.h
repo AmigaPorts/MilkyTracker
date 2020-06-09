@@ -51,7 +51,24 @@ class ResamplerSimple : public ChannelMixer::ResamplerBase
 public:
 	virtual bool isRamping() { return false; }
 	virtual bool supportsFullChecking() { return true; }
-	virtual bool supportsNoChecking() { return true; }
+	virtual bool supportsNoChecking() { return false; }
+
+	virtual void directOutBlockFull(mp_sword* buffer, ChannelMixer::TMixerChannel* chn, mp_uint32 count)
+	{
+		mp_sint32 vol = 0;
+		switch (chn->index & 3)
+		{
+			case 0:
+			case 3:
+				vol = chn->finalvoll;
+				break;
+			case 1:
+			case 2:
+				vol = chn->finalvolr;
+				break;
+		}
+		FULLMIXER_TEMPLATE(FULLDIRECTOUT_8BIT_NORMAL, FULLDIRECTOUT_16BIT_NORMAL, 16, 0);
+	}
 
 	virtual void addBlockFull(mp_sint32* buffer, ChannelMixer::TMixerChannel* chn, mp_uint32 count)
 	{

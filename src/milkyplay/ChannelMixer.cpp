@@ -76,6 +76,50 @@ void ChannelMixer::panToVol (ChannelMixer::TMixerChannel *chn, mp_sint32 &volL, 
 		volL = volR = 0;
 }
 
+void ChannelMixer::ResamplerBase::directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sword* buffer, mp_sint32 beatNum, mp_sint32 beatlength)
+{
+	ChannelMixer::TMixerChannel* chn = &mixer->channel[c];
+	ChannelMixer::TMixerChannel* newChannel = mixer->newChannel;
+
+	chn->index = c;
+
+	if (!(chn->flags & MP_SAMPLE_PLAY))
+		return;
+
+	switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
+	{
+		case MP_SAMPLE_FADEOFF:
+		{
+			chn->flags&=~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
+			return;
+		}
+
+		case MP_SAMPLE_FADEOUT:
+		{
+			chn->sample = newChannel[c].sample;
+			chn->smplen = newChannel[c].smplen;
+			chn->loopstart = newChannel[c].loopstart;
+			chn->loopend = newChannel[c].loopend;
+			chn->smppos = newChannel[c].smppos;
+			chn->smpposfrac = newChannel[c].smpposfrac;
+			chn->flags = newChannel[c].flags;
+			chn->loopendcopy = newChannel[c].loopendcopy;
+			chn->fixedtime = newChannel[c].fixedtimefrac;
+			chn->fixedtimefrac = newChannel[c].fixedtimefrac;
+			// break is missing here intentionally!!!
+		}
+		default:
+		{
+			mixer->panToVol(chn, chn->finalvoll, chn->finalvolr);
+			break;
+		}
+	}
+
+	// direct out here
+	if ((chn->flags&MP_SAMPLE_PLAY))
+		directOutBlockFull((buffer), chn, (beatlength));
+}
+
 void ChannelMixer::ResamplerBase::addChannelsNormal(ChannelMixer* mixer, mp_uint32 numChannels, mp_sint32* buffer32,mp_sint32 beatNum, mp_sint32 beatlength)
 {
 	ChannelMixer::TMixerChannel* channel = mixer->channel;
@@ -499,7 +543,13 @@ void ChannelMixer::setFrequency(mp_sint32 frequency)
 	}
 	
 	mixbuffBeatPacket = new mp_sint32[beatPacketSize*MP_NUMCHANNELS];
-	
+
+	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
+		if (mixbuffBeatPackets[i])
+			delete[] mixbuffBeatPackets[i];
+		mixbuffBeatPackets[i] = new mp_sword[beatPacketSize];
+	}
+
 	// channels contain information based on beatPacketSize so this might
 	// have been changed
 	reallocChannels();
@@ -561,6 +611,11 @@ ChannelMixer::ChannelMixer(mp_uint32 numChannels,
 {	
 	memset(resamplerTable, 0, sizeof(resamplerTable));
 
+	// Helper structures for direct output
+	mixbuffBeatPackets = new mp_sword*[MAX_DIRECTOUT_CHANNELS];
+	memset(mixbuffBeatPackets, 0, MAX_DIRECTOUT_CHANNELS * sizeof(mp_sword *));
+
+	// Set initial frequency
 	setFrequency(frequency);
 
 	// full volume
@@ -593,6 +648,13 @@ ChannelMixer::~ChannelMixer()
 	if (mixbuffBeatPacket)
 		delete[] mixbuffBeatPacket;
 
+	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
+		if(mixbuffBeatPackets[i]) {
+			delete[] mixbuffBeatPackets[i];
+		}
+	}
+	delete[] mixbuffBeatPackets;
+
 	if (channel) 
 		delete[] channel;
 	
@@ -601,6 +663,11 @@ ChannelMixer::~ChannelMixer()
 	
 	for (mp_uint32 i = 0; i < sizeof(resamplerTable) / sizeof(ResamplerBase*); i++)
 		delete resamplerTable[i];
+}
+
+void ChannelMixer::startMixer()
+{
+	lastBeatRemainder = 0;
 }
 
 void ChannelMixer::resetChannelsWithoutMuting()
@@ -947,12 +1014,102 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 	}
 }
 
-void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize)
+void ChannelMixer::directOut(mp_uint32 numChannels, mp_sword** buffers)
+{
+	if (!paused)
+	{
+		mp_uint32 nChannels = mixerNumActiveChannels < numChannels ? mixerNumActiveChannels : numChannels;
+
+		mp_sint32 beatLength = beatPacketSize;
+		mp_sint32 mixSize = mixBufferSize;
+		mp_sint32 done = 0;
+		mp_uint32 c;
+
+		if (lastBeatRemainder) {
+			mp_sint32 todo = lastBeatRemainder;
+			if (lastBeatRemainder > mixBufferSize) {
+				todo = mixBufferSize;
+				mp_uint32 pos = beatLength - lastBeatRemainder;
+				for(c = 0; c < nChannels; c++) {
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+				}
+				done = mixBufferSize;
+				lastBeatRemainder -= done;
+			} else {
+				mp_uint32 pos = beatLength - lastBeatRemainder;
+				for(c = 0; c < nChannels; c++) {
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+					buffers[c] += lastBeatRemainder;
+				}
+				mixSize -= lastBeatRemainder;
+				done = lastBeatRemainder;
+				lastBeatRemainder = 0;
+			}
+		}
+
+		if (done < (mp_sint32)mixBufferSize) {
+			const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
+			mp_sint32 nb;
+
+			done += numbeats * beatLength;
+
+			for (nb = 0; nb < numbeats; nb++) {
+				timer(nb);
+
+				if (!disableMixing) {
+					for(c = 0; c < nChannels; c++) {
+						storeTimeRecordData(nb, &channel[c]);
+						if(resamplerTable[MIXER_NORMAL] != NULL) {
+							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, buffers[c] + nb * beatLength, nb, beatLength);
+						}
+					}
+				}
+			}
+
+			for(c = 0; c < nChannels; c++) {
+				buffers[c] += numbeats * beatLength;
+			}
+
+			if (done < (mp_sint32)mixBufferSize) {
+				for(c = 0; c < nChannels; c++) {
+					memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
+				}
+
+				timer(numbeats);
+
+				if (!disableMixing) {
+					for(c = 0; c < nChannels; c++) {
+						storeTimeRecordData(nb, &channel[c]);
+						if(resamplerTable[MIXER_NORMAL] != NULL) {
+							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixbuffBeatPackets[c], nb, beatLength);
+						}
+					}
+				}
+
+				mp_sint32 todo = mixBufferSize - done;
+				if (todo) {
+					for(c = 0; c < nChannels; c++) {
+						memcpy(buffers[c], mixbuffBeatPackets[c], todo * sizeof(mp_sword));
+					}
+					lastBeatRemainder = beatLength - todo;
+				}
+			}
+		}
+	}
+}
+
+void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize, mp_uint32 numChannels /* = 0 */, mp_sword** buffers /* = 0 */)
 {
 	updateSampleCounter(bufferSize);
 	
 	if (!isPlaying())
 		return;
+
+	// Direct out to channels for machines with multi-channel hardware
+	if (numChannels > 0) {
+		directOut(numChannels, buffers);
+		return;
+	}
 
 	if (!paused)
 	{
@@ -1199,7 +1356,7 @@ mp_sint32 ChannelMixer::setBufferSize(mp_uint32 bufferSize)
 		return MP_OK;
 
 	this->mixBufferSize = bufferSize;
-	
+
 	// channels contain information depending up the buffer size
 	// update those too
 	reallocChannels();

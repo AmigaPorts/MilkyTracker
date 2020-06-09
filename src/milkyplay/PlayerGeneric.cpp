@@ -892,7 +892,7 @@ struct PeakAutoAdjustFilter : public Mixable
 	{
 	}
 	
-	virtual void mix(mp_sint32* buffer, mp_uint32 bufferSize)
+	virtual void mix(mp_sint32* buffer, mp_uint32 bufferSize, mp_uint32 numChannels, mp_sword** buffers)
 	{
 		const mp_sint32* buffer32 = buffer;
 		

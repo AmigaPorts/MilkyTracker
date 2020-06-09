@@ -655,5 +655,19 @@ continueWithBiDir16_## LABELNO: \
 		volr+=rampFromVolStepR; \
 	} 
 
+///////////////////////////////////////////////////////////////////////
+// DIRECT OUT WITHOUT MIXING: NO INTERPOLATION AND NO VOLUME RAMPING //
+///////////////////////////////////////////////////////////////////////
+#define FULLDIRECTOUT_8BIT_NORMAL \
+	/* 8 bit sample */ \
+	sd1 = ((mp_sbyte)sample[smppos])<<8; \
+	/* this is mono! */ \
+	(*buffer++) = (sd1*(vol>>15))>>15;
+
+#define FULLDIRECTOUT_16BIT_NORMAL \
+	/* 16 bit sample */ \
+	sd1 = ((mp_sword*)(sample))[smppos]; \
+	/* this is mono */ \
+	(*buffer++) = (sd1*(vol>>15))>>15;
 
 #endif

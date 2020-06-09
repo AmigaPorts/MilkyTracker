@@ -41,9 +41,13 @@
 #include "MilkyPlayResults.h"
 
 // WAV Header & mixing buffer info
-#define MP_NUMCHANNELS 2
+#if defined(AMIGA_DIRECTOUT)
+#	define MP_NUMCHANNELS 1
+#else
+#	define MP_NUMCHANNELS 2
+#endif
 #define MP_NUMBITS 16
-#define MP_NUMBYTES (NUMBITS>>3)
+#define MP_NUMBYTES (MP_NUMBITS>>3)
 
 class MasterMixer;
 
@@ -103,6 +107,8 @@ public:
 	virtual		void		msleep(mp_uint32 msecs) = 0;
 	virtual		bool		isMixerActive() = 0;
 	virtual		void		setIdle(bool idle) = 0;
+
+	virtual     mp_sint32   getStatValue(mp_uint32 key) = 0;
 };
 
 // -------------------------------------------------------------------------
@@ -166,6 +172,8 @@ public:
 	virtual		void		msleep(mp_uint32 msecs);
 	virtual		bool		isMixerActive();	
 	virtual		void		setIdle(bool idle);
+
+	virtual     mp_sint32   getStatValue(mp_uint32 key) { return 0; }
 };
 
 #endif

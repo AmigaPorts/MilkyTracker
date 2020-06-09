@@ -99,6 +99,8 @@
 	#define DRIVER_PSP
 #elif defined(__HAIKU__) && !defined(__FORCE_SDL_AUDIO__)
 	#define DRIVER_HAIKU
+#elif defined(__AMIGA__) && !defined(__FORCE_SDL_AUDIO__)
+	#define DRIVER_AMIGA
 #else
 	#define DRIVER_SDL
 #endif

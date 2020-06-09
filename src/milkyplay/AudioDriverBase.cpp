@@ -46,13 +46,17 @@
 #include <windows.h>
 #endif
 
+#if defined(__AMIGA__)
+extern "C" void usleep(unsigned long microseconds);
+#endif
+
 void AudioDriverBase::msleep(mp_uint32 msecs)
 {
 #ifdef WIN32
 	::Sleep(msecs);
 #elif defined(__PSP__)
 	sceKernelDelayThreadCB(msecs*1000);
-#elif defined(__AROS__) || defined(__AMIGA__)
+#elif defined(__AROS__)
 	// usleep is not implemented on AROS
 	if(msecs < 1000) msecs = 1000;
 	sleep(msecs/1000);
