@@ -70,6 +70,7 @@ DECLARE_LOADERCLASS(LoaderIMF)		// Imago Orpheus
 DECLARE_LOADERCLASS(LoaderIT)		// Impulse Tracker
 DECLARE_LOADERCLASS(LoaderMDL)		// Digitrakker 2.0/3.0
 DECLARE_LOADERCLASS(LoaderMOD)		// Protracker and compatible (1..32 channels)
+DECLARE_LOADERCLASS(LoaderMED)		// OctaMED v2 -> MED Sound Studio support
 DECLARE_LOADERCLASS(LoaderMTM)		// MultiTracker
 DECLARE_LOADERCLASS(LoaderMXM)		// Cubic Tiny XM
 DECLARE_LOADERCLASS(LoaderOKT)		// Oktalyzer
