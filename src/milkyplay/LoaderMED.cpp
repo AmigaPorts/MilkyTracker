@@ -3,10 +3,47 @@
  *  MilkyPlay Module Loader: OctaMED compatible
  */
 #include <cstring>
-#include <SDL_endian.h>
 #include <vector>
 #include <map>
 #include "Loaders.h"
+
+//! Byte swap unsigned short
+inline mp_uword SwapUInt16( mp_uword val )
+{
+	return (val << 8) | (val >> 8 );
+}
+
+//! Byte swap short
+inline mp_sword SwapInt16( mp_sword val )
+{
+	return (val << 8) | ((val >> 8) & 0xFF);
+}
+
+//! Byte swap unsigned int
+inline mp_uint32 SwapUInt32( mp_uint32 val )
+{
+	val = ((val << 8) & 0xFF00FF00 ) | ((val >> 8) & 0xFF00FF );
+	return (val << 16) | (val >> 16);
+}
+
+//! Byte swap int
+inline mp_sint32 SwapInt32( mp_sint32 val )
+{
+	val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF );
+	return (val << 16) | ((val >> 16) & 0xFFFF);
+}
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define	mp_sword_x(a)	SwapInt16((a))
+#define	mp_uword_x(a)	SwapUInt16((a))
+#define	mp_sint32_x(a)	SwapInt32((a))
+#define	mp_uint32_x(a)	SwapUInt32((a))
+#else
+#define	mp_sword_x(a)		(a)
+#define	mp_uword_x(a)		(a)
+#define	mp_sint32_x(a)		(a)
+#define	mp_uint32_x(a)		(a)
+#endif
 
 typedef struct
 {
@@ -297,14 +334,18 @@ static mp_sint32 mot2int(mp_sint32 x)
 	return (x>>8)+((x&255)<<8);
 }
 
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffff  /* 4294967295U */
+#endif
+
 const mp_uint32 uint32_max = UINT32_MAX;
 
 static bool ValidateHeader(const MMD0FileHeader &fileHeader)
 {
-	mp_uint32 songOffset = SDL_SwapBE32(fileHeader->songOffset);
-	mp_uint32 blockArrOffset = SDL_SwapBE32(fileHeader->blockArrOffset);
-	mp_uint32 sampleArrOffset = SDL_SwapBE32(fileHeader->sampleArrOffset);
-	mp_uint32 expDataOffset = SDL_SwapBE32(fileHeader->expDataOffset);
+	mp_uint32 songOffset = mp_uint32_x(fileHeader->songOffset);
+	mp_uint32 blockArrOffset = mp_uint32_x(fileHeader->blockArrOffset);
+	mp_uint32 sampleArrOffset = mp_uint32_x(fileHeader->sampleArrOffset);
+	mp_uint32 expDataOffset = mp_uint32_x(fileHeader->expDataOffset);
 	if(std::memcmp(fileHeader->mmd, "MMD", 3)
 	   || fileHeader->version < '0' || fileHeader->version > '3'
 	   || songOffset < sizeof(MMD0FileHeader)
@@ -355,10 +396,10 @@ static void MEDReadNextSong(XMFileBase &file, MMD0FileHeader &fileHeader, MMD0Ex
 
 	fileHeader = (MMD0FileHeader)block;
 
-	file.seek(SDL_SwapBE32(fileHeader->songOffset) + 63 * sizeof(MMD0Sample));
+	file.seek(mp_uint32_x(fileHeader->songOffset) + 63 * sizeof(MMD0Sample));
 	file.read(&songHeader, 1, sizeof(MMDSong));
 	if(fileHeader->expDataOffset) {
-		file.seek(SDL_SwapBE32(fileHeader->expDataOffset));
+		file.seek(mp_uint32_x(fileHeader->expDataOffset));
 		file.read(&expData, 1, sizeof(MMD0Exp));
 	} else {
 		expData = {};
@@ -375,30 +416,30 @@ static mp_ubyte MEDScanNumChannels(XMFileBase &file, const mp_ubyte version)
 	file.seek(0);
 	MEDReadNextSong(file, fileHeader, expData, songHeader);
 
-	mp_ubyte numSongs = SDL_SwapBE32(fileHeader->expDataOffset) ? fileHeader->extraSongs + 1 : 1;
+	mp_ubyte numSongs = mp_uint32_x(fileHeader->expDataOffset) ? fileHeader->extraSongs + 1 : 1;
 
 	mp_ubyte numChannels = 4;
 	// Scan patterns for max number of channels
 	for(mp_ubyte song = 0; song < numSongs; song++)
 	{
-		const mp_uword numPatterns = SDL_SwapBE16(songHeader.numBlocks);
+		const mp_uword numPatterns = mp_uword_x(songHeader.numBlocks);
 		if(songHeader.numSamples > 63 || numPatterns > 0x7FFF)
 			return 0;
 
 		for(mp_ubyte pat = 0; pat < numPatterns; pat++)
 		{
 			mp_uint32 newOffset = 0;
-			file.seek(SDL_SwapBE32(fileHeader->blockArrOffset) + pat * 4u);
+			file.seek(mp_uint32_x(fileHeader->blockArrOffset) + pat * 4u);
 			file.read(&newOffset, 1, sizeof(mp_uint32));
-			file.seek(SDL_SwapBE32(newOffset));
+			file.seek(mp_uint32_x(newOffset));
 
-			numChannels = static_cast<mp_ubyte>(version < 1 ? file.readByte() : SDL_SwapBE16(file.readWord()));
+			numChannels = static_cast<mp_ubyte>(version < 1 ? file.readByte() : mp_uword_x(file.readWord()));
 		}
 
 		if(!expData.nextModOffset)
 			break;
 
-		file.seek(SDL_SwapBE32(expData.nextModOffset));
+		file.seek(mp_uint32_x(expData.nextModOffset));
 		
 		MEDReadNextSong(file, fileHeader, expData, songHeader);
 	}
@@ -466,7 +507,7 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	printf("Loading...\n");
 #endif
 
-	f.seek(SDL_SwapBE32(fileHeader->songOffset));
+	f.seek(mp_uint32_x(fileHeader->songOffset));
 
 	char sampleHeaderChunk[63 * sizeof(MMD0Sample)];
 	
@@ -475,13 +516,13 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	MMDSong songHeader;
 	f.read(&songHeader, 1, sizeof(MMDSong));
 
-	if(songHeader.numSamples > 63 || SDL_SwapBE16(songHeader.numBlocks) > 0x7FFF)
+	if(songHeader.numSamples > 63 || mp_uword_x(songHeader.numBlocks) > 0x7FFF)
 		return false;
 
 	MMD0Exp expData{};
-	if(fileHeader->expDataOffset)
+	if(mp_uint32_x(fileHeader->expDataOffset))
 	{
-		f.seek(SDL_SwapBE32(fileHeader->expDataOffset));
+		f.seek(mp_uint32_x(fileHeader->expDataOffset));
 		f.read(&expData,1, sizeof(MMD0Exp));
 	}
 	
@@ -492,11 +533,11 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		return false;
 	
 	std::vector<mp_uint32> instrOffsets;
-	f.seek(SDL_SwapBE32(fileHeader->sampleArrOffset));
+	f.seek(mp_uint32_x(fileHeader->sampleArrOffset));
 	for (mp_sint32 i = 0; i < songHeader.numSamples; i++) {
 		mp_uint32 tmpInt;
 		f.read(&tmpInt, 1, sizeof(mp_uint32));
-		instrOffsets.push_back(SDL_SwapBE32(tmpInt));
+		instrOffsets.push_back(mp_uint32_x(tmpInt));
 	}
 	
 	header->insnum = header->smpnum = songHeader.numSamples;
@@ -527,8 +568,8 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 			f.read(&instrHeader, 1, sizeof(MMDInstrHeader));
 		}
 		
-		const bool isSynth = SDL_SwapBE16(instrHeader.type) < 0;
-		const size_t maskedType = static_cast<size_t>(SDL_SwapBE16(instrHeader.type) & MMDInstrHeader::TYPEMASK);
+		const bool isSynth = mp_sword_x(instrHeader.type) < 0;
+		const size_t maskedType = static_cast<size_t>(mp_sword_x(instrHeader.type) & MMDInstrHeader::TYPEMASK);
 
 		if(isSynth)
 		{
@@ -594,12 +635,12 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		MMD0Sample sampleHeader;
 		memcpy(&sampleHeader, sampleHeaderChunk, sizeof(MMD0Sample));
 		
-		smplen = SDL_SwapBE32(instrHeader.length);
-		loopstart = SDL_SwapBE16(sampleHeader.loopStart)* 2;
-		looplen = SDL_SwapBE16(sampleHeader.loopLength);
-		vol = SDL_SwapBE16(sampleHeader.sampleVolume);
-		mp_ubyte loopend = loopstart + sampleHeader.loopLength * 2;
-		//transpose = SDL_SwapBE16(sampleHeader->sampleTranspose);
+		smplen = mp_uint32_x(instrHeader.length);
+		loopstart = mp_uword_x(sampleHeader.loopStart)* 2;
+		looplen = mp_uword_x(sampleHeader.loopLength);
+		vol = sampleHeader.sampleVolume;
+		mp_ubyte loopend = loopstart + mp_uword_x(sampleHeader.loopLength) * 2;
+		//transpose = SwapBE16(sampleHeader->sampleTranspose);
 		//midiChannel = sampleHeader->midiChannel;
 		//midiPreset = sampleHeader->midiPreset;
 
@@ -691,11 +732,11 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		instr[instrNum].samp = s;//numSamples;
 	}
 
-	if(SDL_SwapBE32(expData.instrInfoOffset) != 0 && SDL_SwapBE16(expData.instrInfoEntries) != 0)
+	if(mp_uint32_x(expData.instrInfoOffset) != 0 && mp_uword_x(expData.instrInfoEntries) != 0)
 	{
-		f.seek(SDL_SwapBE32(expData.instrInfoOffset));
-		const mp_uword entries = std::min<mp_uword>(SDL_SwapBE16(expData.instrInfoEntries), songHeader.numSamples);
-		const mp_uword size = SDL_SwapBE16(expData.instrInfoEntrySize);
+		f.seek(mp_uint32_x(expData.instrInfoOffset));
+		const mp_uword entries = std::min<mp_uword>(mp_uword_x(expData.instrInfoEntries), songHeader.numSamples);
+		const mp_uword size = mp_uword_x(expData.instrInfoEntrySize);
 		for( mp_uword e = 0; e < entries; e++)
 		{
 			MMDInstrInfo instrInfo;
@@ -710,11 +751,11 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		}
 	}
 
-	if(SDL_SwapBE32(expData.songNameOffset))
+	if(mp_uint32_x(expData.songNameOffset))
 	{
-		f.seek(SDL_SwapBE32(expData.songNameOffset));
-		mp_ubyte songName[SDL_SwapBE32(expData.songNameLength)];
-		f.read(songName, 1, SDL_SwapBE32(expData.songNameLength));
+		f.seek(mp_uint32_x(expData.songNameOffset));
+		mp_ubyte songName[mp_uint32_x(expData.songNameLength)];
+		f.read(songName, 1, mp_uint32_x(expData.songNameLength));
 		/*if(numSongs > 1)
 			order.SetName(mpt::ToUnicode(mpt::Charset::ISO8859_1, m_songName));*/
 		
@@ -725,11 +766,11 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	
 	if(version < 2)
 	{
-		if(SDL_SwapBE16(songHeader.songLength) > 256 || header->channum > 16)
+		if(mp_uword_x(songHeader.songLength) > 256 || header->channum > 16)
 			return false;
 		
 		memcpy(&header->ord, songHeader.mmd0song.sequence, sizeof(header->ord));
-		header->ordnum = SDL_SwapBE16(songHeader.songLength);
+		header->ordnum = mp_uword_x(songHeader.songLength);
 		
 		//SetupMODPanning(true);
 		for(mp_ubyte chn = 0; chn < header->channum; chn++)
@@ -828,8 +869,8 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		}
 	}*/
 	
-	header->patnum = SDL_SwapBE16(songHeader.numBlocks);
-	for (int pat = 0; pat < SDL_SwapBE16(songHeader.numBlocks); pat++) {
+	header->patnum = mp_uword_x(songHeader.numBlocks);
+	for (int pat = 0; pat < mp_uword_x(songHeader.numBlocks); pat++) {
 		TXMPattern* pattern = &phead[pat];
 		int transpose;
 		pattern->rows = 0;
@@ -837,33 +878,33 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		pattern->channum = (mp_ubyte)header->channum;
 
 		mp_uint32 newOffset = 0;
-		f.seek(SDL_SwapBE32(fileHeader->blockArrOffset) + pat * 4u);
+		f.seek(mp_uint32_x(fileHeader->blockArrOffset) + pat * 4u);
 		f.read(&newOffset, 1, sizeof(mp_uint32));
-		f.seek(SDL_SwapBE32(newOffset));
+		f.seek(mp_uint32_x(newOffset));
 		
 		MMD1PatternHeader patHeader;
 		f.read(&patHeader, 1, sizeof(MMD1PatternHeader));
-		pattern->channum = SDL_SwapBE16(patHeader.numTracks);
-		pattern->rows = SDL_SwapBE16(patHeader.numRows) + 1;
+		pattern->channum = mp_uword_x(patHeader.numTracks);
+		pattern->rows = mp_uword_x(patHeader.numRows) + 1;
 		transpose = /*NOTE_MIN*/1 + (version <= 2 ? 47 : 23) + songHeader.playTranspose;
 
 
-		if(SDL_SwapBE32(patHeader.blockInfoOffset))
+		if(mp_uint32_x(patHeader.blockInfoOffset))
 		{
 			mp_uint32 offset = f.pos();
-			f.seek(SDL_SwapBE32(patHeader.blockInfoOffset));
+			f.seek(mp_uint32_x(patHeader.blockInfoOffset));
 			MMDBlockInfo blockInfo;
 			f.read(&blockInfo, 1, sizeof(MMDBlockInfo));
 			
-			f.seek(SDL_SwapBE32(blockInfo.nameOffset));
-			mp_ubyte blockName[SDL_SwapBE32(blockInfo.nameLength)];
+			f.seek(mp_uint32_x(blockInfo.nameOffset));
+			mp_ubyte blockName[mp_uint32_x(blockInfo.nameLength)];
 			f.read(&blockName, 1, sizeof(blockName));
 
-			if(SDL_SwapBE32(blockInfo.cmdExtTableOffset))
+			if(mp_uint32_x(blockInfo.cmdExtTableOffset))
 			{
-				f.seek(SDL_SwapBE32(blockInfo.cmdExtTableOffset));
+				f.seek(mp_uint32_x(blockInfo.cmdExtTableOffset));
 				f.read(&newOffset, 1, sizeof(mp_uint32));
-				f.seek(SDL_SwapBE32(newOffset));
+				f.seek(mp_uint32_x(newOffset));
 
 				//cmdExt = file.ReadChunk(numTracks * numRows);
 			}
@@ -1047,7 +1088,7 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	const bool is8Ch = (songHeader.flags & MMDSong::FLAG_8CHANNEL) != 0;
 	const bool bpmMode = (songHeader.flags2 & MMDSong::FLAG2_BPM) != 0;
 	const mp_ubyte rowsPerBeat = 1 + (songHeader.flags2 & MMDSong::FLAG2_BMASK);
-	header->speed = MMDTempoToBPM(SDL_SwapBE16(songHeader.defaultTempo), is8Ch, bpmMode, rowsPerBeat);
+	header->speed = MMDTempoToBPM(mp_uword_x(songHeader.defaultTempo), is8Ch, bpmMode, rowsPerBeat);
 	header->tempo = songHeader.tempo2;//Clamp<mp_ubyte, mp_ubyte>(songHeader.tempo2, 1, 32);
 	
 	if(bpmMode)
