@@ -42,6 +42,7 @@ add_library(milkyplay STATIC
     LoaderIT.cpp
     LoaderMDL.cpp
     LoaderMOD.cpp
+    LoaderMED.cpp
     LoaderMTM.cpp
     LoaderMXM.cpp
     LoaderOKT.cpp
