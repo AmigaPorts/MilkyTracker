@@ -93,7 +93,7 @@ find_library(SDL_LIBRARY_TEMP
   NAMES SDL SDL-1.1 SDL_wos
   HINTS
     ENV SDLDIR
-  PATH_SUFFIXES lib ppc-amigaos/newlib/lib ${VC_LIB_PATH_SUFFIX}
+  PATH_SUFFIXES lib ppc-amigaos/newlib/lib usr/ ${VC_LIB_PATH_SUFFIX}
 )
 
 # Hide this cache variable from the user, it's an internal implementation

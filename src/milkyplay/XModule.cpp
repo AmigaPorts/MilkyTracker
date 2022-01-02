@@ -1235,6 +1235,7 @@ XModule::LoaderManager::LoaderManager() :
 	registerLoader(new LoaderXM(), ModuleType_XM);	
 	// Game Music Creator may not be recognized perfectly
 	registerLoader(new LoaderGMC(), ModuleType_GMC);
+	registerLoader(new LoaderMED(), ModuleType_MED);
 	// Last loader is MOD because there is a slight chance that other formats will be misinterpreted as 15 ins. MODs
 	registerLoader(new LoaderMOD(), ModuleType_MOD);
 #else

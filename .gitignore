@@ -26,3 +26,5 @@ CMakeFiles
 .idea/
 build-*/
 cmake-*
+src/submodules/*SDL*
+src/submodules/*sdl*

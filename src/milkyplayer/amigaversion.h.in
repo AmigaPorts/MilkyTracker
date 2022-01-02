@@ -1,0 +1,2 @@
+static const char __attribute((used)) *amiga_ver = "$VER: MilkyPlayer ${VER_X}.${VER_YY} (${VER_DAY}.${VER_MONTH}.${VER_YEAR}) MilkyPlayer by AmigaDev.com Team\0";
+static const char __attribute((used)) *min_stack = "$STACK: 80000";

@@ -339,6 +339,7 @@ public:
 		ModuleType_IT,
 		ModuleType_MDL,
 		ModuleType_MOD,
+		ModuleType_MED,
 		ModuleType_MTM,
 		ModuleType_MXM,
 		ModuleType_OKT,

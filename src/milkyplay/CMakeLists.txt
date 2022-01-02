@@ -42,6 +42,7 @@ add_library(milkyplay STATIC
     LoaderIT.cpp
     LoaderMDL.cpp
     LoaderMOD.cpp
+	LoaderMED.cpp
     LoaderMTM.cpp
     LoaderMXM.cpp
     LoaderOKT.cpp
@@ -138,7 +139,7 @@ if(APPLE)
             ${CORE_FOUNDATION_LIBRARY}
     )
     message(STATUS "Enabled Core Audio support")
-elseif(AROS OR AMIGA)
+elseif(AROS OR AMIGA OR SDL12)
     target_sources(milkyplay
         PRIVATE
             # Sources
