@@ -38,6 +38,16 @@ PPRadioGroup::PPRadioGroup(pp_int32 id, PPScreen* parentScreen, EventListenerInt
 	maxWidth(0)
 {
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);
+#ifdef __AMIGA__
+	this->obj = MUI_NewObject(MUIC_Group,/*MUIA_Group_Horiz, TRUE, MUIA_Group_SameSize, TRUE,*/ TAG_END);
+	
+	//Printf("PPRadioGroup\n");
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+
+	SetAttrs(this->obj, MUIA_LeftEdge, (ULONG)this->location.x, TAG_DONE);
+	SetAttrs(this->obj, MUIA_TopEdge, (ULONG)this->location.y, TAG_DONE);
+#endif
 }
 
 PPRadioGroup::~PPRadioGroup()

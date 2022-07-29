@@ -66,6 +66,7 @@
 #include "PPMutex.h"
 #include "PPSystem_POSIX.h"
 #include "PPPath_POSIX.h"
+#include "version.h"
 
 #ifdef HAVE_LIBASOUND
 #include "../midi/posix/MidiReceiver_pthread.h"
@@ -660,6 +661,11 @@ void crashHandler(int signum) {
 }
 #endif
 
+#ifdef __AMIGA__
+static Object* app;
+static Object* win1;
+#endif
+
 void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 		bool swapRedBlue, bool fullScreen, bool noSplash) {
 
@@ -704,25 +710,83 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 #ifdef __OPENGL__
 	myDisplayDevice = new PPDisplayDeviceOGL(screen, windowSize.width, windowSize.height, 1, bpp, fullScreen, orientation, swapRedBlue);
 #else
+#ifndef __AMIGA__
 	myDisplayDevice = new PPDisplayDeviceFB(screen, windowSize.width, windowSize.height, scaleFactor,
 			bpp, fullScreen, orientation, swapRedBlue);
 #endif
+#endif
 
-	myDisplayDevice->init();
+	if (myDisplayDevice != nullptr)
+		myDisplayDevice->init();
 
 	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
-	myTracker->setScreen(myTrackerScreen);
+#if defined(__AMIGA__)
 
+
+	/*
+	struct Screen *myScreen;
+	struct TagItem screenTags[] = {
+		{ SA_Left, 0 },
+		{ SA_Top, 0 },
+		{ SA_Width, 640 },
+		{ SA_Height, 480 },
+		{ SA_Depth, 8 },
+		{ SA_Title, (ULONG)"My New Screen" },
+		{ SA_Type, PUBLICSCREEN },
+		{ SA_SysFont, 1 },
+		{ TAG_DONE, 0 }
+	};
+	myScreen = OpenScreenTagList(NULL, screenTags);
+	*/
+
+	win1 = MUI_NewObject(MUIC_Window,
+						 MUIA_Window_Title, (ULONG)MILKYTRACKER_VERSION_STRING,
+						 MUIA_Window_SizeGadget, FALSE,
+						 MUIA_Window_RootObject, (ULONG)(myTrackerScreen->obj),
+	//MUIA_Window_Screen, (_sfdc_vararg)myScreen,
+						 TAG_END);
+
+	app = MUI_NewObject(MUIC_Application,
+						MUIA_Application_Author, (ULONG)"AmigaDev Team",
+						MUIA_Application_Base, (ULONG)"MilkyTracker",
+						MUIA_Application_Copyright, (ULONG)"© 2020-2021 Marlon Beijer",
+						MUIA_Application_Description, (ULONG)"MilkyTracker in MUI.",
+						MUIA_Application_Title, (ULONG)MILKYTRACKER_VERSION_STRING,
+						MUIA_Application_Version, (ULONG)amiga_ver,
+						MUIA_Application_Window, (ULONG)(win1),
+						TAG_END);
+	myTrackerScreen->app = app;
+
+	if (!app)
+	{
+		Printf("Cannot create application.\n");
+		exit(0);
+	}
+
+
+
+
+#endif
+	
+	myTracker->setScreen(myTrackerScreen);
+	
 	// Startup procedure
 	myTracker->startUp(noSplash);
+
+#if defined(__AMIGA__)
+	DoMethod(win1, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+			 app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	SetAttrs(win1, MUIA_Window_Open, TRUE, TAG_DONE);
+#endif
 
 #ifdef HAVE_LIBASOUND
 	InitMidi();
 #endif
 
 	// try to create timer
+#ifndef __AMIGA__
 	SDL_SetTimer(20, timerCallback);
-
+#endif
 	timerMutex->lock();
 	ticking = true;
 	timerMutex->unlock();
@@ -765,13 +829,53 @@ extern "C" int SDL_main(int argc, char *argv[])
 //char ammxon = "Off";
 const char* has_fpu = "No";
 
+BOOL Open_Libs() {
+#ifdef __AMIGA__
+	if ( !(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39)) )
+		return(FALSE);
+
+	if ( !(GfxBase=(struct GfxBase *) OpenLibrary("graphics.library",0)) ) {
+		CloseLibrary((struct Library *)IntuitionBase);
+		return(FALSE);
+	}
+
+	if ( !(MUIMasterBase=OpenLibrary(MUIMASTER_NAME,19)) ) {
+		CloseLibrary((struct Library *)GfxBase);
+		CloseLibrary((struct Library *)IntuitionBase);
+		return(FALSE);
+	}
+#endif
+
+	Printf("Libs loaded!\n");
+	return(TRUE);
+}
+
+void Close_Libs() {
+#if defined(__AMIGA__)
+	if (IntuitionBase)
+		CloseLibrary((struct Library *)IntuitionBase);
+
+	if (GfxBase)
+		CloseLibrary((struct Library *)GfxBase);
+
+	if (MUIMasterBase)
+		CloseLibrary(MUIMasterBase);
+#endif
+}
+
 int main(int argc, char *argv[])
 #endif
 {
-//	ammx = Apollo_EnableAMMX();
 
-//	if (ammx == 1)
-//		ammxon = "On";
+#ifdef __AMIGA__
+
+	if (!Open_Libs())
+	{
+		Printf("Cannot open libs\n");
+		return(0);
+	}
+	
+#endif
 
 #if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
 	// find out what type of CPU we have
@@ -793,11 +897,11 @@ int main(int argc, char *argv[])
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
 		has_fpu = "Yes";
 
-	printf("Your CPU is a %i. Has FPU? %s\n", cpu_type, has_fpu);
+	//Printf("Your CPU is a %i. Has FPU? %s\n", static_cast<_sfdc_vararg>(cpu_type), (_sfdc_vararg)has_fpu);
 
 	if (has_fpu != "Yes")
 	{
-		fprintf(stderr, "Sorry, you need minimum a 68040 processor with FPU to run this application!\n");
+		Printf("Sorry, you need minimum a 68040 processor with FPU to run this application!\n");
 		exit(1);
 	}
 #endif
@@ -856,9 +960,10 @@ unrecognizedCommandLineSwitch:
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
 	}
-#ifdef DEBUG
-	fprintf(stderr,"SDL_INIT Done");
-#endif
+//#ifdef DEBUG
+	//fprintf(stderr,"SDL_INIT Done");
+	Printf("SDL_INIT Done\n");
+//#endif
 	timerMutex = new PPMutex();
 	globalMutex = new PPMutex();
 
@@ -867,13 +972,15 @@ unrecognizedCommandLineSwitch:
 	PPSystemString oldCwd = path.getCurrent();
 
 	globalMutex->lock();
-#ifdef DEBUG
-	fprintf(stderr,"InitTracker\n");
-#endif
+//#ifdef DEBUG
+	//fprintf(stderr,"InitTracker\n");
+	Printf("InitTracker\n");
+//#endif
 	initTracker(defaultBPP, orientation, swapRedBlue, fullScreen, noSplash);
-#ifdef DEBUG
-	fprintf(stderr,"InitTracker done\n");
-#endif
+//#ifdef DEBUG
+	//fprintf(stderr,"InitTracker done\n");
+	Printf("InitTracker done\n");
+//#endif
 	globalMutex->unlock();
 
 
@@ -895,9 +1002,33 @@ unrecognizedCommandLineSwitch:
 #ifdef DEBUG
 	fprintf(stderr,"loadfile done\n");
 #endif
+	Printf("Loadfile done!\n");
+#if defined(__AMIGA__)
+	ULONG signals;
+#endif
+	ULONG id;
 	/* Main event loop */
 	done = 0;
-	while (!done && SDL_WaitEvent(&event)) {
+
+#if defined(__AMIGA__)
+	while (!done) {
+		id = DoMethod(app, MUIM_Application_Input, &signals);
+		switch (id) {
+			case MUIV_Application_ReturnID_Quit:
+				if((MUI_RequestA(app,0,0,"Quit?","_Yes|_No","\33cAre you sure?",0)) == 1)
+					done = TRUE;
+				break;
+			default:
+				//processSDLEvents(event);
+				PPControl* test = myTrackerScreen->getControlByID(id);
+				PPEvent myEvent(eCommand, &p, sizeof (PPPoint));
+				myTracker->handleEvent(test, &myEvent);
+				break;
+		}
+	}
+#else
+	while (!done && SDL_WaitEvent(&event))
+	{
 		switch (event.type) {
 			case SDL_QUIT:
 				exitSDLEventLoop(false);
@@ -924,13 +1055,17 @@ unrecognizedCommandLineSwitch:
 				processSDLEvents(event);
 				break;
 		}
+		
 	}
+#endif
+
 
 	timerMutex->lock();
 	ticking = false;
 	timerMutex->unlock();
-
+#ifndef __AMIGA__
 	SDL_SetTimer(0, NULL);
+#endif
 
 	timerMutex->lock();
 	globalMutex->lock();
@@ -944,6 +1079,12 @@ unrecognizedCommandLineSwitch:
 	delete myDisplayDevice;
 	globalMutex->unlock();
 	timerMutex->unlock();
+#if defined(__AMIGA__)
+	SetAttrs(win1, MUIA_Window_Open, FALSE);
+
+	if(app) MUI_DisposeObject(app);
+	Close_Libs();
+#endif
 	SDL_Quit();
 	delete globalMutex;
 	delete timerMutex;

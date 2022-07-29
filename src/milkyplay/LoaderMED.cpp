@@ -410,8 +410,8 @@ static void MEDReadNextSong(XMFileBase &file, MMD0FileHeader &fileHeader, MMD0Ex
 static mp_ubyte MEDScanNumChannels(XMFileBase &file, const mp_ubyte version)
 {
 	MMD0FileHeader fileHeader;
-	MMD0Exp expData;
-	MMDSong songHeader;
+	MMD0Exp expData = {};
+	MMDSong songHeader = {};
 
 	file.seek(0);
 	MEDReadNextSong(file, fileHeader, expData, songHeader);
@@ -513,13 +513,13 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	
 	f.read(sampleHeaderChunk,1,63 * sizeof(MMD0Sample));
 
-	MMDSong songHeader;
+	MMDSong songHeader = {};
 	f.read(&songHeader, 1, sizeof(MMDSong));
 
 	if(songHeader.numSamples > 63 || mp_uword_x(songHeader.numBlocks) > 0x7FFF)
 		return false;
 
-	MMD0Exp expData{};
+	MMD0Exp expData = {};
 	if(mp_uint32_x(fileHeader->expDataOffset))
 	{
 		f.seek(mp_uint32_x(fileHeader->expDataOffset));
@@ -562,7 +562,7 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		mp_uword loopstart=0;
 		mp_uword looplen=0;
 
-		MMDInstrHeader instrHeader{};
+		MMDInstrHeader instrHeader = {};
 		if(instrOffsets[instrNum] != 0) {
 			f.seek(instrOffsets[instrNum]);
 			f.read(&instrHeader, 1, sizeof(MMDInstrHeader));
@@ -700,6 +700,13 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 			TXMSample* mptSmp = &module->smp[s];
 			mptSmp->vol = XModule::vol64to255(sampleHeader.sampleVolume); // 4u * std::min<mp_ubyte>(sampleHeader.sampleVolume, 64u);
 			mptSmp->relnote = sampleHeader.sampleTranspose;
+			
+			if(sampleHeader.midiChannel > 0) {
+				//char tmpName[32];
+				sprintf(mptSmp->name,"%d",sampleHeader.midiChannel);
+				//mptSmp->name = itoa(sampleHeader.midiChannel);
+			}
+			//	memcpy(mptSmp->name,(mp_ubyte*)sampleHeader.midiChannel, 1);
 
 			instr[instrNum].snum[numSample] = s;
 			
@@ -707,12 +714,13 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 
 			f.seek(instrOffsets[instrNum]+sizeof(MMDInstrHeader));
 			
-			if (instrHeader.type == MMDInstrHeader::SYNTHETIC || instrHeader.type == MMDInstrHeader::HYBRID) continue;
-
+			if (instrHeader.type == MMDInstrHeader::SYNTHETIC || instrHeader.type == MMDInstrHeader::HYBRID) 
+				continue;
+			
 			mp_sint32 result = module->loadModuleSample(f, s, sampleIO);
-			if (result != MP_OK)
+			if ( result != MP_OK )
 				return result;
-
+			
 			if(hasLoop)
 			{
 				mptSmp->loopstart = loopstart;
@@ -888,7 +896,6 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 		pattern->rows = mp_uword_x(patHeader.numRows) + 1;
 		transpose = /*NOTE_MIN*/1 + (version <= 2 ? 47 : 23) + songHeader.playTranspose;
 
-
 		if(mp_uint32_x(patHeader.blockInfoOffset))
 		{
 			mp_uint32 offset = f.pos();
@@ -962,128 +969,6 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	
 	}
 	
-	/*
-	header->ordnum = f.readByte();
-	
-	f.read(&header->whythis1a,1,1);
-	f.read(&header->ord,1,128);
-	
-	if (moduleType == ModuleTypeIns63)
-		f.read(header->sig,1,4);
-	
-	if ((memcmp(header->sig+2,"CH",2) != 0 && 
-		memcmp(header->sig+1,"CHN",3) != 0) ||
-		moduleType == ModuleTypeIns15)
-		header->flags = XModule::MODULE_PTNEWINSTRUMENT;
-	
-	header->patnum=0;
-	for (i=0;i<128;i++)
-		if (header->ord[i]>header->patnum) header->patnum=header->ord[i];
-	
-	header->patnum++;
-	
-	//patterns = new mp_ubyte*[modhead.numpatts];
-	
-	
-	//mp_sint32 patternsize = modhead.numchannels*modhead.numrows*5;
-	mp_sint32 modpatternsize = header->channum*64*4;
-	
-	mp_ubyte *buffer = new mp_ubyte[modpatternsize];
-	
-	if (buffer == NULL) 
-	{
-		return MP_OUT_OF_MEMORY;
-	}
-	
-	for (i=0;i<header->patnum;i++) {
-		f.read(buffer,1,modpatternsize);
-		
-		phead[i].rows=64;
-		phead[i].effnum=1;
-		phead[i].channum=(mp_ubyte)header->channum;
-		
-		phead[i].patternData=new mp_ubyte[phead[i].rows*header->channum*4];
-		
-		// out of memory?
-		if (phead[i].patternData == NULL)
-		{
-			delete[] buffer;
-			return MP_OUT_OF_MEMORY;
-		}
-		
-		memset(phead[i].patternData,0,phead[i].rows*header->channum*4);
-		
-		mp_sint32 r,c,cnt=0;
-		for (r=0;r<64;r++) {
-			for (c=0;c<header->channum;c++) {
-				mp_ubyte b1 = buffer[cnt];
-				mp_ubyte b2 = buffer[cnt+1];
-				mp_ubyte b3 = buffer[cnt+2];
-				mp_ubyte b4 = buffer[cnt+3];
-				
-				mp_sint32 note,ins,eff,notenum = 0;
-				note = ((b1&0xf)<<8)+b2;
-				ins = (b1&0xf0)+(b3>>4);
-				eff = b3&0xf;
-				
-				if (eff==0xE) {
-					eff=(b4>>4)+0x30;
-					b4&=0xf;
-				}
-				
-				if ((!eff)&&b4) 
-					eff=0x20;
-				
-				// old style modules don't support last effect for:
-				// - portamento up/down
-				// - volume slide
-				if (eff==0x1&&(!b4)) eff = 0;
-				if (eff==0x2&&(!b4)) eff = 0;
-				if (eff==0xA&&(!b4)) eff = 0;
-
-				if (eff==0x5&&(!b4)) eff = 0x3;
-				if (eff==0x6&&(!b4)) eff = 0x4;
-				
-				if (eff==0xC) {
-					b4 = XModule::vol64to255(b4);
-				}
-				
-				if (note) 
-					notenum = XModule::amigaPeriodToNote(note);
-
-				phead[i].patternData[cnt]=notenum;
-				phead[i].patternData[cnt+1]=ins;
-				phead[i].patternData[cnt+2]=eff;
-				phead[i].patternData[cnt+3]=b4;
-				
-				cnt+=4;
-			}
-		}
-		
-	}
-	delete[] buffer;
-	
-	for (i=0; i < header->smpnum; i++) 
-	{
-		// Take a peek of the sample and check if we have to do some nasty MODPLUG ADPCM decompression
-		bool adpcm = false;
-		
-		if (f.posWithBaseOffset() + 5 <= f.sizeWithBaseOffset())
-		{
-			f.read(block, 1, 5);
-			adpcm = memcmp(block, "ADPCM", 5) == 0;
-			if (!adpcm)
-				f.seekWithBaseOffset(f.posWithBaseOffset() - 5);
-		}
-					
-		mp_sint32 result = module->loadModuleSample(f, i, adpcm ? XModule::ST_PACKING_ADPCM : XModule::ST_DEFAULT);
-		if (result != MP_OK)
-			return result;
-	}
-
-*/
-
-
 	const bool volHex = (songHeader.flags & MMDSong::FLAG_VOLHEX) != 0;
 	const bool is8Ch = (songHeader.flags & MMDSong::FLAG_8CHANNEL) != 0;
 	const bool bpmMode = (songHeader.flags2 & MMDSong::FLAG2_BPM) != 0;
@@ -1093,15 +978,21 @@ mp_sint32 LoaderMED::load(XMFileBase& f, XModule* module)
 	
 	if(bpmMode)
 	{
-		//m_nDefaultRowsPerBeat = rowsPerBeat;
+		//header->speed = rowsPerBeat * 4u;
 		//m_nDefaultRowsPerMeasure = m_nDefaultRowsPerBeat * 4u;
 	}
 
 	if(songHeader.masterVol)
 		header->mainvol = std::min<mp_ubyte>(songHeader.masterVol, 64) * 4;
-	
-	strcpy(header->tracker,"OctaMED");
 
+	switch(version)
+	{
+		case 0: header->channum > 4 ? strcpy(header->tracker,"OctaMED v2.10 (MMD0)") : strcpy(header->tracker,"MED v2 (MMD0)"); break;
+		case 1: strcpy(header->tracker,"OctaMED v4 (MMD1)"); break;
+		case 2: strcpy(header->tracker,"OctaMED v5 (MMD2)"); break;
+		case 3: strcpy(header->tracker,"OctaMED Soundstudio (MMD3)"); break;
+	}
+	
 	module->postLoadAnalyser();
 	module->postProcessSamples();
 	

@@ -109,6 +109,9 @@ ScopesControl::ScopesControl(pp_int32 id,
 	backgroundButton = new PPButton(0, parentScreen, NULL, PPPoint(location.x, location.y), PPSize(size.width, size.height), false, false);
 	backgroundButton->setColor(PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBackground));
 	backgroundButton->setInvertShading(true);
+#ifdef __AMIGA__
+	this->obj = backgroundButton->obj;
+#endif
 }
 
 ScopesControl::~ScopesControl()

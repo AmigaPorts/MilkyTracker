@@ -350,20 +350,20 @@ PlayerController::~PlayerController()
 
 void PlayerController::attachModuleEditor(XModule* module)
 {
-	printf("hi1\n");
+	//printf("hi1\n");
 	//this->moduleEditor = moduleEditor;
 	this->module = module; //moduleEditor->getModule();
-	printf("hi2\n");
+	//printf("hi2\n");
 	if (!player)
 		return;
-	printf("hi3\n");
+	//printf("hi3\n");
 	if (!mixer->isDeviceRemoved(player))
 		mixer->removeDevice(player);
-	printf("hi4\n");
+	//printf("hi4\n");
 //	ASSERT(sizeof(muteChannels)/sizeof(bool) >= (unsigned)totalPlayerChannels);
-	printf("hi5 %d %d\n",sizeof(muteChannels)/sizeof(bool),totalPlayerChannels);
+	//printf("hi5 %d %d\n",sizeof(muteChannels)/sizeof(bool),totalPlayerChannels);
 	player->startPlaying(module, true, 0, 0, totalPlayerChannels, panning, true);
-	printf("hi6 %d\n", numPlayerChannels);
+	//printf("hi6 %d\n", numPlayerChannels);
 
 	// restore muting
 	for (mp_sint32 i = 0; i < numPlayerChannels; i++)

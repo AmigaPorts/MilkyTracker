@@ -39,13 +39,23 @@
 
 #include <exec/exec.h>
 #include <dos/dos.h>
+
 #if defined(__SASC) || defined(WARPOS)
 #include <proto/exec.h>
 #else
+#ifdef MORPHOS
+#include <ppcinline/exec.h>
+#else
+
 #include <inline/exec.h>
+#include <proto/dos.h>
+#include <inline/dos.h>
+
 #endif
-#include <stdlib.h>
-#include <string.h>
+#endif
+
+#include <cstdlib>
+#include <cstring>
 
 #include <devices/ahi.h>
 
@@ -54,40 +64,54 @@
 class AudioDriver_AHI : public AudioDriver_COMPENSATE
 {
 private:
-/* The handle for the audio device */
-        struct AHIRequest *audio_req[2];
-        struct MsgPort *audio_port;
-        Sint32 freq,type,bytespersample,size;
-        Uint8 *mixbuf[2];           /* The app mixing buffer */
-        int current_buffer;
-        Uint32 playing;
-	mp_uint32	periodSize;
+	struct MsgPort		*ahi_ReplyPort;
+	struct AHIRequest	*ahi_IORequest[2];
 
-	static void AHICALL fill_audio(void *udata, Uint8 *stream, int len);
+	struct AHIAudioCtrl	*ahi_AudioCtrl;
+	mp_uint32			ahi_Type;
+	int					currentBuffer; // buffer number to fill
+	struct AHIRequest	*link;          // point to previous I/O request sent
+
+	int					audio_IsOpen;
+	mp_uint32			audio_MixBufferSize;
+	mp_ubyte			*audio_MixBuffer[2];
+
+	APTR				audio_Mutex;
+
+	/* Audio driver init fuctions */
+	int					AHI_AudioAvailable(void);
+	//SDL_AudioDevice	*AHI_CreateDevice(int devindex);
+	void				AHI_DeleteDevice();
+
+/* Audio driver export functions */
+/* pre thread functions */
+//static int AHI_OpenAudio(_THIS, SDL_AudioSpec *spec);
+	void				AHI_CloseAudio();
+
+/* thread functions */
+	void				AHI_ThreadInit();
+	void				AHI_WaitDone();
+	void				AHI_WaitAudio();
+	void				AHI_PlayAudio();
+	mp_uint32			*AHI_GetAudioBuf();
+	static void			fill_audio(void *udata, mp_ubyte *stream, int len);
 
 public:
-				AudioDriver_AHI();
+						AudioDriver_AHI();
 
-	virtual		~AudioDriver_AHI();
+	virtual				~AudioDriver_AHI();
 
-	virtual		mp_sint32	initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer);
-	virtual		mp_sint32	closeDevice();
+	virtual mp_sint32	initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer);
+	virtual mp_sint32	closeDevice();
 
-	virtual		mp_sint32	start();
-	virtual		mp_sint32	stop();
+	virtual mp_sint32	start();
+	virtual mp_sint32	stop();
 
-	virtual		mp_sint32	pause();
-	virtual		mp_sint32	resume();
+	virtual mp_sint32	pause();
+	virtual mp_sint32	resume();
 
-	virtual		const char*	getDriverID() { return "AHIAudio"; }
-	virtual		mp_sint32	getPreferredBufferSize() const { return 2048; }
+	virtual const char*	getDriverID() { return "AHIAudio"; }
+	virtual mp_sint32	getPreferredBufferSize() const { return 2048; }
 };
-
-/* Old variable names */
-#define audio_port              (this->hidden->audio_port)
-#define audio_req               (this->hidden->audio_req)
-#define mixbuf                  (this->hidden->mixbuf)
-#define current_buffer          (this->hidden->current_buffer)
-#define playing                 (this->hidden->playing)
 
 #endif

@@ -48,10 +48,22 @@ PPSeperator::PPSeperator(pp_int32 id, PPScreen* parentScreen,
 		this->size.height = size;
 		this->size.width = 2;
 	}
+#ifdef __AMIGA__
+	this->obj = MUI_NewObject(MUIC_Rectangle, TAG_END);
+
+	//Printf("PPSeperator\n");
+	
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+	
+
+#endif
 }
 
 void PPSeperator::paint(PPGraphicsAbstract* g)
 {
+	if (!g) return;
+	
 	if (!isVisible())
 		return;
 

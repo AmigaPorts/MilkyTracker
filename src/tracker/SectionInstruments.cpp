@@ -560,15 +560,20 @@ pp_int32 SectionInstruments::handleEvent(PPObject* sender, PPEvent* event)
 
 void SectionInstruments::init()
 {
+	//Printf("SectionInstruments::init1\n");
 	init(0, tracker.MAXEDITORHEIGHT()-tracker.INSTRUMENTSECTIONDEFAULTHEIGHT());
 }
 
 void SectionInstruments::init(pp_int32 x, pp_int32 y)
 {
+	//Printf("SectionInstruments::init2\n");
+
 	PPScreen* screen = tracker.screen;
 
 	containerEntire = new PPTransparentContainer(CONTAINER_ENTIREINSSECTION, screen, this, 
 												 PPPoint(0, 0), PPSize(screen->getWidth(), screen->getHeight()));
+
+	//Printf("SectionInstruments::init3\n");
 
 #ifndef __LOWRES__
 	// envelope stuff

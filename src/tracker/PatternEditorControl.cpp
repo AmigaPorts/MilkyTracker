@@ -114,6 +114,11 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	
 	transposeHandlerResponder = new TransposeHandlerResponder(*this);
 	dialog = NULL;
+
+#ifndef __AMIGA__
+#else
+	this->obj = MUI_NewObject(MUIC_Rectangle, TAG_END);
+#endif
 }
 
 PatternEditorControl::~PatternEditorControl()

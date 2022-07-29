@@ -476,6 +476,8 @@ void SectionSamples::init()
 
 void SectionSamples::init(pp_int32 x, pp_int32 y)
 {
+	//Printf("SectionSamples::init\n");
+
 	PPScreen* screen = tracker.screen;
 
 	containerEntire = new PPTransparentContainer(CONTAINER_ENTIRESMPSECTION, screen, this, 

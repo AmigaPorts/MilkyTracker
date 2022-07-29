@@ -71,6 +71,11 @@ typedef signed int		pp_int32;
 // Little helper macro
 #define PPSTR_PERIODS "\xef"
 
+#ifdef __AMIGA__
+#undef PPSTR_PERIODS
+#define PPSTR_PERIODS ".."
+#endif
+
 // ------ This has to be defined somewhere ------ 
 pp_uint32 PPGetTickCount();
 

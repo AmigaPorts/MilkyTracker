@@ -61,9 +61,18 @@ PPScreen::PPScreen(PPDisplayDeviceBase* displayDevice, EventListenerInterface* e
 	contextMenuControls = new PPSimpleVector<PPControl>(16, false);
 	timerEventControls = new PPSimpleVector<PPControl>(16, false);
 	
-	rootContainer = new PPTransparentContainer(-1, this, eventListener, 
-											   PPPoint(0, 0), 
-											   PPSize(displayDevice->getSize()));
+	PPSize size;
+	if (displayDevice != nullptr)
+		size = PPSize(displayDevice->getSize());
+	else
+		size = PPSize(0,0);
+		
+	rootContainer = new PPTransparentContainer(-1, this, eventListener,
+											   PPPoint(0, 0),
+											   size);
+#ifdef __AMIGA__
+	this->obj = rootContainer->obj;
+#endif
 }
 
 PPScreen::~PPScreen()
@@ -555,6 +564,7 @@ PPControl* PPScreen::getFocusedControl() const
 
 bool PPScreen::hasFocus(PPControl* control) const
 { 
+	if (control == NULL) return FALSE;
 	// if the client is asking for container focus we first need to find the control 
 	// which is at the end of the focus hierarchy (see above)
 	PPControl* parent = control;
@@ -568,13 +578,23 @@ bool PPScreen::hasFocus(PPControl* control) const
 }
 
 void PPScreen::addControl(PPControl* control) 
-{ 
+{
+//#ifdef __AMIGA__
+	//DoMethod(this->obj, OM_ADDMEMBER, control->obj);
+//#else
 	rootContainer->addControl(control);
+//#endif
+
 }
 
 bool PPScreen::removeControl(PPControl* control)
 {
+//#ifdef __AMIGA__
+//	DoMethod(this->obj, OM_REMMEMBER, control->obj);
+//	return true;
+//#endif
 	return rootContainer->removeControl(control);
+
 }
 
 void PPScreen::addTimerEventControl(PPControl* control)

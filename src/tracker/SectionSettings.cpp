@@ -2749,6 +2749,8 @@ void SectionSettings::init()
 
 void SectionSettings::init(pp_int32 x, pp_int32 y)
 {
+	//Printf("SectionSettings::init\n");
+
 	pp_int32 i;
 
 	PPScreen* screen = tracker.screen;
@@ -2822,6 +2824,8 @@ void SectionSettings::init(pp_int32 x, pp_int32 y)
 	pp_int32 sx = x2 + 10;
 	pp_int32 sy = y2 + 4;
 
+	//Printf("Pre numSettingsPages\n");
+
 	for (i = 0; i < numSettingsPages; i++)
 	{
 		button = new PPButton(PAGE_BUTTON_0+i, screen, this, PPPoint(sx, sy), PPSize(bWidth, bHeight), false, true, false);
@@ -2844,6 +2848,8 @@ void SectionSettings::init(pp_int32 x, pp_int32 y)
 
 		sy+=bHeight;
 	}
+	
+	//Printf("Post numSettingsPages\n");
 	x2++;
 
 #else
@@ -2900,14 +2906,16 @@ void SectionSettings::init(pp_int32 x, pp_int32 y)
 	button->setText("Cancel");
 
 	static_cast<PPContainer*>(sectionContainer)->addControl(button);
-
+	//Printf("Pre screen->addControl(sectionContainer);\n");
 	screen->addControl(sectionContainer);
+	//Printf("Post screen->addControl(sectionContainer);\n");
 
 	initialised = true;
 
 	showPage(0, 0);
-
+	//Printf("showPage\n");
 	showSection(false);
+	//Printf("initEnd\n");
 }
 
 void SectionSettings::update(bool repaint/* = true*/)
@@ -3006,9 +3014,9 @@ void SectionSettings::showPage(pp_int32 page, pp_int32 subPage/* = 0*/)
 	currentActiveSubPageNum[currentActiveTabNum] = subPage;
 
 	for (pp_int32 i = 0; i < NUMSETTINGSPAGES; i++)
-		static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(PAGE_BUTTON_0+i))->setPressed(false);
+		dynamic_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(PAGE_BUTTON_0+i))->setPressed(false);
 
-	static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(PAGE_BUTTON_0+page))->setPressed(true);
+	dynamic_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(PAGE_BUTTON_0+page))->setPressed(true);
 
 	currentActiveSubPageNum[currentActiveTabNum] = subPage;
 }

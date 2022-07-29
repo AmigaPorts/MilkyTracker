@@ -35,22 +35,8 @@
 
 #include "AudioDriver_AHI.h"
 
-/* Audio driver functions */
-static int AHI_OpenAudio(_THIS, SDL_AudioSpec *spec);
-static void AHI_WaitAudio(_THIS);
-static void AHI_PlayAudio(_THIS);
-static Uint8 *AHI_GetAudioBuf(_THIS);
-static void AHI_CloseAudio(_THIS);
 
-#ifndef __SASC
-        #define mymalloc(x) AllocVec(x,MEMF_PUBLIC)
-        #define myfree FreeVec
-#else
-        #define mymalloc malloc
-        #define myfree free
-#endif
-
-void AHICALL AudioDriver_AHI::fill_audio(void *udata, Uint8 *stream, int length)
+void AudioDriver_AHI::fill_audio(void *udata, mp_ubyte *stream, int length)
 {
 	AudioDriver_AHI* audioDriver = (AudioDriver_AHI*)udata;
 
@@ -74,17 +60,43 @@ AudioDriver_AHI::~AudioDriver_AHI()
 {
 }
 
+void AudioDriver_AHI::AHI_CloseAudio()
+{
+	if (this->audio_MixBuffer[0])
+	{
+		free(this->audio_MixBuffer[0]);
+		this->audio_MixBuffer[0] = NULL;
+	}
+
+	if (this->audio_MixBuffer[1])
+	{
+		free(this->audio_MixBuffer[1]);
+		this->audio_MixBuffer[1] = NULL;
+	}
+	this->audio_IsOpen = 0;
+}
+
 // On error return a negative value
 // If the requested buffer size can be served return MP_OK,
 // otherwise return the number of 16 bit words contained in the obtained buffer
 mp_sint32 AudioDriver_AHI::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
-	SDL_AudioSpec	wanted, obtained, saved;
 	char name[32];
 	mp_sint32 res = AudioDriverBase::initDevice(bufferSizeInWords, mixFrequency, mixer);
 	if (res < 0)
 	{
 		return res;
+	}
+
+	/* Allocate mixing buffer */
+	this->audio_MixBufferSize = bufferSizeInWords;
+	this->audio_MixBuffer[0] = (mp_ubyte *)malloc(bufferSizeInWords);
+	this->audio_MixBuffer[1] = (mp_ubyte *)malloc(bufferSizeInWords);
+
+	if ( this->audio_MixBuffer[0] == NULL || this->audio_MixBuffer[1] == NULL )
+	{
+		this->AHI_CloseAudio();
+		return -1;
 	}
 
 	wanted.freq = mixFrequency;

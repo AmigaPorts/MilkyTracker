@@ -54,6 +54,28 @@ PeakLevelControl::PeakLevelControl(pp_int32 id,
 	peak[0] = peak[1] = 0;
 	
 	buildColorLUT();
+#ifdef __AMIGA__
+	this->obj = MUI_NewObject(MUIC_Bitmap, (ULONG)"NewButton", TAG_END);
+	struct BitMap *newbm;
+	long w,h;
+	
+	SetAttrs(this->obj, MUIA_Bitmap_Width, (ULONG)visibleWidth, TAG_DONE);
+	SetAttrs(this->obj, MUIA_Bitmap_Height, (ULONG)visibleHeight, TAG_DONE);
+
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+	if (newbm = AllocBitMap (
+			visibleWidth,
+			visibleHeight,
+			4,
+			0,newbm))
+	{
+		//BltBitMap (oldbm,0,0,newbm,0,0,w,h,0x0c0,0xff,NULL);
+		SetAttrs(this->obj, MUIA_Bitmap_Bitmap, (ULONG)&newbm, TAG_DONE);
+	}
+
+
+#endif
 }
 
 PeakLevelControl::~PeakLevelControl()

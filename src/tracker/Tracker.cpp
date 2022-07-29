@@ -169,10 +169,13 @@ Tracker::Tracker() :
 	
 	sectionTranspose = new SectionTranspose(*this);
 	sections->add(sectionTranspose);
+	
 	sectionAdvancedEdit = new SectionAdvancedEdit(*this);
 	sections->add(sectionAdvancedEdit);
+	
 	sectionDiskMenu = new SectionDiskMenu(*this);
 	sections->add(sectionDiskMenu);
+	
 	sectionHDRecorder = new SectionHDRecorder(*this);	
 	sections->add(sectionHDRecorder);
 	sectionSettings = new SectionSettings(*this);
@@ -187,6 +190,7 @@ Tracker::Tracker() :
 	sections->add(sectionOptimize);
 	sectionAbout = new SectionAbout(*this);
 	sections->add(sectionAbout);
+	
 
 	inputControlListener = new InputControlListener(*this);
 
@@ -365,7 +369,7 @@ void Tracker::showSongSettings(bool show)
 	screen->getControlByID(CONTAINER_ABOUT)->show(show);
 	screen->getControlByID(CONTAINER_ORDERLIST)->show(show);
 	screen->getControlByID(CONTAINER_SPEED)->show(show);
-	screen->getControlByID(CONTAINER_PATTERN)->show(show);
+	//screen->getControlByID(CONTAINER_PATTERN)->show(show);
 }
 
 void Tracker::showMainOptions(bool show)
@@ -2012,26 +2016,27 @@ bool Tracker::isActiveEditing()
 {
 	// check for focus of song title edit field
 	PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_ABOUT));
-	PPListBox* listBox = static_cast<PPListBox*>(container->getControlByID(LISTBOX_SONGTITLE));
-	
-	if (screen->hasFocus(container) && listBox->isEditing())							
-		return true;
+	if (container != nullptr) {
+		PPListBox *listBox = static_cast<PPListBox *>(container->getControlByID(LISTBOX_SONGTITLE));
 
-	container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_INSTRUMENTLIST));
-	listBox = listBoxInstruments;
+		if ( screen->hasFocus(container) && listBox->isEditing())
+			return true;
 
-	if (screen->hasFocus(container) && listBox->isEditing())							
-		return true;
+		container = static_cast<PPContainer *>(screen->getControlByID(CONTAINER_INSTRUMENTLIST));
+		listBox = listBoxInstruments;
 
-	container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_INSTRUMENTLIST));
-	listBox = listBoxSamples;
+		if ( screen->hasFocus(container))// && listBox->isEditing())							
+			return true;
 
-	if (screen->hasFocus(container) && listBox->isEditing())							
-		return true;
-		
-	if (sectionDiskMenu->isActiveEditing())
-		return true;
+		container = static_cast<PPContainer *>(screen->getControlByID(CONTAINER_INSTRUMENTLIST));
+		listBox = listBoxSamples;
 
+		if ( screen->hasFocus(container) && listBox->isEditing())
+			return true;
+
+		if ( 0 )//sectionDiskMenu->isActiveEditing())
+			return true;
+	}
 	return false;
 }
 
@@ -2287,7 +2292,7 @@ void Tracker::expandOrderlist(bool b)
 {
 	extendedOrderlist = b;
 	
-	PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_ORDERLIST));
+	PPContainer* container = dynamic_cast<PPContainer*>(screen->getControlByID(CONTAINER_ORDERLIST));
 	
 	PPPoint p = container->getLocation();
 	pp_int32 x = p.x;
@@ -2307,7 +2312,7 @@ void Tracker::expandOrderlist(bool b)
 		container->getControlByID(0)->hide(true);
 		container->getControlByID(1)->hide(false);
 		container->getControlByID(2)->hide(true);
-		static_cast<PPButton*>(container->getControlByID(BUTTON_ORDERLIST_EXTENT))->setText(TrackerConfig::stringButtonExtended);
+		dynamic_cast<PPButton*>(container->getControlByID(BUTTON_ORDERLIST_EXTENT))->setText(TrackerConfig::stringButtonExtended);
 	
 		PPSize size = container->getControlByID(LISTBOX_ORDERLIST)->getSize();
 		size.height = 60;
@@ -2325,7 +2330,8 @@ void Tracker::expandOrderlist(bool b)
 		container->getControlByID(0)->hide(false);
 		container->getControlByID(1)->hide(true);
 		container->getControlByID(2)->hide(false);
-		static_cast<PPButton*>(container->getControlByID(BUTTON_ORDERLIST_EXTENT))->setText(TrackerConfig::stringButtonCollapsed);
+
+		dynamic_cast<PPButton*>(container->getControlByID(BUTTON_ORDERLIST_EXTENT))->setText(TrackerConfig::stringButtonCollapsed);
 
 		PPSize size = container->getControlByID(LISTBOX_ORDERLIST)->getSize();
 		size.height = 36;
@@ -2339,7 +2345,7 @@ void Tracker::flipSpeedSection()
 	PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_SPEED));
 	ASSERT(container);
 
-	PPControl* control = container->getControlByID(STATICTEXT_SPEED_OCTAVE);
+	PPControl* control = container->getControlByID(CONTAINER_SPEED1);
 	ASSERT(control);
 	
 	pp_int32 dy = container->getControlByID(STATICTEXT_SPEED_SPEED)->getLocation().y -
@@ -2348,7 +2354,11 @@ void Tracker::flipSpeedSection()
 	if (control->isHidden())
 	{
 		// Show octave integer field
-		control->hide(false);
+		control->show(true);
+
+		PPControl* control = container->getControlByID(CONTAINER_SPEED2);
+		control->hide(true);
+		/*
 		// Show octave description text ("Oct")
 		control = container->getControlByID(STATICTEXT_SPEED_OCTAVE_DESC);
 		control->hide(false);
@@ -2403,9 +2413,15 @@ void Tracker::flipSpeedSection()
 		p = control->getLocation();
 		p.y-=dy;
 		control->setLocation(p);
+	 */
 	}
 	else
 	{
+		control->hide(true);
+
+		PPControl* control = container->getControlByID(CONTAINER_SPEED2);
+		control->show(true);
+		/*
 		// The hide octave texts + buttons
 		control->hide(true);
 		control = container->getControlByID(STATICTEXT_SPEED_OCTAVE_DESC);
@@ -2458,6 +2474,7 @@ void Tracker::flipSpeedSection()
 		p = control->getLocation();
 		p.y+=dy;
 		control->setLocation(p);
+		 */
 	}
 }
 
@@ -2615,7 +2632,7 @@ bool Tracker::prepareLoading(FileTypes eType, const PPSystemString& fileName, bo
 	if (loadingParameters.suspendPlayer)
 	{
 #ifndef __LOWRES__
-		scopesControl->enable(false);
+//		scopesControl->enable(false);
 #endif
 		playerController->suspendPlayer();
 	}
@@ -2668,7 +2685,7 @@ bool Tracker::finishLoading()
 	if (loadingParameters.suspendPlayer)
 	{
 		playerController->resumePlayer(true);
-		scopesControl->enable(true);
+		//scopesControl->enable(true);
 	}
 	
 	if (loadingParameters.deleteFile)

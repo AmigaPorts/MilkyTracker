@@ -37,11 +37,21 @@ PPContainer::PPContainer(pp_int32 id, PPScreen* parentScreen, EventListenerInter
 	currentlyPressedMouseButtons(0)
 {
 	this->border = border;
-
+#ifndef __AMIGA__
 	backgroundButton = new PPButton(0, parentScreen, NULL, location, size, border, false);
 	backgroundButton->setColor(*color);
-
+#endif
 	timerEventControls = new PPSimpleVector<PPControl>(16, false);
+
+#ifdef __AMIGA__
+	this->obj = MUI_NewObject(MUIC_Group, TAG_END);
+
+	if (this->border)
+		SetAttrs(this->obj, MUIA_Frame, MUIV_Frame_Group, TAG_END);
+	
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+#endif
 }
 
 PPContainer::~PPContainer()
@@ -55,17 +65,18 @@ PPContainer::~PPContainer()
 			parentScreen->removeTimerEventControl(controls.get(i));
 		}
 	}
-
+#ifndef __AMIGA__
 	delete backgroundButton;
+#endif
 }
 
 void PPContainer::paint(PPGraphicsAbstract* g)
 {
 	if (!isVisible())
 		return;
-
+#ifndef __AMIGA__
 	backgroundButton->paint(g);
-
+#endif
 	paintControls(g);
 }
 
@@ -311,7 +322,7 @@ PPControl* PPContainer::getControlByID(pp_int32 id)
 		PPControl* control = controls.get(i);
 		if (control->isContainer())
 		{
-			PPControl* newCtrl = static_cast<PPContainer*>(control)->getControlByID(id);
+			PPControl* newCtrl = dynamic_cast<PPContainer*>(control)->getControlByID(id);
 			if (newCtrl)
 				return newCtrl;
 		}
@@ -324,6 +335,11 @@ void PPContainer::addControl(PPControl* control)
 {
 	control->setOwnerControl(this);
 	controls.add(control);
+#ifdef __AMIGA__
+	if (this->obj != nullptr && control->obj != nullptr)
+		DoMethod(this->obj, OM_ADDMEMBER, control->obj);
+#endif
+
 	if (control->receiveTimerEvent())
 	{
 		if (this->isVisible())
@@ -337,7 +353,9 @@ bool PPContainer::removeControl(PPControl* control)
 {
 	pp_int32 i;
 	bool res = false;
-
+#ifdef __AMIGA__
+	DoMethod(this->obj, OM_ADDMEMBER, control->obj);
+#endif
 	if (control->receiveTimerEvent())
 	{
 		parentScreen->removeTimerEventControl(control);
@@ -436,7 +454,12 @@ void PPContainer::hide(bool hidden)
 void PPContainer::setSize(const PPSize& size)
 {
 	this->size = size;
+#ifndef __AMIGA__
 	backgroundButton->setSize(size);
+#else
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+#endif
 }
 
 void PPContainer::setLocation(const PPPoint& location)
@@ -446,7 +469,9 @@ void PPContainer::setLocation(const PPPoint& location)
 	move(offset);*/
 
 	this->location = location;
+#ifndef __AMIGA__
 	backgroundButton->setLocation(location);
+#endif
 }
 
 void PPContainer::setFocus(PPControl* control, bool repaint/* = true*/)
@@ -513,8 +538,9 @@ void PPContainer::move(const PPPoint& offset)
 	p.y+=offset.y;
 
 	location = p;
+#ifndef __AMIGA__
 	backgroundButton->setLocation(p);
-
+#endif
 	PPSimpleVector<PPControl>& controls = getControls();
 
 	for (pp_int32 i = 0; i < controls.size(); i++)
@@ -564,4 +590,22 @@ void PPContainer::adjustContainerSize()
 
 	setLocation(PPPoint(x1, y1));
 	setSize(PPSize(x2-x1, y2-y1));
+}
+
+void PPContainer::setRows(pp_int32 i) {
+#ifdef __AMIGA__
+	SetAttrs(this->obj, MUIA_Group_Rows, (ULONG)i, TAG_END);
+#endif
+}
+
+void PPContainer::setColumns(pp_int32 i) {
+#ifdef __AMIGA__
+	SetAttrs(this->obj, MUIA_Group_Columns, (ULONG)i, TAG_END);
+#endif
+}
+
+void PPContainer::setSpacing(pp_int32 i) {
+#ifdef __AMIGA__
+	SetAttrs(this->obj, MUIA_Group_Spacing, (ULONG)i, TAG_END);
+#endif
 }

@@ -44,7 +44,20 @@ PPStaticText::PPStaticText(pp_int32 id,	PPScreen* parentScreen, EventListenerInt
 {
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);		
 
+#ifndef __AMIGA__
 	calcExtent();
+#else
+	const char * modifyText = "%s";
+	
+	if (this->underlined)
+		modifyText = "\33u%s\33n";
+	
+	char outputText[255];
+	sprintf(outputText, modifyText, text.getStrBuffer());
+	
+	this->obj = MUI_NewObject(MUIC_Text, MUIA_Text_Contents, (ULONG)outputText, TAG_END);
+	//Printf("PPStaticText: %s\n", reinterpret_cast<_sfdc_vararg>(outputText));
+#endif
 }
 
 PPStaticText::~PPStaticText()
@@ -141,8 +154,11 @@ pp_int32 PPStaticText::dispatchEvent(PPEvent* event)
 void PPStaticText::setText(const PPString& text)
 {
 	this->text = text;
-
+#ifdef __AMIGA__
+	SetAttrs(this->obj, MUIA_Text_Contents, (ULONG)this->text.getStrBuffer(), TAG_DONE);
+#else
 	calcExtent();
+#endif
 }
 
 void PPStaticText::setIntValue(pp_int32 value, pp_uint32 numDecDigits/* = 0*/, bool negative/*= false*/)

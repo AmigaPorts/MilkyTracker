@@ -57,7 +57,7 @@ void PPSlider::initButtons()
 	backgroundButton = new PPButton(0, parentScreen, NULL, /*_Point(location.x + (horizontal?0:1), location.y + (horizontal?1:0))*/location, this->size, false);
 	backgroundButton->setColor(backgroundColor);
 	backgroundButton->setInvertShading(true);
-
+	
 	buttonUp = new PPButton(0, parentScreen, this, location, PPSize(SLIDERBUTTONWIDTH,SLIDERBUTTONHEIGHT), false);
 	buttonUp->setText(!buttonSwap ? "-" : "+");
 
@@ -86,8 +86,11 @@ PPSlider::PPSlider(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* 
 
 	currentBarSize = 65536;
 	currentBarPosition = 0;
-
+#ifndef __AMIGA__
 	initButtons();
+#else
+	this->obj = MUI_NewObject(MUIC_Rectangle, TAG_END);
+#endif
 	
 	caughtControl = NULL;
 
@@ -98,10 +101,12 @@ PPSlider::PPSlider(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* 
 
 PPSlider::~PPSlider()
 {
+#ifndef __AMIGA__
 	delete backgroundButton;	
 	delete buttonUp;
 	delete buttonDown;
 	delete buttonBar;
+#endif
 }
 
 void PPSlider::paint(PPGraphicsAbstract* g)
@@ -127,6 +132,7 @@ void PPSlider::paint(PPGraphicsAbstract* g)
 
 void PPSlider::setBarSize(pp_int32 size, bool repaint /* = true */)
 {
+#ifndef __AMIGA__
 	if (size < 0) size = 0;
 	if (size > 65536) size = 65536;
 
@@ -145,7 +151,7 @@ void PPSlider::setBarSize(pp_int32 size, bool repaint /* = true */)
 
 	if (repaint)
 		parentScreen->paintControl(this);
-
+#endif
 }
 
 void PPSlider::setLocation(const PPPoint& location)

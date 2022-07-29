@@ -1,6 +1,9 @@
 #ifndef MILKYPLAYER_PROJECT_H
 #define MILKYPLAYER_PROJECT_H 1
 
+#include <cstdio>
+#include <sstream>
+
 #ifdef __AMIGA__
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -15,6 +18,8 @@
 
 #include <clib/alib_protos.h>
 #include <utility/tagitem.h>
+#include <exec/types.h>
+#include "AslRequester.h"
 #else
 #define BOOL bool
 #define TRUE true
@@ -26,7 +31,7 @@
 #define MILKYTRACKER 1
 #include <SDL.h>
 #include <XModule.h>
-#include "AslRequester.h"
+
 #include "amigaversion.h"
 #include "PlayerMaster.h"
 #include "PlayerController.h"
@@ -35,6 +40,8 @@
 #define MAKE_ID(a,b,c,d) ((ULONG) (a)<<24 | (ULONG) (b)<<16 | (ULONG) (c)<<8 | (ULONG) (d))
 
 #define IPTR ULONG
+
+//#define screen (PPScreen*)app
 
 #endif
 

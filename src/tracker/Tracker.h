@@ -32,6 +32,12 @@
 #define INPUTCONTAINERHEIGHT_DEFAULT	(25+SCROLLBUTTONSIZE+4)
 #define INPUTCONTAINERHEIGHT_EXTENDED	(25+SCROLLBUTTONSIZE+4+13)
 
+#ifdef __AMIGA__
+BOOL Open_Libs();
+
+void Close_Libs();
+#endif
+
 template<class Type>
 class PPSimpleVector;
 

@@ -89,7 +89,7 @@ static PPSystemString GetFileNameFromRequester(struct FileRequester *req)
             fileName = buffer;
         }
 
-        //printf("%s\n", fileName.getStrBuffer());
+        Printf("%s\n", (_sfdc_vararg)fileName.getStrBuffer());
 
     } else {
         printf("Path is too long (limit %ld)\n", sizeof(buffer));

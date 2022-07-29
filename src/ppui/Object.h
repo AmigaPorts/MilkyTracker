@@ -23,8 +23,33 @@
 #ifndef OBJECT__H
 #define OBJECT__H
 
+#ifdef __AMIGA__
+#include <libraries/mui.h>
+#include <libraries/gadtools.h>
+#include <libraries/iffparse.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/asl.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/muimaster_lib.h>
+
+#include <clib/alib_protos.h>
+#include <utility/tagitem.h>
+#include <exec/types.h>
+#else
+#define BOOL bool
+#define TRUE true
+#define FALSE false
+#define ULONG unsigned long
+#define Printf printf
+#define Object void
+#endif
+
 class PPObject
 {
+
 };
 
 #endif

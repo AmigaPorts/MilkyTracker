@@ -78,6 +78,7 @@ private:
 	void adjustEventMouseCoordinates(PPEvent* event);
 
 public:
+	Object * obj;
 	PPScreen(PPDisplayDeviceBase* displayDevice, EventListenerInterface* eventListener = NULL);
 
 	virtual ~PPScreen();
@@ -163,6 +164,8 @@ public:
 	MouseCursorTypes getCurrentActiveMouseCursor() const;
 	
 	void shutDown();
+
+	Object *app;
 };
 
 #endif

@@ -279,7 +279,7 @@ elseif(WIN32)
         win32/ThreadTimer.h
         win32/Win32_resource.h
     )
-elseif(AROS OR AMIGA)
+elseif(AROS OR AMIGA OR SDL12)
     target_sources(tracker PRIVATE
         # Sources
         sdl-1.2/SDL_KeyTranslation.cpp

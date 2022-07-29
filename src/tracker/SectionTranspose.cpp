@@ -426,6 +426,7 @@ void SectionTranspose::init(pp_int32 px, pp_int32 py)
 	pp_int32 i;
 
 	PPScreen* screen = tracker.screen;
+	//Printf("SectionTranspose::init\n");
 
 	// test
 	PPContainer* container = new PPContainer(CONTAINER_TRANSPOSE, tracker.screen, this, PPPoint(px, py), PPSize(320,UPPERLEFTSECTIONHEIGHT), false);

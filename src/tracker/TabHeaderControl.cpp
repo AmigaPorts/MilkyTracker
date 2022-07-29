@@ -73,7 +73,10 @@ TabHeaderControl::TabHeaderControl(pp_int32 id, PPScreen* parentScreen, EventLis
 	startIndex(0)
 {
 	backgroundButton = new PPButton(0, parentScreen, NULL, location, size, false, false);
-	backgroundButton->setColor(*color);	
+	backgroundButton->setColor(*color);
+#ifdef __AMIGA__
+	this->obj = backgroundButton->obj;
+#endif
 }
 
 TabHeaderControl::~TabHeaderControl()

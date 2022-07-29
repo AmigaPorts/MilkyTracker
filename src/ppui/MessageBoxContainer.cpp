@@ -47,6 +47,7 @@ PPMessageBoxContainer::PPMessageBoxContainer(pp_int32 id, PPScreen* parentScreen
 
 	button = new PPButton(-1, NULL, NULL, buttonLocation, buttonSize, false, false, false);
 	button->setColor(*PPContainer::color);
+	//this->addControl(button);
 }
 
 PPMessageBoxContainer::~PPMessageBoxContainer()

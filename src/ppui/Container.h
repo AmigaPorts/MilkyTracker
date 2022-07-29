@@ -65,7 +65,24 @@ public:
 	virtual void setLocation(const PPPoint& location);
 
 	//void setColor(pp_int32 r,pp_int32 g,pp_int32 b) { color.r = r; color.g = g; color.b = b; backgroundButton->setColor(color); }
-	void setColor(const PPColor& color) { this->color = &color; backgroundButton->setColor(color); }
+	void setColor(const PPColor& color) { 
+		this->color = &color; 
+		backgroundButton->setColor(color);
+		char colorText[255] = "2:%d,%d,%d\0";
+		char colorText2[255];
+		sprintf(colorText2,colorText,color.r,color.g,color.b);
+		SetAttrs(this->obj, MUIA_Background, (_sfdc_vararg)colorText2, TAG_END);
+	}
+	
+	void setBorder(bool enabled) {
+#ifdef __AMIGA__
+		this->border = enabled;
+		if (this->border)
+			SetAttrs(this->obj, MUIA_Frame, MUIV_Frame_Group, TAG_END);
+		else
+			SetAttrs(this->obj, MUIA_Frame, MUIV_Frame_None, TAG_END);
+#endif
+	}
 
 	const PPColor& getColor() const { return *color; }
 
@@ -96,6 +113,12 @@ public:
 	
 	void move(const PPPoint& offset);
 	void adjustContainerSize();
+
+	void setRows(pp_int32 i);
+
+	void setColumns(pp_int32 i);
+
+	void setSpacing(pp_int32 i);
 
 protected:
 	void paintControls(PPGraphicsAbstract* g)

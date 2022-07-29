@@ -70,12 +70,17 @@ public:
 	virtual ~PPButton();
 
 	virtual void setSize(const PPSize& size) 
-	{ 
+	{
 		this->size = size; 
 		if (this->size.width < 8)
 			this->size.width = 8;	
 		if (this->size.height < 8)
 			this->size.height = 8;
+
+#ifdef __AMIGA__
+		SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_DONE);
+		SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_DONE);
+#endif
 	}
 
 	void setColor(const PPColor& color) { this->color = &color; }
@@ -95,7 +100,7 @@ public:
 	void setFont(PPFont* font) { this->font = font; }
 	PPFont* getFont() const { return font; }
 
-	void setPressed(bool pressed) { this->pressed = pressed; }
+	void setPressed(bool pressed);
 	bool isPressed() const { return pressed; }
 
 	void setUpdateable(bool b) { update = b; }
@@ -111,7 +116,9 @@ public:
 
 	virtual void paint(PPGraphicsAbstract* graphics);
 	virtual pp_int32 dispatchEvent(PPEvent* event);
-	
+
+	void setTinyText();
+
 private:
 	void handleButtonPress(bool& lMouseDown, bool& rMouseDown);
 	void handleButtonRelease(bool& lMouseDown, bool& rMouseDown, PPEvent* event, EEventDescriptor postEvent);

@@ -235,7 +235,7 @@ bool Tracker::updatePlayTime()
 	
 	strcat(buffer, buffer2);
 	
-	if (strcmp(playTimeText->getText(), buffer) != 0)
+	if (strcmp(playTimeText->getText(), buffer) != 0 && container != nullptr)
 	{
 		playTimeText->setText(buffer);
 		screen->paintControl(container, false);
@@ -252,16 +252,18 @@ void Tracker::updateSongTitle(bool repaint)
 {
 	PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_ABOUT));
 	
-	PPListBox* listBox = static_cast<PPListBox*>(container->getControlByID(LISTBOX_SONGTITLE));
-	
-	listBox->clear();
-	char str[MP_MAXTEXT+1];
-	moduleEditor->getTitle(str, ModuleEditor::MAX_TITLETEXT);
+	if (container != nullptr) {
+		PPListBox *listBox = static_cast<PPListBox *>(container->getControlByID(LISTBOX_SONGTITLE));
 
-	listBox->addItem(str);
-	listBox->setMaxEditSize(ModuleEditor::MAX_TITLETEXT);
+		listBox->clear();
+		char str[MP_MAXTEXT + 1];
+		moduleEditor->getTitle(str, ModuleEditor::MAX_TITLETEXT);
 
-	screen->paintControl(container, repaint);
+		listBox->addItem(str);
+		listBox->setMaxEditSize(ModuleEditor::MAX_TITLETEXT);
+
+		screen->paintControl(container, repaint);
+	}
 }
 
 #ifdef __LOWRES__
@@ -362,7 +364,7 @@ bool Tracker::updateSpeed(bool repaint)
 		PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_SPEED));
 		static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SPEED_SPEED))->setIntValue(speed, 2);		
 		static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SPEED_BPM))->setIntValue(bpm, 3);
-		static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SPEED_MAINVOL))->setHexValue((mainvol*64)/255, 2);
+		//static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SPEED_MAINVOL))->setHexValue((mainvol*64)/255, 2);
 		
 		screen->paintControl(container, repaint);
 		return true;
@@ -536,26 +538,26 @@ void Tracker::updateSongInfo(bool repaint/* = true*/)
 				
 	//updateBPM(repaint);
 	updateSpeed(repaint);                                                                      
-	updatePatternAddAndOctave(repaint);
+	//updatePatternAddAndOctave(repaint);
 				
-	updatePatternIndex(repaint);
-	updatePatternLength(repaint);
+	//updatePatternIndex(repaint);
+	//updatePatternLength(repaint);
 				
-	updateInstrumentsListBox(repaint);
-	updateSamplesListBox(repaint);				
+	//updateInstrumentsListBox(repaint);
+	//updateSamplesListBox(repaint);				
 				
-	getPatternEditorControl()->reset();
-	getPatternEditorControl()->unmuteAll();
+	//getPatternEditorControl()->reset();
+	//getPatternEditorControl()->unmuteAll();
 	sectionInstruments->resetEnvelopeEditor();
 	sectionInstruments->updateEnvelopeEditor(false, true);
 	sectionInstruments->resetPianoAssignment();
 	sectionSamples->resetSampleEditor();
 
-	setNumChannels(moduleEditor->getNumChannels(), false);
+	//setNumChannels(moduleEditor->getNumChannels(), false);
 
-	updatePatternEditorControl(repaint);
+	//updatePatternEditorControl(repaint);
 				
-	updateSampleEditorAndInstrumentSection(repaint);
+	//updateSampleEditorAndInstrumentSection(repaint);
 
 	updateWindowTitle(moduleEditor->getModuleFileName());
 
@@ -823,7 +825,7 @@ void Tracker::doFollowSong()
 	}
 	
 	// check if the piano has been updated
-	bool updatePiano = updatePianoControl(sectionInstruments->getPianoControl());
+	bool updatePiano = false; //updatePianoControl(sectionInstruments->getPianoControl());
 	
 	// check if the play time has been updated
 	bool updatePlayTime = this->updatePlayTime();
@@ -847,7 +849,7 @@ void Tracker::doFollowSong()
 	bool importantRefresh = false;
 
 	// now for updating the sample editor control
-	SampleEditorControl* sampleEditorControl = sectionSamples->getSampleEditorControl(false);
+	SampleEditorControl* sampleEditorControl = NULL; //sectionSamples->getSampleEditorControl(false);
 
 	if (sampleEditorControl)
 	{
@@ -894,7 +896,7 @@ void Tracker::doFollowSong()
 		
 	}
 	
-	if (sectionInstruments->isEnvelopeVisible())
+	if (0)//sectionInstruments->isEnvelopeVisible())
 	{
 		EnvelopeEditorControl* eeCtrl = sectionInstruments->getEnvelopeEditorControl();
 		
@@ -983,38 +985,42 @@ void Tracker::updateAfterLoad(bool loadResult, bool wasPlaying, bool wasPlayingP
 	
 	moduleEditor->setCurrentPatternIndex(moduleEditor->getOrderPosition(0));
 	
-	listBoxInstruments->setSelectedIndex(0);
+	//listBoxInstruments->setSelectedIndex(0);
 	moduleEditor->setCurrentInstrumentIndex(0);
-	listBoxSamples->setSelectedIndex(0);
+	//listBoxSamples->setSelectedIndex(0);
 	moduleEditor->setCurrentSampleIndex(0);
 	
 	updateSongInfo(false);
 	
 	playerController->resetMainVolume();
-	getPatternEditorControl()->setChannel(0,0);
-	getPatternEditorControl()->setCurrentInstrument(1);
 	
-	if (wasPlaying)
-	{
-		if (!wasPlayingPattern && shouldFollowSong())
+	if(getPatternEditorControl()) {
+	
+		getPatternEditorControl()->setChannel(0,0);
+		getPatternEditorControl()->setCurrentInstrument(1);
+		
+		if (wasPlaying)
+		{
+			if (!wasPlayingPattern && shouldFollowSong())
+			{
+				getPatternEditorControl()->setSongPosition(-1, -1);
+				getPatternEditorControl()->setRow(0);
+			}
+			else if (wasPlayingPattern && !shouldFollowSong())
+			{
+				getPatternEditorControl()->setSongPosition(-1, 0);
+			}
+			else if (wasPlayingPattern && shouldFollowSong())
+			{
+				getPatternEditorControl()->setSongPosition(-1, -1);
+				getPatternEditorControl()->setRow(0);
+			}
+		}
+		else		
 		{
 			getPatternEditorControl()->setSongPosition(-1, -1);
 			getPatternEditorControl()->setRow(0);
 		}
-		else if (wasPlayingPattern && !shouldFollowSong())
-		{
-			getPatternEditorControl()->setSongPosition(-1, 0);
-		}
-		else if (wasPlayingPattern && shouldFollowSong())
-		{
-			getPatternEditorControl()->setSongPosition(-1, -1);
-			getPatternEditorControl()->setRow(0);
-		}
-	}
-	else		
-	{
-		getPatternEditorControl()->setSongPosition(-1, -1);
-		getPatternEditorControl()->setRow(0);
 	}
 	
 	if (loadResult)

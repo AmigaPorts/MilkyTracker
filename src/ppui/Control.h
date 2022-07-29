@@ -32,6 +32,8 @@
 #include "Object.h"
 #include "BasicTypes.h"
 
+
+
 // Forwards
 class PPEvent;
 class EventListenerInterface;
@@ -83,7 +85,16 @@ public:
 
 	virtual bool hit(const PPPoint& p) const; 
 
-	virtual void show(bool visible) { this->visible = visible; }
+	virtual void show(bool visible) { 
+		this->visible = visible;
+#ifdef __AMIGA__
+		SetAttrs(this->obj, MUIA_ShowMe, (ULONG)this->visible, TAG_DONE);
+		//if (!this->obj)
+		//	Printf("Trying to hide null object!\n");
+		//else
+		//	Printf("Trying to hide object!\n");
+#endif
+	}
 	virtual void hide(bool hidden) { show(!hidden); }
 
 	virtual bool isVisible() const;
@@ -112,6 +123,7 @@ public:
 
 	virtual bool gotFocus() const { return hasFocus; }
 
+	Object * obj;
 protected:
 	virtual void translateCoordinates(PPPoint& cp) 
 	{ 

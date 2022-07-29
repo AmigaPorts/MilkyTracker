@@ -101,8 +101,9 @@ PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface
 	items = new PPSimpleVector<PPString>(16);		
 
 	// create background button
+#ifndef __AMIGA__
 	initialize();
-
+#endif
 	caughtControl = NULL;
 	controlCaughtByLMouseButton = controlCaughtByRMouseButton = false;
 	lMouseDown = rMouseDown = false;
@@ -119,7 +120,16 @@ PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface
 
 	adjustScrollbars();
 
-	editCopy = NULL;	
+	editCopy = NULL;
+#ifdef __AMIGA__
+	this->obj = MUI_NewObject(MUIC_List,
+							  MUIA_List_Editable, this->editable,
+							  TAG_END);
+	if (this->border)
+		SetAttrs(this->obj, MUIA_Frame, MUIV_Frame_InputList, TAG_END);
+#endif
+
+	
 }
 
 PPListBox::~PPListBox()
@@ -1128,9 +1138,9 @@ void PPListBox::setSize(const PPSize& size)
 
 	if (hScrollbar)
 		delete hScrollbar;
-	
+#ifndef __AMIGA__
 	initialize();
-
+#endif
 	adjustScrollbars();
 	
 	assureCursorVisible();
@@ -1157,9 +1167,12 @@ void PPListBox::setLocation(const PPPoint& p)
 
 void PPListBox::addItem(const PPString& item)
 {
-	items->add(new PPString(item)); 
-
+	items->add(new PPString(item));
+#ifdef __AMIGA__	
+	DoMethod(this->obj, MUIM_List_InsertSingle, (STRPTR)item.getStrBuffer());
+#endif
 	adjustScrollbars();
+
 }
 
 const PPString& PPListBox::getItem(pp_int32 index) const
@@ -1170,12 +1183,22 @@ const PPString& PPListBox::getItem(pp_int32 index) const
 void PPListBox::updateItem(pp_int32 index, const PPString& item)
 {
 	items->replace(index, new PPString(item));
+	adjustScrollbars();
+#ifdef __AMIGA__
+	//DoMethod(this->obj, MUIM_List_Clear, 0);
+	for (pp_int32 i = startIndex; i < items->size(); i++)
+	{
+		//DoMethod(this->obj, MUIM_List_InsertSingle, (STRPTR)items->get(i)->getStrBuffer());
+	}
+#endif
 }
 
 void PPListBox::clear()
 {
 	items->clear();
-
+#ifdef __AMIGA__
+	//DoMethod(this->obj, MUIM_List_Clear, 0);
+#else
 	startIndex = 0;	
 	startPos = 0;
 
@@ -1189,6 +1212,7 @@ void PPListBox::clear()
 	
 	if (hScrollbar)
 		hScrollbar->setBarPosition(0);
+#endif
 }
 
 void PPListBox::setSelectedIndex(pp_int32 index, bool adjustStartIndex/* = true*/, bool assureCursor/* = true*/)
@@ -1247,8 +1271,9 @@ void PPListBox::placeCursorAtStart()
 void PPListBox::setShowIndex(bool showIndex)
 { 
 	this->showIndex = showIndex; 
-
+#ifndef __AMIGA__
 	calcVisible();
+#endif
 }
 
 void PPListBox::calcVisible()
@@ -1307,6 +1332,7 @@ void PPListBox::adjustScrollbarPositions()
 
 void PPListBox::adjustScrollbars()
 {
+#ifndef __AMIGA__
 	if (!scrollable)
 	{
 		calcVisible();
@@ -1384,6 +1410,7 @@ void PPListBox::adjustScrollbars()
 
 		hScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 	}
+#endif
 }
 
 void PPListBox::assureCursorVisible()

@@ -728,6 +728,7 @@ void Tracker::applySettings(TrackerSettingsDatabase* newSettings,
 
 	TMixerSettings newMixerSettings;
 
+	/*
 	while (theKey)
 	{
 		if (currentSettings != NULL)
@@ -749,6 +750,7 @@ void Tracker::applySettings(TrackerSettingsDatabase* newSettings,
 
 		theKey = newSettings->getNextKey();
 	}
+	*/
 
 	if (applyMixerSettings)
 	{

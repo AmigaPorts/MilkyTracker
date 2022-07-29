@@ -171,20 +171,23 @@ void Tracker::hideSplash()
 
 void Tracker::startUp(bool forceNoSplash/* = false*/)
 {
-	bool noSplash = forceNoSplash ? true : !getShowSplashFlagFromDatabase();
+	bool noSplash = true; //forceNoSplash ? true : !getShowSplashFlagFromDatabase();
 
 	// put up splash screen if desired
 	pp_uint32 startTime = PPGetTickCount();
- 
+	
 	if (!noSplash) 
 		showSplash();
+#ifndef __AMIGA__
 	else
 		screen->enableDisplay(false);	
+#endif
 
 	initUI();	
 
 	pp_int32 dTime;
 
+	
 	if (!noSplash)
 	{
 		dTime = (signed)(PPGetTickCount() - startTime);
@@ -193,6 +196,7 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 		System::msleep(SPLASH_WAIT_TIME/2 - dTime);
 		startTime = PPGetTickCount();
 	}
+	
 	
 	if (XMFile::exists(System::getConfigFileName()))
 	{
@@ -217,7 +221,7 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 	settingsDatabase->store("VERSION", MILKYTRACKER_VERSION);
 	
 	// Update info panels
-	updateSongInfo(false);
+	//updateSongInfo(false);
 	
 	updateWindowTitle();
 
@@ -234,11 +238,12 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 		System::msleep(SPLASH_WAIT_TIME/2 - dTime);
 		hideSplash();
 	}
+#ifndef __AMIGA__
 	else
 		screen->enableDisplay(true);			
 	
 	screen->paint();
-	
+#endif
 	if (!masterStart)
 	{
 		SystemMessage systemMessage(*screen, SystemMessage::MessageSoundDriverInitFailed);

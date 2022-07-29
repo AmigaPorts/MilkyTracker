@@ -144,11 +144,14 @@ elseif(AROS OR AMIGA OR SDL12)
         PRIVATE
             # Sources
             drivers/sdl/AudioDriver_SDL.cpp
+			#drivers/amiga/AudioDriver_AHI.cpp
             # Headers
             drivers/sdl/AudioDriver_SDL.h
+			#drivers/amiga/AudioDriver_AHI.h
         )
     target_include_directories(milkyplay PRIVATE
             drivers/sdl
+			drivers/amiga
             ${SDL_INCLUDE_DIR}
         )
     target_link_libraries(milkyplay PUBLIC ${SDL_LIBRARY})

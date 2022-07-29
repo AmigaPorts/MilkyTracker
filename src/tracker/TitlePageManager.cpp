@@ -83,7 +83,7 @@ void TitlePageManager::showSongTitleEditField(bool update/* = true*/)
 
 	buttonShowPeak->setPressed(false);
 	buttonShowTime->setPressed(false);
-	buttonShowTitle->setPressed(true);
+	//buttonShowTitle->setPressed(true);
 #ifdef __LOWRES__
 	text->setText("Title:");
 #else

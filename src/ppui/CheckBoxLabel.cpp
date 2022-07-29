@@ -1,7 +1,7 @@
 /*
 *  ppui/CheckBoxLabel.h
 *
-*  Copyright 2017 Henri Isojärvi
+*  Copyright 2017 Henri Isojï¿½rvi
 *
 *  This file is part of Milkytracker.
 *

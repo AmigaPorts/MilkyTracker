@@ -27,7 +27,7 @@
 #include "Font.h"
 #include "PPUIConfig.h"
 
-PPButton::PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
+PPButton:: PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
 				   const PPPoint& location, const PPSize& size, 
 				   bool border/*= true*/, 
 				   bool clickable/*= true*/, 
@@ -49,6 +49,20 @@ PPButton::PPButton(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* 
 	pressed = false;
 	
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);
+#ifdef __AMIGA__
+	this->obj = MUI_MakeObject(MUIO_Button, (ULONG)"NewButton", TAG_END);
+	DoMethod(this->obj, MUIM_Notify, MUIA_Pressed, FALSE, parentScreen->app, 2, MUIM_Application_ReturnID, (ULONG)id);
+
+	SetAttrs(this->obj, MUIA_FixWidth, (ULONG)this->size.width, TAG_END);
+	SetAttrs(this->obj, MUIA_FixHeight, (ULONG)this->size.height, TAG_END);
+
+	/*
+	SetAttrs(this->obj, MUIA_LeftEdge, (ULONG)this->location.x, TAG_DONE);
+	SetAttrs(this->obj, MUIA_TopEdge, (ULONG)this->location.y, TAG_DONE);
+	*/
+
+	//Printf("PPButton: %s\n", (_sfdc_vararg)this->text.getStrBuffer());
+#endif
 }
 
 PPButton::~PPButton()
@@ -87,7 +101,8 @@ void PPButton::paint(PPGraphicsAbstract* g)
 			nsbColor.scaleFixed(flat ? 65536 : 60000);
 		}
 		
-		g->fillVerticalShaded(nsbColor, nsdColor, invertShading);
+		g->fillVerticalShaded(nsbColor, /*nsdColor*/nsbColor, invertShading);
+		//g->fill(nsbColor);
 
 	}
 
@@ -254,17 +269,23 @@ void PPButton::setText(const PPString& text)
 { 
 	bool lastCharIsPeriod = text.length() ? (text[text.length()-1] == '.') : false;
 	
-	this->text = text; 
-	
+	this->text = text;
+
+#ifndef __AMIGA__
 	// Fall back to tiny font if string doesn't fit with current font
 	if (autoSizeFont &&
 		font != PPFont::getFont(PPFont::FONT_TINY) &&
-		!verticalText && 
+		!verticalText &&
 		((signed)font->getStrWidth(text) > size.width - (lastCharIsPeriod ? -6 : 2) ||
 		 (signed)font->getCharHeight() > size.height))
 	{
 		font = PPFont::getFont(PPFont::FONT_TINY);
 	}
+
+#else
+	SetAttrs(this->obj, MUIA_Text_Contents, (ULONG)this->text.getStrBuffer(), TAG_DONE);
+#endif
+
 }
 
 void PPButton::handleButtonPress(bool& lMouseDown, bool& rMouseDown)
@@ -304,5 +325,19 @@ void PPButton::handleButtonRelease(bool& lMouseDown, bool& rMouseDown, PPEvent* 
 		}
 		
 	}
+}
+
+void PPButton::setTinyText() {
+#ifdef __AMIGA__
+	SetAttrs(this->obj, MUIA_Font, (ULONG)MUIV_Font_Tiny, TAG_END);
+#endif
+}
+
+void PPButton::setPressed(bool pressed) {
+	this->pressed = pressed;
+#ifdef __AMIGA__
+	DoMethod(this->obj, MUIM_Notify, MUIA_Pressed, pressed, this->parentScreen->app, 2, MUIM_Application_ReturnID, (ULONG)this->getID());
+#endif
+
 }
 

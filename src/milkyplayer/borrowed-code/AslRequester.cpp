@@ -57,7 +57,7 @@ static void GetCurrentPath()
         bool success = GetCurrentDirName(pathBuffer, sizeof(pathBuffer));
 #endif
         if (success) {
-            Printf("Initialized to '%s'\n", (ULONG)pathBuffer);
+            //Printf("Initialized to '%s'\n", (ULONG)pathBuffer);
         } else {
             puts("Failed to get current dir name, use PROGDIR:");
             strncpy(pathBuffer, "PROGDIR:", sizeof(pathBuffer));
@@ -92,7 +92,7 @@ static const char* GetFileNameFromRequester(struct FileRequester *req)
         //printf("%s\n", fileName.getStrBuffer());
 
     } else {
-        Printf("Path is too long (limit %ld)\n", sizeof(buffer));
+        //Printf("Path is too long (limit %ld)\n", sizeof(buffer));
     }
 
     return fileName;
@@ -176,7 +176,7 @@ const char* GetFileName(CONST_STRPTR title, bool saveMode, CONST_STRPTR name)
         CloseLibrary(AslBase);
 #endif
     } else {
-        Printf("Failed to open %s\n", (ULONG)AslName);
+        //Printf("Failed to open %s\n", (ULONG)AslName);
     }
 
     return fileName;

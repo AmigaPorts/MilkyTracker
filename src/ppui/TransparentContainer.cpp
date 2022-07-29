@@ -26,8 +26,9 @@
 
 PPTransparentContainer::PPTransparentContainer(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
 											   const PPPoint& location, const PPSize& size) :
-	PPContainer(id, parentScreen, eventListener, location, size)
+	PPContainer(id, parentScreen, eventListener, location, size, false)
 {
+	//this->setBorder(false);
 }
 
 PPTransparentContainer::~PPTransparentContainer()

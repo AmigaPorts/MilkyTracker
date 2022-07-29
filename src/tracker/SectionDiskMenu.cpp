@@ -560,6 +560,8 @@ pp_int32 SectionDiskMenu::handleEvent(PPObject* sender, PPEvent* event)
 
 void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 {
+	//Printf("SectionDiskMenu::init\n");
+
 	pp_int32 i;
 
 	PPScreen* screen = tracker.screen;

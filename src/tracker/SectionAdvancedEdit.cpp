@@ -245,6 +245,7 @@ pp_int32 SectionAdvancedEdit::handleEvent(PPObject* sender, PPEvent* event)
 
 void SectionAdvancedEdit::init(pp_int32 px, pp_int32 py)
 {
+	//Printf("SectionAdvancedEdit::init\n");
 	PPScreen* screen = tracker.screen;
 
 	PPContainer* container = new PPContainer(CONTAINER_ADVEDIT, tracker.screen, this, PPPoint(px, py), PPSize(320,UPPERLEFTSECTIONHEIGHT), false);

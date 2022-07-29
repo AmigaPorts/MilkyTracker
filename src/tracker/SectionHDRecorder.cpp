@@ -371,6 +371,8 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 
 void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 {
+	//Printf("SectionHDRecorder::init\n");
+
 	PPScreen* screen = tracker.screen;
 
 	PPContainer* container = new PPContainer(CONTAINER_HDRECORDER, tracker.screen, this, PPPoint(px, py), PPSize(320,UPPERLEFTSECTIONHEIGHT), false);
