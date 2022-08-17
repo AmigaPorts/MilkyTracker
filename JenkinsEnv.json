@@ -7,6 +7,14 @@
             "Dockerfile": "",
             "BuildIfSuccessful": "",
             "BuildParam": "-DM68K_CPU=68040 -DM68K_FPU=hard"
-        }
+        },
+		{
+			"DockerRoot": "amigadev",
+			"DockerImage": "crosstools",
+			"DockerTag": "ppc-amigaos",
+			"Dockerfile": "",
+			"BuildIfSuccessful": "",
+			"BuildParam": ""
+		}
     ]
 }
