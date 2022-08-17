@@ -46,7 +46,7 @@
 #	include <windows.h>
 #endif
 
-#if defined(__AMIGA__)
+#if defined(__amigaos3__)
 extern "C" void usleep(unsigned long microseconds);
 #endif
 

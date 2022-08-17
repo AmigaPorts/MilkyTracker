@@ -33,20 +33,32 @@ cp -fvr MiniGL/SDK/local/common/include/* ${SYSROOT}/include/
 cp -fvr MiniGL/SDK/local/newlib/lib/* ${SYSROOT}/lib/
 cd "${SUBMODULES}"
 
+#SDL2.0
+rm -rf SDL2
+mkdir -p "${SUBMODULES}"/SDL2
+cd "${SUBMODULES}"/SDL2
+wget http://os4depot.net/share/library/misc/sdl2.lha -O sdl2.lha
+lha -x sdl2.lha
+mkdir -p ${SYSROOT}/usr/include
+mkdir -p ${SYSROOT}/usr/lib
+rm -rf ${SYSROOT}/include/SDL
+cp -fvr SDL2/SDK/local/newlib/include/* ${SYSROOT}/include/
+mv -fv ${SYSROOT}/include/SDL2 ${SYSROOT}/include/SDL
+cp -fvr SDL2/SDK/local/newlib/lib/* ${SYSROOT}/lib/
+mv -fv ${SYSROOT}/lib/libSDL2-2.0.so ${SYSROOT}/lib/libSDL.so
+mv -fv ${SYSROOT}/lib/libSDL2.a ${SYSROOT}/lib/libSDL.a
+cd "${SUBMODULES}"
 
 # SDL1.2
-if [ ! -d "${SUBMODULES}/SDL" ]; then
-	git clone https://github.com/AmigaPorts/SDL.git "${SUBMODULES}"/SDL
-fi
-cd "${SUBMODULES}"/SDL
-git checkout SDL-1.2-AmigaOS3
-git pull
-rm -rf "${SUBMODULES}"/SDL/build
-mkdir -p "${SUBMODULES}"/SDL/build
-cd "${SUBMODULES}"/SDL/build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SYSROOT} -DTOOLCHAIN_COMMON="${M68K_COMMON} -O3 -fno-exceptions -w -DBIG_ENDIAN -DAMIGA -fpermissive -std=c++14"
-cmake --build . --config Release --target install -- -j$(getconf _NPROCESSORS_ONLN)
-cd "${SUBMODULES}"
+#if [ ! -d "${SUBMODULES}/SDL-2.0" ]; then
+#	git clone https://github.com/AmigaPorts/SDL-2.0.git "${SUBMODULES}"/SDL-2.0
+#fi
+#cd "${SUBMODULES}"/SDL-2.0
+#cd "${SUBMODULES}"/SDL-2.0
+#ln -sf /opt/ppc-amigaos/usr/include/GL ./include/GL
+#ln -sf /opt/ppc-amigaos/usr/include/mgl ./include/mgl
+#make -f Makefile.amigaos4 -j$(getconf _NPROCESSORS_ONLN)
+#cd "${SUBMODULES}"
 
 # Zziplib
 #rm -rf "${SUBMODULES}"/zziplib/build

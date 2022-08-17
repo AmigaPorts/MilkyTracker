@@ -142,27 +142,47 @@ elseif(WIN32)
             win32
     )
 elseif(AROS OR AMIGA)
-    enable_language(ASM_VASM)
+	if(AMIGAOS3)
+		enable_language(ASM_VASM)
+	
+		target_sources(ppui
+			PRIVATE
+				# Sources
+				amiga/DisplayDevice_Amiga.cpp
+				amiga/DisplayDevice_Amiga.asm
+	
+				# Headers
+				amiga/DisplayDevice_Amiga.h
+		)
+	else()
+		target_sources(ppui
+			PRIVATE
+				# Sources
+				sdl/DisplayDeviceFB_SDL.cpp
+				sdl/DisplayDevice_SDL.cpp
 
-    target_sources(ppui
-        PRIVATE
-            # Sources
-            amiga/DisplayDevice_Amiga.cpp
-            amiga/DisplayDevice_Amiga.asm
+				# Headers
+				sdl/DisplayDeviceFB_SDL.h
+				sdl/DisplayDevice_SDL.h
+		)
 
-            # Headers
-            amiga/DisplayDevice_Amiga.h
-    )
-    target_include_directories(ppui
-        PUBLIC
-            osinterface/amiga
-            osinterface/posix
-            amiga
-    )
-    target_include_directories(ppui
-        PRIVATE
-            ${PROJECT_SOURCE_DIR}/include/amiga
-    )
+		target_include_directories(ppui
+			PUBLIC
+				sdl
+				${SDL_INCLUDE_DIRS}
+				${OPENGL_INCLUDE_DIR}
+		)
+	endif()
+	target_include_directories(ppui
+		PUBLIC
+			osinterface/amiga
+			osinterface/posix
+			amiga
+	)
+	target_include_directories(ppui
+		PRIVATE
+			${PROJECT_SOURCE_DIR}/include/amiga
+	)
 else()
     target_sources(ppui
         PRIVATE
@@ -177,7 +197,7 @@ else()
     target_include_directories(ppui
         PUBLIC
             sdl
-            ${SDL2_INCLUDE_DIRS}
+            ${SDL_INCLUDE_DIRS}
     )
 endif()
 

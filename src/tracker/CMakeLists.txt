@@ -284,17 +284,28 @@ elseif(WIN32)
         win32/Win32_resource.h
     )
 elseif(AROS OR AMIGA)
-    target_sources(tracker PRIVATE
-        # Sources
-        amiga/Amiga_KeyTranslation.cpp
-        amiga/Amiga_Main.cpp
-        amiga/Amiga_StackSwap.cpp
-        amiga/AmigaApplication.cpp
+	if(AMIGAOS3)
+		target_sources(tracker PRIVATE
+			# Sources
+			amiga/Amiga_KeyTranslation.cpp
+			amiga/Amiga_Main.cpp
+			amiga/Amiga_StackSwap.cpp
+			amiga/AmigaApplication.cpp
+	
+			# Headers
+			amiga/Amiga_KeyTranslation.h
+			amiga/AmigaApplication.h
+		)
+	else()
+		target_sources(tracker PRIVATE
+			# Sources
+			sdl/SDL_KeyTranslation.cpp
+			sdl/SDL_Main.cpp
 
-        # Headers
-        amiga/Amiga_KeyTranslation.h
-        amiga/AmigaApplication.h
-    )
+			# Headers
+			sdl/SDL_KeyTranslation.h
+		)
+	endif()
 
     target_include_directories(tracker PRIVATE
         ${PROJECT_SOURCE_DIR}/include/amiga

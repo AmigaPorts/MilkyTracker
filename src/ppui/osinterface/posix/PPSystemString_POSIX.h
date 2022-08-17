@@ -144,7 +144,7 @@ public:
 
 	pp_int32 compareToNoCase(const PPSystemString& str) const
 	{
-		return strcasecmp(strBuffer, str.strBuffer);
+		return strcasecmp((const char*)strBuffer, (const char*)str.strBuffer);
 	}
 	
 	void toUpper()

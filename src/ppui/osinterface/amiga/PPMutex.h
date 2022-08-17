@@ -24,7 +24,15 @@
 #define PPMUTEX__H
 
 #include <exec/semaphores.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
+
+#ifdef __amigaos4__
+#define AllocMem IExec->AllocMem
+#define FreeMem IExec->FreeMem
+#define InitSemaphore IExec->InitSemaphore
+#define ObtainSemaphore IExec->ObtainSemaphore
+#define ReleaseSemaphore IExec->ReleaseSemaphore
+#endif
 
 class PPMutex
 {

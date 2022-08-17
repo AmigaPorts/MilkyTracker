@@ -25,8 +25,24 @@
 
 #include "PPPath.h"
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#ifdef __amigaos4__
+#define AddPart IDOS->AddPart
+#define Lock IDOS->Lock
+#define LockDosList IDOS->LockDosList
+#define UnLockDosList IDOS->UnLockDosList
+#define UnLock IDOS->UnLock
+#define NextDosEntry IDOS->NextDosEntry
+#define ExNext IDOS->ExNext
+#define NameFromLock IDOS->NameFromLock
+#define AllocDosObject IDOS->AllocDosObject
+#define FreeDosObject IDOS->FreeDosObject
+#define Examine IDOS->Examine
+#define ParentDir IDOS->ParentDir
+#define AllocMem IExec->AllocMem
+#endif
 
 class PPPathEntry_Amiga : public PPPathEntry
 {
