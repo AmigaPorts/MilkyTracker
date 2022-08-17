@@ -3049,6 +3049,7 @@ void SampleEditor::tool_generateHalfSine(const FilterParameters* par)
 	{
 		setFloatSampleInWaveform(i, 0);
 	}
+
 	finishUndo();
 
 	postFilter();
