@@ -284,6 +284,8 @@ static Screen * discoverDisplayModes()
 		}
 
 		// Get and check a lot of data :-P
+		if(!(modeID & MONITOR_ID_MASK))
+			continue;
 		if(ModeNotAvailable(modeID))
 			continue;
 		if(!(displayHandle = FindDisplayInfo(modeID)))
@@ -301,6 +303,10 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &nameInfo, sizeof(struct NameInfo), DTAG_NAME, 0)))
 			continue;
+
+		printf("%08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s\n", modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
+			dimensionInfo.MaxDepth, displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
+			displayInfo.PropertyFlags, nameInfo.Name);
 
 		// Requirement is 640x480x16 RTG for now
 		if(dimensionInfo.Nominal.MaxX+1 < 640)
@@ -351,8 +357,23 @@ static Screen * discoverDisplayModes()
 
 	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
 
+	// If no screen mode has been detected, bail out
+	if(i == 0) {
+		UnlockPubScreen(NULL, pubScreen);
+		pubScreen = NULL;
+
+		return NULL;
+	}
+
 	return pubScreen;
 }
+
+static const char * setupErrors[] = {
+	"",
+	"GadTools error",
+	"Cannot create setup window",
+	"Cannot detect valid screen modes",
+};
 
 static int setup()
 {
@@ -398,6 +419,9 @@ static int setup()
 		useSAGA ? "Y" : "N",
 		hasAMMX ? "Y" : "N",
 		isV4Core ? "Y" : "N");
+
+	printf("%s\n", detected);
+	printf("%ld\n", displayModeNames[0]);
 
 	newGadget.ng_GadgetText = NULL;
 	newGadget.ng_GadgetID   = GID_DETECTED;
@@ -491,93 +515,89 @@ static int setup()
 	}
 
     // Open setup dialog
-	if(gadget) {
-		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
-		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
+	winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
+	winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
 
-		window = OpenWindowTags(NULL,
-			WA_Width,  		winWidth,
-			WA_Height, 		winHeight,
-			WA_Left,   		(pubScreen->Width - winWidth) >> 1,
-			WA_Top,    		(pubScreen->Height - winHeight) >> 1,
-			WA_PubScreen,	pubScreen,
-			WA_Title,		"MilkyTracker Setup",
-			WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
-			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
-			WA_Gadgets,		gadgetList,
-			TAG_END
-		);
+	window = OpenWindowTags(NULL,
+		WA_Width,  		winWidth,
+		WA_Height, 		winHeight,
+		WA_Left,   		(pubScreen->Width - winWidth) >> 1,
+		WA_Top,    		(pubScreen->Height - winHeight) >> 1,
+		WA_PubScreen,	pubScreen,
+		WA_Title,		"MilkyTracker Setup",
+		WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
+		WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
+		WA_Gadgets,		gadgetList,
+		TAG_END
+	);
 
-		if(window) {
-			struct IntuiMessage *imsg;
+	if(window) {
+		struct IntuiMessage *imsg;
 
-			GT_RefreshWindow(window, NULL);
-			UnlockPubScreen(NULL, pubScreen);
-			pubScreen = NULL;
+		GT_RefreshWindow(window, NULL);
+		UnlockPubScreen(NULL, pubScreen);
+		pubScreen = NULL;
 
-			do {
-				if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-					setupRunning = false;
+		do {
+			if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+				setupRunning = false;
 
-				while(imsg = GT_GetIMsg(window->UserPort)) {
-					switch(imsg->Class) {
-					case IDCMP_GADGETUP:
-						gadget = (struct Gadget *) imsg->IAddress;
-						switch (gadget->GadgetID) {
-						case GID_SCREEN_MODE: {
-								long num;
-								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-								app->setDisplayID(displayModeIDs[num]);
-								app->setWindowSize(displayModeSizes[num]);
-								app->setBpp(displayModeDepths[num]);
-							}
-							break;
-						case GID_AUDIO_DRV: {
-								long num;
-								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-								GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
-								app->setAudioDriver(drivers[num]);
-							}
-							break;
-						case GID_AUDIO_MIXER: {
-								long num;
-								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-								GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
-								app->setAudioMixer(mixTypes[num]);
-							}
-							break;
-						case GID_RUN:
-							setupRunning = false;
-							break;
-						case GID_QUIT:
-							setupRunning = false;
-							ret = 1;
-							break;
+			while(imsg = GT_GetIMsg(window->UserPort)) {
+				switch(imsg->Class) {
+				case IDCMP_GADGETUP:
+					gadget = (struct Gadget *) imsg->IAddress;
+					switch (gadget->GadgetID) {
+					case GID_SCREEN_MODE: {
+							long num;
+							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+							app->setDisplayID(displayModeIDs[num]);
+							app->setWindowSize(displayModeSizes[num]);
+							app->setBpp(displayModeDepths[num]);
 						}
 						break;
-					case IDCMP_VANILLAKEY:
-						if(imsg->Code == 0x1b)
-							setupRunning = false;
+					case GID_AUDIO_DRV: {
+							long num;
+							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+							GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
+							app->setAudioDriver(drivers[num]);
+						}
 						break;
-					case IDCMP_CLOSEWINDOW:
+					case GID_AUDIO_MIXER: {
+							long num;
+							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+							GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
+							app->setAudioMixer(mixTypes[num]);
+						}
+						break;
+					case GID_RUN:
 						setupRunning = false;
 						break;
-					case IDCMP_REFRESHWINDOW:
-						GT_BeginRefresh(window);
-						GT_EndRefresh(window, TRUE);
+					case GID_QUIT:
+						setupRunning = false;
+						ret = 1;
 						break;
 					}
-
-					GT_ReplyIMsg (imsg);
+					break;
+				case IDCMP_VANILLAKEY:
+					if(imsg->Code == 0x1b)
+						setupRunning = false;
+					break;
+				case IDCMP_CLOSEWINDOW:
+					setupRunning = false;
+					break;
+				case IDCMP_REFRESHWINDOW:
+					GT_BeginRefresh(window);
+					GT_EndRefresh(window, TRUE);
+					break;
 				}
-			} while(setupRunning);
 
-			CloseWindow(window);
-		} else {
-			ret = -3;
-		}
+				GT_ReplyIMsg (imsg);
+			}
+		} while(setupRunning);
+
+		CloseWindow(window);
 	} else {
-		ret = -2;
+		ret = -3;
 	}
 
 	FreeGadgets(gadgetList);
@@ -642,7 +662,7 @@ static int boot(int argc, char * argv[])
 	// Show setup dialog
 	ret = setup();
 	if(ret < 0) {
-		fprintf(stderr, "Setup failed! (ret = %ld)\n", ret);
+		fprintf(stderr, "Setup failed: %s\n", setupErrors[(-ret)-1]);
 	} else if(ret == 0) {
 		// @todo Add new splash screen
 		app->setNoSplash(true);
