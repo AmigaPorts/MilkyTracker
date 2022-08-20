@@ -48,6 +48,7 @@ const char* FileExtProvider::moduleExtensions[] =
 	"it","Impulse Tracker",
 	"mdl","Digitrakker",
 	"mod","Protracker",
+	"med","OctaMED",
 	"mtm","Multitracker",
 	"mxm","Cubic Tiny XM",
 	"okt","Oktalyzer",
