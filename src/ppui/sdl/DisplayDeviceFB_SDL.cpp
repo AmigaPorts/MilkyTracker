@@ -50,7 +50,8 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 #endif
 	width, height, scaleFactor, bpp, fullScreen, theOrientation),
 	needsTemporaryBuffer((orientation != ORIENTATION_NORMAL) || (scaleFactor != 1)),
-	temporaryBuffer(NULL)
+	temporaryBuffer(NULL),
+	theTexture(NULL)
 {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	// Create an SDL window and surface
@@ -112,11 +113,13 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	}
 
 	// Streaming texture for rendering the UI
-	theTexture = SDL_CreateTexture(theRenderer, theSurface->format->format, SDL_TEXTUREACCESS_STREAMING, realWidth, realHeight);
-	if (theTexture == NULL)
-	{
-		fprintf(stderr, "SDL: SDL_CreateTexture failed: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
+	if (bpp > 8) {
+		theTexture = SDL_CreateTexture(theRenderer, theSurface->format->format, SDL_TEXTUREACCESS_STREAMING, realWidth, realHeight);
+		if (theTexture == NULL)
+		{
+			fprintf(stderr, "SDL: SDL_CreateTexture failed: %s\n", SDL_GetError());
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	// We got a surface: update bpp value
@@ -245,6 +248,10 @@ PPDisplayDeviceFB::~PPDisplayDeviceFB()
 	SDL_FreeSurface(theSurface);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (theTexture != NULL) {
+		SDL_DestroyTexture(theTexture);
+	}
+
 	SDL_DestroyRenderer(theRenderer);
 	SDL_DestroyWindow(theWindow);
 #endif
@@ -320,10 +327,17 @@ void PPDisplayDeviceFB::update()
 	postProcess(r);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	// Update entire texture and copy to renderer
-	SDL_UpdateTexture(theTexture, NULL, theSurface->pixels, theSurface->pitch);
 	SDL_RenderClear(theRenderer);
-	SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+
+	// Update entire texture and copy to renderer
+	if (theTexture != NULL) {
+		SDL_UpdateTexture(theTexture, NULL, theSurface->pixels, theSurface->pitch);
+		SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+	} else {
+		SDL_Texture * t = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+		SDL_RenderCopy(theRenderer, t, NULL, NULL);
+		SDL_DestroyTexture(t);
+	}
 	SDL_RenderPresent(theRenderer);
 #else
 	SDL_UpdateRect(theSurface, 0, 0, 0, 0);
@@ -348,14 +362,22 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 
 	SDL_Rect r3 = { r2.x1, r2.y1, r2.width(), r2.height() };
 
-	// Calculate destination pixel data offset based on row pitch and x coordinate
-	void* surfaceOffset = (char*) theSurface->pixels + r2.y1 * theSurface->pitch + r2.x1 * theSurface->format->BytesPerPixel;
-
 	// Update dirty area of texture and copy to renderer
-	SDL_UpdateTexture(theTexture, &r3, surfaceOffset, theSurface->pitch);
-	SDL_RenderClear(theRenderer);
-	SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
-	SDL_RenderPresent(theRenderer);
+	if (theTexture != NULL) {
+		// Calculate destination pixel data offset based on row pitch and x coordinate
+		void* surfaceOffset = (char*) theSurface->pixels +
+			r2.y1 * theSurface->pitch +
+			r2.x1 * theSurface->format->BytesPerPixel;
+
+		SDL_UpdateTexture(theTexture, &r3, surfaceOffset, theSurface->pitch);
+		SDL_RenderClear(theRenderer);
+		SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+		SDL_RenderPresent(theRenderer);
+	} else {
+		SDL_Texture * t = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+		SDL_RenderCopy(theRenderer, t, NULL, NULL);
+		SDL_DestroyTexture(t);
+	}
 #else
 	PPRect r2(r);
 	postProcess(r2);
@@ -836,7 +858,9 @@ void PPDisplayDeviceFB::setSize(const PPSize& size)
 {
 	this->size = size;
 	theSurface = SDL_CreateRGBSurface(0, size.width, size.height, theSurface->format->BitsPerPixel, 0, 0, 0, 0);
-	theTexture = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+	if (theTexture != NULL) {
+		theTexture = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+	}
 	theRenderer = SDL_GetRenderer(theWindow);
 }
 #endif
