@@ -367,6 +367,8 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 
 	SDL_Rect r3 = { r2.x1, r2.y1, r2.width(), r2.height() };
 
+	SDL_RenderClear(theRenderer);
+
 	// Update dirty area of texture and copy to renderer
 	if (theTexture != NULL) {
 		// Calculate destination pixel data offset based on row pitch and x coordinate
@@ -375,14 +377,14 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 			r2.x1 * theSurface->format->BytesPerPixel;
 
 		SDL_UpdateTexture(theTexture, &r3, surfaceOffset, theSurface->pitch);
-		SDL_RenderClear(theRenderer);
 		SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
-		SDL_RenderPresent(theRenderer);
 	} else {
 		SDL_Texture * t = SDL_CreateTextureFromSurface(theRenderer, theSurface);
 		SDL_RenderCopy(theRenderer, t, NULL, NULL);
 		SDL_DestroyTexture(t);
 	}
+
+	SDL_RenderPresent(theRenderer);
 #else
 	PPRect r2(r);
 	postProcess(r2);
