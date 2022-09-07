@@ -46,9 +46,9 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	bool swapRedBlue/* = false*/) :
 	PPDisplayDevice(
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-	screen,
+		screen,
 #endif
-	width, height, scaleFactor, bpp, fullScreen, theOrientation),
+		width, height, scaleFactor, bpp, fullScreen, theOrientation),
 	needsTemporaryBuffer((orientation != ORIENTATION_NORMAL) || (scaleFactor != 1)),
 	temporaryBuffer(NULL),
 	theTexture(NULL)
@@ -105,7 +105,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
 	// Create surface for rendering graphics
-	theSurface = SDL_CreateRGBSurface(0, realWidth, realHeight, bpp == -1 ? 32 : bpp, 0, 0, 0, 0);
+	theSurface = SDL_CreateRGBSurface(0, realWidth, realHeight, bpp == -1 ? 32 : (bpp < 8) ? 8 : bpp, 0, 0, 0, 0);
 	if (theSurface == NULL)
 	{
 		fprintf(stderr, "SDL: SDL_CreateSurface failed: %s\n", SDL_GetError());
@@ -123,7 +123,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	}
 
 	// We got a surface: update bpp value
-	bpp = theSurface->format->BitsPerPixel;
+	this->bpp = bpp = bpp < 8 ? bpp : theSurface->format->BitsPerPixel;
 #else
 	const SDL_VideoInfo* videoinfo;
 
@@ -149,6 +149,9 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	// Create a PPGraphics context based on bpp
 	switch (bpp)
 	{
+		case 5:
+			currentGraphics = new PPGraphics_5BIT(width, height, 0, NULL);
+			break;
 		case 8:
 			currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
 			break;
@@ -293,23 +296,25 @@ void PPDisplayDeviceFB::close()
 
 void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 {
-	int i;
-
 	if(!currentGraphics->needsPalette())
 		return;
+
+	int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
+	printf("PPDisplayDeviceFB: Using palette with %d colors.\n", nColors);
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
 
 	// Pass palette to SDL
-	for(i = 0; i < 256; i++) {
+	for(int i = 0; i < nColors; i++) {
 		palette[i].r = pppal[i].r;
 		palette[i].g = pppal[i].g;
 		palette[i].b = pppal[i].b;
 	}
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, 256);
+	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, nColors);
 #else
 	SDL_SetColors(theSurface, palette, 0, 256);
 #endif

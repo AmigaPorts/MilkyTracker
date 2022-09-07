@@ -35,6 +35,7 @@ add_library(ppui STATIC
     DictionaryKey.cpp
     Event.cpp
     Font.cpp
+    Graphics_5BIT.cpp
     Graphics_8BIT.cpp
     Graphics_15BIT.cpp
     Graphics_16BIT.cpp
@@ -43,7 +44,6 @@ add_library(ppui STATIC
     Graphics_ARGB32.cpp
     Graphics_BGR24.cpp
     Graphics_BGR24_SLOW.cpp
-#   Graphics_OGL.cpp
     KeyboardBindingHandler.cpp
     ListBox.cpp
     ListBoxFileBrowser.cpp
@@ -111,7 +111,7 @@ target_include_directories(ppui
 )
 
 target_link_libraries(ppui
-    PRIVATE 
+    PRIVATE
         osinterface
         tmm
 )

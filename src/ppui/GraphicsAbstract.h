@@ -379,21 +379,23 @@ public:
 		return 0;
 	}
 
+	virtual int32_t getOperatingBitDepth() const = 0;
+
 	virtual void setPalette(PPColor * palette)
 	{
 		if(!needsPalette())
 			return;
 		currentPalette = palette;
-	}	
-	
+	}
+
 	void drawHLineDashed(pp_int32 x1, pp_int32 x2, pp_int32 y, pp_int32 dashLength, pp_int32 dashOffset = 0)
 	{
 		if (x2 < x1)
 			swap(&x1, &x2);
-		
+
 		pp_int32 tail = x1;
 		pp_int32 head = x1 + dashLength - modulo(dashOffset, dashLength);
-		
+
 		while (head-1 < x2)
 		{
 			drawHLine(tail, head-1, y);
@@ -403,15 +405,15 @@ public:
 		if (tail < x2)
 			drawHLine(tail, x2, y);
 	}
-	
+
 	void drawVLineDashed(pp_int32 y1, pp_int32 y2, pp_int32 x, pp_int32 dashLength, pp_int32 dashOffset = 0)
 	{
 		if (y2 < y1)
 			swap(&y1, &y2);
-		
+
 		pp_int32 tail = y1;
 		pp_int32 head = y1 + dashLength - modulo(dashOffset, dashLength);
-		
+
 		while (head-1 < y2)
 		{
 			drawVLine(tail, head-1, x);

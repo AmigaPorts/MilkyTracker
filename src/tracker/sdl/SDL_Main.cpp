@@ -86,7 +86,7 @@
 
 #ifdef AMIGA
 SDL_Surface*			screen			= NULL;
-static 
+static
 #endif
 SDL_TimerID			timer;
 
@@ -967,7 +967,7 @@ unrecognizedCommandLineSwitch:
 	PPSystemString oldCwd = path.getCurrent();
 
 	globalMutex->lock();
-	initTracker(defaultBPP, orientation, swapRedBlue, noSplash);
+	initTracker(defaultBPP, orientation, swapRedBlue, defaultBPP > 8 ? noSplash : true);
 	globalMutex->unlock();
 
 #ifdef HAVE_LIBRTMIDI
