@@ -93,10 +93,12 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 
 	// Lock aspect ratio and scale the UI up to fit the window
 #ifdef HIDPI_SUPPORT
-	SDL_RenderSetLogicalSize(theRenderer, rendererW, rendererH);
+	if (SDL_RenderSetLogicalSize(theRenderer, rendererW, rendererH) < 0) {
 #else
-	SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight);
+	if (SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight) <0) {
 #endif
+		fprintf(stderr, "SDL: SDL_RenderSetLogicalSize failed: %s\n", SDL_GetError());
+	}
 
 	// Use linear filtering for the scaling (make this optional eventually)
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -138,6 +140,8 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 		exit(2);
 	}
 #endif
+
+	printf("SDL: Using bitdepth: %d.\n", bpp);
 
 	// Create a PPGraphics context based on bpp
 	switch (bpp)

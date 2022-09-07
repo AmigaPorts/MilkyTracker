@@ -29,28 +29,48 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 	size_t namelen = 0;
 	char rendername[256] = { 0 };
 	PFNGLGETSTRINGPROC glGetStringAPI = NULL;
+	int drv_opengl = -1;
+	int drv_opengles2 = -1;
+	SDL_RendererInfo info;
 
 	for (int it = 0; it < SDL_GetNumRenderDrivers(); it++)
 	{
-		SDL_RendererInfo info;
 		SDL_GetRenderDriverInfo(it, &info);
 
 		namelen += strlen(info.name) + 1;
 		strncat(rendername, info.name, sizeof(rendername) - namelen);
 		strncat(rendername, " ", sizeof(rendername) - namelen);
 
-		if (strncmp("opengles2", info.name, 9) == 0)
-		{
-			drv_index = it;
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-			SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+		if (!strcmp("opengl", info.name)) {
+			drv_opengl = it;
+		} else if (strncmp("opengles2", info.name, 9) == 0) {
+			drv_opengles2 = it;
 		}
 	}
 
+	// Check GL capatibilities
+	if(drv_opengl >= 0) {
+		// If opengl is supported, prefer it
+		drv_index = drv_opengl;
+		flags |= SDL_WINDOW_OPENGL;
+	} else if(drv_opengles2 >= 0) {
+		// OpenGL ES 2 basically for mobile devices, not fully supported by Linux nvidia driver btw
+		drv_index = drv_opengles2;
+		flags |= SDL_WINDOW_OPENGL;
+
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+	}
+
+	// Show some renderer info
+	SDL_GetRenderDriverInfo(drv_index, &info);
+	printf("Available renderers: %s\n", rendername);
+	printf("Selected renderer: %s\n", info.name);
+
 	// Create SDL window
-	SDL_Window* theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL | flags);
+	SDL_Window* theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
 
 	if (theWindow == NULL)
 	{
@@ -60,7 +80,7 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 		w = getDefaultWidth();
 		h = getDefaultHeight();
 
-		theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL | flags);
+		theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
 
 		if (theWindow == NULL)
 		{
@@ -70,21 +90,23 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 		}
 	}
 
-	SDL_GLContext ctx = SDL_GL_CreateContext(theWindow);
-	SDL_GL_MakeCurrent(theWindow, ctx);
+	// Setup GL
+	if(drv_opengl >= 0 || drv_opengles2 >= 0) {
+		SDL_GLContext ctx = SDL_GL_CreateContext(theWindow);
+		SDL_GL_MakeCurrent(theWindow, ctx);
 
-	glGetStringAPI = (PFNGLGETSTRINGPROC)SDL_GL_GetProcAddress("glGetString");
-
-	fprintf(stdout, "Available Renderers: %s\n", rendername);
-	if (glGetStringAPI)
-	{
-		fprintf(stdout, "Vendor     : %s\n", glGetStringAPI(GL_VENDOR));
-		fprintf(stdout, "Renderer   : %s\n", glGetStringAPI(GL_RENDERER));
-		fprintf(stdout, "Version    : %s\n", glGetStringAPI(GL_VERSION));
-#ifdef DEBUG
-		fprintf(stdout, "Extensions : %s\n", glGetStringAPI(GL_EXTENSIONS));
-#endif
+		glGetStringAPI = (PFNGLGETSTRINGPROC)SDL_GL_GetProcAddress("glGetString");
+		if (glGetStringAPI)
+		{
+			fprintf(stdout, "GL: Vendor: %s\n", glGetStringAPI(GL_VENDOR));
+			fprintf(stdout, "GL: Renderer: %s\n", glGetStringAPI(GL_RENDERER));
+			fprintf(stdout, "GL: Version: %s\n", glGetStringAPI(GL_VERSION));
+	#ifdef DEBUG
+			fprintf(stdout, "Extensions : %s\n", glGetStringAPI(GL_EXTENSIONS));
+	#endif
+		}
 	}
+
 	// Prevent window from being resized below minimum
 	SDL_SetWindowMinimumSize(theWindow, w, h);
 	fprintf(stderr, "SDL: Minimum window size set to %dx%d.\n", w, h);
@@ -256,7 +278,7 @@ bool PPDisplayDevice::goFullScreen(bool b)
 	// In X11, this will make MilkyTracker go fullscreen at the selected
 	// resolution.
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (SDL_SetWindowFullscreen(theWindow, (!b)?SDL_FALSE:SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
+	if (SDL_SetWindowFullscreen(theWindow, b ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) == 0)
 	{
 		bFullScreen = b;
 		return true;
