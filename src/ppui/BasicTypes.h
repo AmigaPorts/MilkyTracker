@@ -174,6 +174,23 @@ struct PPColor
 	PPColor()
 	{}
 
+	pp_uint32 getRGB888() const
+	{
+		return (r<<16) | (g<<8) | b;
+	}
+
+	pp_uint32 getRGB444() const
+	{
+		return ((r&0xf0)<<4) | (g&0xf0) | ((b&0xf0)>>4);
+	}
+
+	void reduceToRGB444()
+	{
+		r = r & 0xf0;
+		g = g & 0xf0;
+		b = b & 0xf0;
+	}
+
 	void validate()
 	{
 		if (r > 255) r = 255;
