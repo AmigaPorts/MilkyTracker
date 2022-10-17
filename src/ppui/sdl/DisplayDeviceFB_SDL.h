@@ -33,10 +33,6 @@
 
 #include "DisplayDevice_SDL.h"
 
-#ifndef EXIT_FAILURE
-#define EXIT_FAILURE 2
-#endif
-
 class PPDisplayDeviceFB : public PPDisplayDevice
 {
 private:
@@ -47,27 +43,21 @@ private:
 	SDL_Color palette[256];
 
 	// used for rotating coordinates etc.
-	void postProcess(const PPRect& r);
+	void swap(const PPRect& r);
 
 public:
-	PPDisplayDeviceFB(
-#if !SDL_VERSION_ATLEAST(2, 0, 0)
-					  SDL_Surface*& screen,
-#endif
-					  pp_int32 width,
-					  pp_int32 height,
+	PPDisplayDeviceFB(pp_int32 width,
+					  pp_int32 height, 
 					  pp_int32 scaleFactor,
-					  pp_int32 bpp,
+					  pp_int32 bpp, 
 					  bool fullScreen,
-					  Orientations theOrientation = ORIENTATION_NORMAL,
+					  Orientations theOrientation = ORIENTATION_NORMAL, 
 					  bool swapRedBlue = false);
-
+				  
 	virtual ~PPDisplayDeviceFB();
 
 	virtual bool supportsScaling() const { return true; }
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 	virtual void setSize(const PPSize& size);
-#endif
 	virtual void setPalette(PPColor * palette);
 
 	virtual PPGraphicsAbstract* open();
@@ -75,12 +65,10 @@ public:
 
 	void update();
 	void update(const PPRect& r);
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 protected:
 	SDL_Surface* theSurface;
 	SDL_Texture* theTexture;
 	SDL_Renderer* theRenderer;
-#endif
 };
 
 #endif

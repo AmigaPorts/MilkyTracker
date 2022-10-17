@@ -31,29 +31,18 @@
 #include "DisplayDeviceFB_SDL.h"
 #include "Graphics.h"
 
-#include <unistd.h>
-
-PPDisplayDeviceFB::PPDisplayDeviceFB(
-#if !SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_Surface*& screen,
-#endif
-	pp_int32 width,
-	pp_int32 height,
-	pp_int32 scaleFactor,
-	pp_int32 bpp,
-	bool fullScreen,
-	Orientations theOrientation/* = ORIENTATION_NORMAL*/,
-	bool swapRedBlue/* = false*/) :
-	PPDisplayDevice(
-#if !SDL_VERSION_ATLEAST(2, 0, 0)
-		screen,
-#endif
-		width, height, scaleFactor, bpp, fullScreen, theOrientation),
+PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
+									 pp_int32 height,
+									 pp_int32 scaleFactor,
+									 pp_int32 bpp,
+									 bool fullScreen,
+									 Orientations theOrientation/* = ORIENTATION_NORMAL*/,
+									 bool swapRedBlue/* = false*/) :
+	PPDisplayDevice(width, height, scaleFactor, bpp, fullScreen, theOrientation),
 	needsTemporaryBuffer((orientation != ORIENTATION_NORMAL) || (scaleFactor != 1)),
 	temporaryBuffer(NULL),
 	theTexture(NULL)
 {
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 	// Create an SDL window and surface
 	theWindow = CreateWindow(realWidth, realHeight, bpp,
 #ifdef HIDPI_SUPPORT
@@ -123,26 +112,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 	}
 
 	// We got a surface: update bpp value
-	this->bpp = bpp = bpp < 8 ? bpp : theSurface->format->BitsPerPixel;
-#else
-	const SDL_VideoInfo* videoinfo;
-
-	/* Some SDL to get display format */
-	videoinfo = SDL_GetVideoInfo();
-	if (bpp == -1) {
-		bpp = videoinfo->vfmt->BitsPerPixel > 15 ? videoinfo->vfmt->BitsPerPixel : 15;
-	}
-	this->bpp = bpp;
-
-	/* Set a video mode */
-	theSurface = screen = CreateScreen(realWidth, realHeight, bpp,
-		SDL_SWSURFACE | (bFullScreen==true ? SDL_FULLSCREEN : 0));
-	if ( screen == NULL )
-	{
-		fprintf(stderr, "Could not set video mode: %s\n", SDL_GetError());
-		exit(2);
-	}
-#endif
+	bpp = bpp < 8 ? bpp : theSurface->format->BitsPerPixel;
 
 	printf("SDL: Using bitdepth: %d.\n", bpp);
 
@@ -161,10 +131,10 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 		case 16:
 			currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
 			break;
+
 		case 24:
 		{
 			PPGraphics_24bpp_generic* g = new PPGraphics_24bpp_generic(width, height, 0, NULL);
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 			if (swapRedBlue)
 			{
 				g->setComponentBitpositions(theSurface->format->Bshift,
@@ -177,20 +147,6 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 											theSurface->format->Gshift,
 											theSurface->format->Bshift);
 			}
-#else
-			if (swapRedBlue)
-			{
-				g->setComponentBitpositions(videoinfo->vfmt->Bshift,
-											videoinfo->vfmt->Gshift,
-											videoinfo->vfmt->Rshift);
-			}
-			else
-			{
-				g->setComponentBitpositions(videoinfo->vfmt->Rshift,
-											videoinfo->vfmt->Gshift,
-											videoinfo->vfmt->Bshift);
-			}
-#endif
 			currentGraphics = static_cast<PPGraphicsAbstract*>(g);
 			break;
 		}
@@ -198,7 +154,6 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 		case 32:
 		{
 			PPGraphics_32bpp_generic* g = new PPGraphics_32bpp_generic(width, height, 0, NULL);
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 			if (swapRedBlue)
 			{
 				g->setComponentBitpositions(theSurface->format->Bshift,
@@ -211,20 +166,6 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 											theSurface->format->Gshift,
 											theSurface->format->Bshift);
 			}
-#else
-			if (swapRedBlue)
-			{
-				g->setComponentBitpositions(videoinfo->vfmt->Bshift,
-											videoinfo->vfmt->Gshift,
-											videoinfo->vfmt->Rshift);
-			}
-			else
-			{
-				g->setComponentBitpositions(videoinfo->vfmt->Rshift,
-											videoinfo->vfmt->Gshift,
-											videoinfo->vfmt->Bshift);
-			}
-#endif
 			currentGraphics = static_cast<PPGraphicsAbstract*>(g);
 			break;
 		}
@@ -246,18 +187,9 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 
 PPDisplayDeviceFB::~PPDisplayDeviceFB()
 {
-	pp_uint32 i;
-
 	SDL_FreeSurface(theSurface);
-
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (theTexture != NULL) {
-		SDL_DestroyTexture(theTexture);
-	}
-
 	SDL_DestroyRenderer(theRenderer);
 	SDL_DestroyWindow(theWindow);
-#endif
 
 	delete[] temporaryBuffer;
 	// base class is responsible for deleting currentGraphics
@@ -275,11 +207,10 @@ PPGraphicsAbstract* PPDisplayDeviceFB::open()
 
 		currentGraphics->lock = false;
 
-		if (needsTemporaryBuffer) {
+		if (needsTemporaryBuffer)
 			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(temporaryBufferPitch, (pp_uint8*)temporaryBuffer);
-		} else {
-			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8 *)theSurface->pixels);
-		}
+		else
+			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8*)theSurface->pixels);
 
 		return currentGraphics;
 	}
@@ -313,11 +244,7 @@ void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 		palette[i].b = pppal[i].b;
 	}
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, nColors);
-#else
-	SDL_SetColors(theSurface, palette, 0, 256);
-#endif
 }
 
 void PPDisplayDeviceFB::update()
@@ -326,13 +253,12 @@ void PPDisplayDeviceFB::update()
 		return;
 
 	if (theSurface->locked)
+	{
 		return;
+	}
 
 	PPRect r(0, 0, getSize().width, getSize().height);
-	postProcess(r);
-
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_RenderClear(theRenderer);
+	swap(r);
 
 	// Update entire texture and copy to renderer
 	if (theTexture != NULL) {
@@ -344,9 +270,6 @@ void PPDisplayDeviceFB::update()
 		SDL_DestroyTexture(t);
 	}
 	SDL_RenderPresent(theRenderer);
-#else
-	SDL_UpdateRect(theSurface, 0, 0, 0, 0);
-#endif
 }
 
 void PPDisplayDeviceFB::update(const PPRect& r)
@@ -355,10 +278,11 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 		return;
 
 	if (theSurface->locked)
+	{
 		return;
+	}
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	postProcess(r);
+	swap(r);
 
 	PPRect r2(r);
 	r2.scale(scaleFactor);
@@ -366,8 +290,6 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 	transformInverse(r2);
 
 	SDL_Rect r3 = { r2.x1, r2.y1, r2.width(), r2.height() };
-
-	SDL_RenderClear(theRenderer);
 
 	// Update dirty area of texture and copy to renderer
 	if (theTexture != NULL) {
@@ -385,20 +307,9 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 	}
 
 	SDL_RenderPresent(theRenderer);
-#else
-	PPRect r2(r);
-	postProcess(r2);
-
-	PPRect r3(r);
-	r3.scale(scaleFactor);
-
-	transformInverse(r3);
-
-	SDL_UpdateRect(theSurface, r3.x1, r3.y1, (r3.x2-r3.x1), (r3.y2-r3.y1));
-#endif
 }
 
-void PPDisplayDeviceFB::postProcess(const PPRect& r2)
+void PPDisplayDeviceFB::swap(const PPRect& r2)
 {
 	PPRect r(r2);
 	pp_int32 h;
@@ -859,7 +770,7 @@ void PPDisplayDeviceFB::postProcess(const PPRect& r2)
 	}
 
 }
-#if SDL_VERSION_ATLEAST(2, 0, 0)
+
 // This is unused at the moment, could be useful if we manage to get the GUI resizable in the future.
 void PPDisplayDeviceFB::setSize(const PPSize& size)
 {
@@ -870,4 +781,3 @@ void PPDisplayDeviceFB::setSize(const PPSize& size)
 	}
 	theRenderer = SDL_GetRenderer(theWindow);
 }
-#endif
