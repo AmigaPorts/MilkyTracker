@@ -112,15 +112,15 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 	}
 
 	// We got a surface: update bpp value
-	bpp = bpp < 8 ? bpp : theSurface->format->BitsPerPixel;
+	bpp = (bpp >= 0 && bpp < 8) ? bpp : theSurface->format->BitsPerPixel;
 
 	printf("SDL: Using bitdepth: %d.\n", bpp);
 
 	// Create a PPGraphics context based on bpp
 	switch (bpp)
 	{
-		case 5:
-			currentGraphics = new PPGraphics_5BIT(width, height, 0, NULL);
+		case 4:
+			currentGraphics = new PPGraphics_4BIT(width, height, 0, NULL);
 			break;
 		case 8:
 			currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);

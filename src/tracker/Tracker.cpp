@@ -3406,8 +3406,8 @@ void Tracker::updateDisplayPalette()
 	col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorMessageBoxContainer);
 	col.scaleFixed(131072); palette[c++] = col;
 
-	// For 5-bit mode remove color-reduced duplicates from palette
-	if(displayDevice->getPaletteBitDepth() == 5) {
+	// For 4-bit mode remove color-reduced duplicates from palette
+	if(displayDevice->getPaletteBitDepth() == 4) {
 		PPColor mergedPalette[256];
 		int mergedColors = 0;
 

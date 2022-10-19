@@ -86,7 +86,7 @@ static inline void set_pixel_transp(PPGraphicsAbstract* g, pp_int32 x, pp_int32 
 }
 
 // For platforms with indexed display modes (Amiga etc.)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_5BIT, 5,
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_4BIT, 4,
 	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);
 	virtual void setColor(const PPColor& color);
 	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b);
