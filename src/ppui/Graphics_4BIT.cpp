@@ -39,14 +39,20 @@ pp_uint8 PPGraphics_4BIT::lookupPaletteIndex(const PPColor& color)
 	if(cachedIndex >= 0) {
 		return cachedIndex;
 	}
+	if(cachedIndex == -2) {
+		return 0;
+	}
 
 	for(int i = 0; i < 16; i++) {
 		pp_int32 candidate = currentPalette[i].getRGB444();
 		if(search == candidate) {
 			paletteIndexCache[search] = i;
+			printf("Caching %03x as %02d\n", search, i);
 			return i;
 		}
 	}
+	paletteIndexCache[search] = -2;
+	printf("Not found: %03x\n", search);
 
 	return 0;
 }

@@ -61,12 +61,17 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		return;
 
 	PPPoint location = this->location;
+	bool flat = this->flat;
+
+	if(g->getOperatingBitDepth() == 4) {
+		flat = true;
+	}
 
 	g->setRect(location.x, location.y, location.x + size.width, location.y + size.height);
 
 	g->setColor(*color);
-
 	//g->fill();
+
 	{
 		PPColor nsdColor = *color, nsbColor = *color;
 
@@ -88,7 +93,6 @@ void PPButton::paint(PPGraphicsAbstract* g)
 		}
 
 		g->fillVerticalShaded(nsbColor, nsdColor, invertShading, *color);
-
 	}
 
 	PPColor bColor = *color;
@@ -97,22 +101,24 @@ void PPButton::paint(PPGraphicsAbstract* g)
 
 	if (!pressed)
 	{
-		// adjust bright color
-		bColor.scaleFixed(87163);
+		if(!flat) {
+			// adjust bright color
+			bColor.scaleFixed(87163);
 
-		g->setColor(bColor);
+			g->setColor(bColor);
 
-		g->drawHLine(location.x, location.x + size.width, location.y);
-		g->drawVLine(location.y, location.y + size.height, location.x);
+			g->drawHLine(location.x, location.x + size.width, location.y);
+			g->drawVLine(location.y, location.y + size.height, location.x);
 
-		// adjust dark color
-		bColor = *color;
-		bColor.scaleFixed(20000);
+			// adjust dark color
+			bColor = *color;
+			bColor.scaleFixed(20000);
 
-		g->setColor(bColor);
+			g->setColor(bColor);
 
-		g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
-		g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
+			g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
+			g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
+		}
 
 		if (text)
 		{
@@ -142,21 +148,19 @@ void PPButton::paint(PPGraphicsAbstract* g)
 	}
 	else
 	{
-		// adjust dark color
-		bColor = *color;
-		bColor.scaleFixed(32768);
+		if(!flat) {
+			// adjust dark color
+			bColor = *color;
+			bColor.scaleFixed(32768);
 
-		g->setColor(bColor);
+			g->setColor(bColor);
+			g->drawHLine(location.x, location.x + size.width, location.y);
+			g->drawVLine(location.y, location.y + size.height, location.x);
 
-		g->drawHLine(location.x, location.x + size.width, location.y);
-		g->drawVLine(location.y, location.y + size.height, location.x);
-
-		g->setColor(bColor.r>>1,bColor.g>>1,bColor.b>>1);
-		g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
-		g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
-
-		//g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
-		//g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
+			g->setColor(bColor.r>>1,bColor.g>>1,bColor.b>>1);
+			g->drawHLine(location.x, location.x + size.width, location.y + size.height - 1);
+			g->drawVLine(location.y, location.y + size.height, location.x + size.width - 1);
+		}
 
 		if (text)
 		{

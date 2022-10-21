@@ -220,6 +220,8 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 	// Pre-read some settings which initUI needs
 	sectionDiskMenu->specialMagic = settingsDatabase->restore("SPECIALMAGIC")->getIntValue() != 0;
 
+	settingsDatabase->store("ACTIVECOLORS", TrackerConfig::defaultColorPalette);
+
 	// Creates the user interface
 	initUI();
 
