@@ -363,14 +363,16 @@ public:
 		return false;
 	}
 
-	virtual pp_uint8 searchPaletteIndex(const PPColor& color)
+	virtual pp_uint8 lookupPaletteIndex(const PPColor& color)
 	{
 		int i;
 
 		if(!needsPalette() || !currentPalette)
 			return 0;
 
-		for(i = 0; i < 256; i++) {
+		int nColors = 1 << getOperatingBitDepth();
+
+		for(i = 0; i < nColors; i++) {
 			PPColor * c = &currentPalette[i];
 			if(c->r == color.r && c->g == color.g && c->b == color.b)
 				return i;

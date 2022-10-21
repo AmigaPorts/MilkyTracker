@@ -45,7 +45,7 @@ void PPGraphics_8BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 		x >= currentClipRect.x1 && x < currentClipRect.x2)
 	{
 		pp_uint8 * d = buffer + pitch * y + x;
-		*d = searchPaletteIndex(color);
+		*d = lookupPaletteIndex(color);
 	}
 }
 
@@ -55,14 +55,14 @@ void PPGraphics_8BIT::setColor(pp_int32 r, pp_int32 g, pp_int32 b)
 	currentColor.g = g;
 	currentColor.b = b;
 
-	currentColorIndex = searchPaletteIndex(currentColor);
+	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
 void PPGraphics_8BIT::setColor(const PPColor& color)
 {
 	currentColor = color;
 
-	currentColorIndex = searchPaletteIndex(currentColor);
+	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
 void PPGraphics_8BIT::setSafeColor(pp_int32 r, pp_int32 g, pp_int32 b)

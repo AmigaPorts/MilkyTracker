@@ -27,6 +27,28 @@
 PPGraphics_4BIT::PPGraphics_4BIT(pp_int32 w, pp_int32 h, pp_int32 p, void* buff)
 : PPGraphicsFrameBuffer(w, h, p, buff)
 {
+	for(int i = 0; i < 4096; i++) {
+		paletteIndexCache[i] = -1;
+	}
+}
+
+pp_uint8 PPGraphics_4BIT::lookupPaletteIndex(const PPColor& color)
+{
+	pp_int32 search = color.getRGB444();
+	pp_int8 cachedIndex = paletteIndexCache[search];
+	if(cachedIndex >= 0) {
+		return cachedIndex;
+	}
+
+	for(int i = 0; i < 16; i++) {
+		pp_int32 candidate = currentPalette[i].getRGB444();
+		if(search == candidate) {
+			paletteIndexCache[search] = i;
+			return i;
+		}
+	}
+
+	return 0;
 }
 
 void PPGraphics_4BIT::setPixel(pp_int32 x, pp_int32 y)
@@ -45,7 +67,7 @@ void PPGraphics_4BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 		x >= currentClipRect.x1 && x < currentClipRect.x2)
 	{
 		pp_uint8 * d = buffer + pitch * y + x;
-		*d = searchPaletteIndex(color);
+		*d = lookupPaletteIndex(color);
 	}
 }
 
@@ -55,14 +77,14 @@ void PPGraphics_4BIT::setColor(pp_int32 r, pp_int32 g, pp_int32 b)
 	currentColor.g = g;
 	currentColor.b = b;
 
-	currentColorIndex = searchPaletteIndex(currentColor);
+	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
 void PPGraphics_4BIT::setColor(const PPColor& color)
 {
 	currentColor = color;
 
-	currentColorIndex = searchPaletteIndex(currentColor);
+	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
 void PPGraphics_4BIT::setSafeColor(pp_int32 r, pp_int32 g, pp_int32 b)

@@ -86,13 +86,16 @@ static inline void set_pixel_transp(PPGraphicsAbstract* g, pp_int32 x, pp_int32 
 }
 
 // For platforms with indexed display modes (Amiga etc.)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_4BIT, 4,
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer,
+	pp_int8 paletteIndexCache[4096];
+, PPGraphics_4BIT, 4,
 	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);
 	virtual void setColor(const PPColor& color);
 	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b);
 	virtual void fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
 	virtual void fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
 	virtual bool needsPalette() { return true; }
+	virtual pp_uint8 lookupPaletteIndex(const PPColor& color);
 )
 SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_8BIT, 8,
 	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);

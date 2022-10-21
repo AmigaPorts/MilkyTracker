@@ -177,9 +177,9 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 
 	if (needsTemporaryBuffer)
 	{
-		temporaryBufferPitch = (width*bpp)/8;
-		temporaryBufferBPP = bpp;
-		temporaryBuffer = new pp_uint8[getSize().width*getSize().height*(bpp/8)];
+		temporaryBufferBPP = bpp < 8 ? 8 : bpp;
+		temporaryBufferPitch = (width*temporaryBufferBPP)/8;
+		temporaryBuffer = new pp_uint8[getSize().width*getSize().height*(temporaryBufferBPP/8)];
 	}
 
 	currentGraphics->lock = true;
@@ -343,6 +343,30 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 
 			switch (temporaryBufferBPP)
 			{
+				case 8:
+				{
+					pp_uint32 srcPitch = temporaryBufferPitch;
+					pp_uint32 dstPitch = theSurface->pitch;
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
+					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
+
+					pp_uint32 v = r.y1 * 65536;
+					for (pp_uint32 y = destRect.y1; y < destRect.y2; y++)
+					{
+						pp_uint32 u = r.x1 * 65536;
+						pp_uint8* dstPtr = (pp_uint8*)(dst + y*dstPitch + destRect.x1*dstBPP);
+						pp_uint8* srcPtr = src + (v>>16)*srcPitch;
+						for (pp_uint32 x = destRect.x1; x < destRect.x2; x++)
+						{
+							*dstPtr++ = *(pp_uint8*)(srcPtr + (u>>16) * srcBPP);
+							u += stepU;
+						}
+						v += stepV;
+					}
+
+					break;
+				}
 				case 16:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
