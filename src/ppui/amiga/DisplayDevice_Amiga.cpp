@@ -69,6 +69,8 @@ DisplayDevice_Amiga::~DisplayDevice_Amiga()
             if(unalignedScreenBuffer[i])
                 FreeMem(unalignedScreenBuffer[i], (pitch * height) + 16);
     } else if(useRTGMode) {
+        restorePalette();
+
         if(unalignedOffScreenBuffer)
             FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
     }
@@ -310,8 +312,39 @@ DisplayDevice_Amiga::flush()
 void
 DisplayDevice_Amiga::storePalette()
 {
+    if(paletteStored) {
+        return;
+    }
+
+    int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
     if(useRTGMode) {
-        //screen->ViewPort.ColorMap->
+        pp_uint16 * hi = (pp_uint16 *) screen->ViewPort.ColorMap->ColorTable;
+        pp_uint16 * lo = (pp_uint16 *) screen->ViewPort.ColorMap->LowColorBits;
+        int i = 0;
+
+        paletteStore[i++] = (screen->ViewPort.ColorMap->Count << 16) | 0;
+        for(int j = 0; j < screen->ViewPort.ColorMap->Count; j++) {
+            pp_uint32 h = hi[j], l = lo[j];
+
+            paletteStore[i++] = ((h & 0xf00) >> 4 | (l & 0xf00)     ) << 24;
+            paletteStore[i++] = ((h & 0x0f0)      | (l & 0x0f0) >> 4) << 24;
+            paletteStore[i++] = ((h & 0x00f) << 4 | (l & 0x00f)     ) << 24;
+        }
+        paletteStore[i] = 0;
+
+        paletteStored = true;
+    }
+}
+
+void
+DisplayDevice_Amiga::restorePalette()
+{
+    if(useRTGMode) {
+        if(paletteStored) {
+            LoadRGB32(&screen->ViewPort, (const ULONG *) paletteStore);
+            paletteStored = false;
+        }
     }
 }
 
@@ -324,10 +357,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
     int nColors = 1 << currentGraphics->getOperatingBitDepth();
 
     // Store old palette
-    if(!paletteStored) {
-        storePalette();
-        paletteStored = true;
-    }
+    storePalette();
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
@@ -346,7 +376,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
     } else if(useRTGMode) {
 	    int i = 0, j = 0;
 
-        palette[j++] = (256 << 16) | 0;
+        palette[j++] = (nColors << 16) | 0;
         for(i = 0; i < nColors; i++) {
             palette[j++] = pppal[i].r << 24;
             palette[j++] = pppal[i].g << 24;

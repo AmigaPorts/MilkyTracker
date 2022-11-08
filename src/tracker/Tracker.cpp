@@ -3301,8 +3301,8 @@ void Tracker::updateDisplayPalette()
 	palette[c++] = PPColor(0x60, 0x60, 0x60);
 	palette[c++] = PPColor(0x00, 0x00, 0x10);
 
-	for(i = 0; i < 256; i++)
-		printf("%03d: %06x\n", i, palette[i].getRGB888());
+	//for(i = 0; i < 256; i++)
+	//	printf("%03d: %06x\n", i, palette[i].getRGB888());
 
 	// For 4-bit mode remove color-reduced duplicates from palette
 	if(displayDevice->getPaletteBitDepth() == 4) {
@@ -3328,9 +3328,9 @@ void Tracker::updateDisplayPalette()
 
 		for(i = 0; i < mergedColors; i++) {
 			palette[i] = mergedPalette[i];
-			printf("%03d: %08x\n", i, palette[i].getRGB888());
+			//printf("%03d: %08x\n", i, palette[i].getRGB888());
 		}
-		printf("Merged: %d\n", mergedColors);
+		//printf("Merged: %d\n", mergedColors);
 	}
 
 	displayDevice->setPalette(palette);
