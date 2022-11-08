@@ -77,6 +77,8 @@ private:
 	std::vector<PPRect> drawCommands;
 
 	pp_uint32			palette[1 + (256 * 3) + 1];
+	PPColor             paletteStore[256];
+	bool                paletteStored;
 	struct Screen * 	screen;
 	struct Window *     window;
 	struct RastPort * 	rastPort;
@@ -89,6 +91,8 @@ private:
 
 	void * 				allocMemAligned(pp_uint32 size, void ** aligned);
 
+	void				storePalette();
+	void				restorePalette();
 public:
 	void                flush();
 

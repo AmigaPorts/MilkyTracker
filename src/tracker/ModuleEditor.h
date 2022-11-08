@@ -145,7 +145,7 @@ private:
 
 	DialogSynth * dialogSynth;
 public:
-	ModuleEditor();
+	ModuleEditor(mp_uword numChannels = 8);
 	~ModuleEditor();
 
 	XModule* getModule() { return module; }
@@ -394,7 +394,7 @@ public:
 						 bool evaluate);
 
 	void adjustSampleOffsetCommandAfterSampleSizeChange(TXMSample *sample, pp_int32 oldSize);
-						 
+
 public:
 	static void insertText(char* dst, const char* src, mp_sint32 max);
 

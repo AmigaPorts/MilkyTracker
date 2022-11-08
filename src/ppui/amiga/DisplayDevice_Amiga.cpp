@@ -1,5 +1,6 @@
 #include "DisplayDevice_Amiga.h"
 #include "../../tracker/amiga/AmigaApplication.h"
+#include "../../tracker/amiga/Log.h"
 #include "Graphics.h"
 #include "PPMutex.h"
 
@@ -17,6 +18,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 , screenMode(INVALID)
 , unalignedOffScreenBuffer(NULL)
 , alignedOffScreenBuffer(NULL)
+, paletteStored(false)
 {
     screen = app->getScreen();
     window = app->getWindow();
@@ -306,10 +308,26 @@ DisplayDevice_Amiga::flush()
 }
 
 void
+DisplayDevice_Amiga::storePalette()
+{
+    if(useRTGMode) {
+        //screen->ViewPort.ColorMap->
+    }
+}
+
+void
 DisplayDevice_Amiga::setPalette(PPColor * pppal)
 {
 	if(!currentGraphics->needsPalette())
 		return;
+
+    int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
+    // Store old palette
+    if(!paletteStored) {
+        storePalette();
+        paletteStored = true;
+    }
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
@@ -318,7 +336,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
     if(useSAGAMode) {
         int i = 0;
 
-        for(i = 0; i < 256; i++) {
+        for(i = 0; i < nColors; i++) {
             ULONG col = (i << 24) | (pppal[i].r << 16) | (pppal[i].g << 8) | pppal[i].b;
             if(useSAGAPiP)
                 *((ULONG *)SAGA_VIDEO_CLUT_PIP) = col;
@@ -329,7 +347,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 	    int i = 0, j = 0;
 
         palette[j++] = (256 << 16) | 0;
-        for(i = 0; i < 256; i++) {
+        for(i = 0; i < nColors; i++) {
             palette[j++] = pppal[i].r << 24;
             palette[j++] = pppal[i].g << 24;
             palette[j++] = pppal[i].b << 24;
@@ -343,6 +361,8 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 void
 DisplayDevice_Amiga::setSize(const PPSize& size)
 {
+    INFO("Set size = %ldx%ld (current = %ld, %ld)", size.width, size.height, width, height);
+
     if(useSAGAPiP) {
         ULONG x0 = 0, y0 = 0;
         ULONG x1 = 0, y1 = 0;

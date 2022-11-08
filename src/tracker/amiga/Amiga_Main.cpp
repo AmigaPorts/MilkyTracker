@@ -48,9 +48,10 @@
 #endif
 
 #include "AmigaApplication.h"
+#include "Log.h"
 #include "PPUI.h"
 
-#define MAX_DISPLAY_MODES 		64
+#define MAX_DISPLAY_MODES 		128
 
 #define GID_BASE				10000
 #define GID_SCREEN_MODE 		(GID_BASE + 1)
@@ -166,7 +167,7 @@ BPTR GetProgramDirLock() {
 void PrintStackSize() {
 	struct Task * task = FindTask(NULL);
 	ULONG currentstack = (ULONG) task->tc_SPUpper - (ULONG) task->tc_SPLower;
-	printf("Current stack: %lu\n", currentstack);
+	INFO("Current stack: %lu", currentstack);
 }
 
 void QueryKeyModifiers() {
@@ -191,6 +192,10 @@ void QueryKeyModifiers() {
 
 pp_uint32 PPGetTickCount() {
     struct timeval endTime;
+
+	if(!TimerBase) {
+		return 0;
+	}
 
 	GetSysTime(&endTime);
     SubTime(&endTime, &startTime);
@@ -304,10 +309,6 @@ static Screen * discoverDisplayModes()
 		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &nameInfo, sizeof(struct NameInfo), DTAG_NAME, 0)))
 			continue;
 
-		printf("%08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s\n", modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
-			dimensionInfo.MaxDepth, displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
-			displayInfo.PropertyFlags, nameInfo.Name);
-
 		// Requirement is 640x480x16 RTG for now
 		if(dimensionInfo.Nominal.MaxX+1 < 640)
 			continue;
@@ -319,6 +320,10 @@ static Screen * discoverDisplayModes()
 			continue;
 		else if(CyberGfxBase && !IsCyberModeID(readID))
 			continue;
+
+		TRACE("%03ld: %08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s", i, modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
+			dimensionInfo.MaxDepth, displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
+			displayInfo.PropertyFlags, nameInfo.Name);
 
 		// Insert display mode
 		if(isWindowed) {
@@ -388,8 +393,12 @@ static int setup()
 	AmigaApplication::AudioDriver audioDriverIndex = (cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula;
 	char detected[256] = {0};
 
-	if(!(pubScreen = discoverDisplayModes()))
+	INFO("Starting setup", NULL);
+
+	if(!(pubScreen = discoverDisplayModes())) {
+		ERROR("Error discovering display mode", NULL);
 		return -4;
+	}
 
     // Set default application configuration
     app->setDisplayID(displayModeIDs[0]);
@@ -400,7 +409,7 @@ static int setup()
     // Create Gadtools UI
 	gadget = CreateContext(&gadgetList);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create context!\n");
+		ERROR("Cannot create context!", NULL);
 		return -2;
 	}
 
@@ -420,8 +429,7 @@ static int setup()
 		hasAMMX ? "Y" : "N",
 		isV4Core ? "Y" : "N");
 
-	printf("%s\n", detected);
-	printf("%ld\n", displayModeNames[0]);
+	INFO("%s", detected);
 
 	newGadget.ng_GadgetText = NULL;
 	newGadget.ng_GadgetID   = GID_DETECTED;
@@ -429,7 +437,7 @@ static int setup()
 		GTTX_Text, detected,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -441,7 +449,7 @@ static int setup()
 		GTCY_Labels, displayModeNames,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -453,7 +461,7 @@ static int setup()
 		GTCY_Active, audioDriverIndex,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -464,7 +472,7 @@ static int setup()
 		GTTX_Text, driverDescs[audioDriverIndex],
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 	driverDesc = gadget;
@@ -476,7 +484,7 @@ static int setup()
 		GTCY_Labels, mixTypeNames,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -487,7 +495,7 @@ static int setup()
 		GTTX_Text, mixTypeDescs[0],
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 	mixTypeDesc = gadget;
@@ -500,7 +508,7 @@ static int setup()
 	gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -510,7 +518,7 @@ static int setup()
 	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
 	if(!gadget) {
-		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
 		return -2;
 	}
 
@@ -538,6 +546,7 @@ static int setup()
 		UnlockPubScreen(NULL, pubScreen);
 		pubScreen = NULL;
 
+		INFO("Starting setup window loop", NULL);
 		do {
 			if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
 				setupRunning = false;
@@ -579,11 +588,14 @@ static int setup()
 					}
 					break;
 				case IDCMP_VANILLAKEY:
-					if(imsg->Code == 0x1b)
+					if(imsg->Code == 0x1b) {
 						setupRunning = false;
+						ret = -1;
+					}
 					break;
 				case IDCMP_CLOSEWINDOW:
 					setupRunning = false;
+					ret = -1;
 					break;
 				case IDCMP_REFRESHWINDOW:
 					GT_BeginRefresh(window);
@@ -597,6 +609,7 @@ static int setup()
 
 		CloseWindow(window);
 	} else {
+		INFO("Could not open setup window", NULL);
 		ret = -3;
 	}
 
@@ -622,6 +635,8 @@ static int boot(int argc, char * argv[])
 	BPTR dirLock, oldDir;
 	struct DiskObject * diskObj;
 
+	INFO("Booting application", NULL);
+
 	app = new AmigaApplication();
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
@@ -635,11 +650,16 @@ static int boot(int argc, char * argv[])
    	fromWorkbench = argc == 0;
 	if(fromWorkbench) {
    		struct WBArg * workbenchArgs = ((struct WBStartup *) argv)->sm_ArgList;
+
+		INFO("Started from Workbench", NULL);
+
 		dirLock = workbenchArgs->wa_Lock;
         programDirLock = workbenchArgs->wa_Lock;
 		strncpy(exePath, (char *) workbenchArgs->wa_Name, 255);
 		oldDir = CurrentDir(dirLock);
 	} else {
+		INFO("Started from CLI", NULL);
+
         programDirLock = GetProgramDir();
 		strncpy(exePath, argv[0], 255);
 	}
@@ -662,14 +682,14 @@ static int boot(int argc, char * argv[])
 	// Show setup dialog
 	ret = setup();
 	if(ret < 0) {
-		fprintf(stderr, "Setup failed: %s\n", setupErrors[(-ret)-1]);
+		ERROR("Setup failed: %s", setupErrors[(-ret)-1]);
 	} else if(ret == 0) {
 		// @todo Add new splash screen
 		app->setNoSplash(true);
 
 		// And start
 		if(ret = app->start()) {
-			fprintf(stderr, "Starting tracker failed! (ret = %ld)\n", ret);
+			ERROR("Starting tracker failed! (ret = %ld)", ret);
 			app->stop();
 		} else {
 			do {
@@ -686,6 +706,8 @@ static int boot(int argc, char * argv[])
 int main2(int argc, char * argv[])
 {
 	int ret = 0;
+
+	INFO("Checking hardware", NULL);
 
 	// Check hardware
 	if(!checkHardware()) {
@@ -707,16 +729,20 @@ int main2(int argc, char * argv[])
 							GetSysTime(&startTime);
 
 							if(hasAMMX) {
+								INFO("AMMX detected, trying to load vampire.resource", NULL);
+
 								if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
-									fprintf(stderr, "Could not find vampire.resource!\n");
+									ERROR("Could not find vampire.resource!", NULL);
 									ret = 2;
 								} else if(VampireBase->lib_Version < 45) {
-									fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
+									ERROR("Vampire.resource version needs to be 45 or higher!", NULL);
 									ret = 2;
 								} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
-									fprintf(stderr, "Cannot enable AMMX V2+!\n");
+									ERROR("Cannot enable AMMX V2+!", NULL);
 									ret = 2;
 								}
+
+								INFO("vampire.resource loaded", NULL);
 							}
 
 							if(!ret) {
@@ -725,7 +751,7 @@ int main2(int argc, char * argv[])
 
 							CloseDevice(&timereq);
 						} else {
-							fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+							ERROR("Could not open timer.device! (err = %ld)", NULL);
 							ret = 1;
 						}
 
@@ -734,27 +760,27 @@ int main2(int argc, char * argv[])
 						if(CyberGfxBase)
 							CloseLibrary(CyberGfxBase);
 					} else {
-						fprintf(stderr, "Could not open %s V2! This program needs RTG installed.\n", P96NAME);
+						ERROR("Could not open %s V2! This program needs RTG installed.", P96NAME);
 						ret = 1;
 					}
 					CloseLibrary(GfxBase);
 				} else {
-					fprintf(stderr, "Could not open graphics.library V39!\n");
+					ERROR("Could not open graphics.library V39!", NULL);
 					ret = 1;
 				}
 				CloseLibrary(IconBase);
 			} else {
-				fprintf(stderr, "Could not open icon.library V37!\n");
+				ERROR("Could not open icon.library V37!", NULL);
 				ret = 1;
 			}
 			CloseLibrary(IntuitionBase);
 		}  else {
-			fprintf(stderr, "Could not open intuition.library V39!\n");
+			ERROR("Could not open intuition.library V39!", NULL);
 			ret = 1;
 		}
 		CloseLibrary(KeymapBase);
 	} else {
-		fprintf(stderr, "Could not open keymap.library V39!\n");
+		ERROR("Could not open keymap.library V39!", NULL);
 		ret = 1;
 	}
 

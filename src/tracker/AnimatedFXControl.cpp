@@ -40,7 +40,7 @@
 
 #undef FXTOGGLE
 
-#ifdef __LOWRES__
+#if defined(__LOWRES__) || defined(__AMIGA__)
 #define __SIMPLEFX__
 #endif
 
