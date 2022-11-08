@@ -85,7 +85,7 @@ const PPString TrackerConfig::defaultPredefinedPanningEnvelope("0602030500000000
 
 const PPString TrackerConfig::defaultProTrackerPanning("0000002000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF00");
 
-const PPString TrackerConfig::defaultColorPalette("2B" // Numkeys
+const PPString TrackerConfig::defaultReducedColorPalette("2B" // Numkeys
 												  "B0D0F0" // ColorPatternNote
 												  "B0D0F0" // ColorPatternInstrument
 												  "B0D0F0" // ColorPatternVolume
@@ -111,6 +111,52 @@ const PPString TrackerConfig::defaultColorPalette("2B" // Numkeys
 												  "FF0000" // Scopes record indicator
 												  "FF0000" // Peak clip indicator
 												  "B0D0F0" // Sample Editor Waveform
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0"
+												  "DB00A0");
+
+const PPString TrackerConfig::defaultColorPalette("2B" // Numkeys
+												  "FFFFFF" // ColorPatternNote
+												  "80E0FF" // ColorPatternInstrument
+												  "80FF80" // ColorPatternVolume
+												  "FF80E0" // ColorPatternEffect
+												  "FFE080" // ColorPatternOperand
+												  "8080FF" // ColorCursor
+												  "602040" // ColorCursorLine
+												  "A01830" // ColorCursorLineHighlighted
+												  "406080" // ColorTheme
+												  "FFFFFF" // ColorForegroundText
+												  "C0C0C0" // ColorButtons
+												  "000000" // ColorButtonText
+												  "8080FF" // ColorSelection
+												  "282849" // ColorListBoxBackground
+												  "103060" // ColorPatternSelection
+												  "FFFF00" // Hilighted text
+												  "FFFFFF" // Scopes
+												  "FFFF80" // Hilighted rows (secondary)
+												  "202020" // Row highlight background (primary)
+												  "101010" // Row highlight background (secondary)
+												  "203040" // ColorScrollBarBackground
+												  "FF0000" // ColorRecordModeButtonText
+												  "FF0000" // Scopes record indicator
+												  "FF0000" // Peak clip indicator
+												  "FFFF80" // Sample Editor Waveform
 												  "DB00A0"
 												  "DB00A0"
 												  "DB00A0"

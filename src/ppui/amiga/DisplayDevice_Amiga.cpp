@@ -31,7 +31,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     size.height = height;
 
     bpp = app->getBpp();
-    pitch = width * bpp >> 3;
+    pitch = width * (bpp < 8 ? 8 : bpp) >> 3;
 
     useRTGFullscreen = app->isFullScreen();
     useRTGWindowed = !app->isFullScreen();
@@ -116,29 +116,24 @@ DisplayDevice_Amiga::init()
 
             screenMode = bpp == 16 ? SAGA_PIP_16 : SAGA_PIP_8;
         }
-
-        if(bpp == 16) {
-            currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
-        } else {
-            currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
-        }
-	    currentGraphics->lock = true;
     } else if(useRTGFullscreen) {
         screenMode = bpp == 16 ? RTG_FULLSCREEN_16 : RTG_FULLSCREEN_8;
 
         if(useSAGADirectFB) {
             screenMode = bpp == 16 ? SAGA_DIRECT_16 : SAGA_DIRECT_8;
         }
+    }
 
+    if(screenMode != INVALID) {
         if(bpp == 16) {
             currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        } else if(bpp == 4) {
+            currentGraphics = new PPGraphics_4BIT(width, height, 0, NULL);
         } else {
             currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
         }
 	    currentGraphics->lock = true;
-    }
 
-    if(screenMode != INVALID) {
         if(useSAGAMode) {
             //
             // Partial double buffering in SAGA Modes

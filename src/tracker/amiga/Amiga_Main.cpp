@@ -343,6 +343,13 @@ static Screen * discoverDisplayModes()
 			} else {
 				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
+				strcpy(displayModeNames[i], "Win: 640x480 4-bit");
+				displayModeSizes[i] = PPSize(640, 480);
+				displayModeDepths[i] = 4;
+				i++;
+
+				displayModeIDs[i] = -1;
+				displayModeNames[i] = new char[256];
 				sprintf(displayModeNames[i], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
 				displayModeSizes[i] = PPSize(640, 480);
 				displayModeDepths[i] = dimensionInfo.MaxDepth;

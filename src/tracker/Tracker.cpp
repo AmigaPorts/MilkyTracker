@@ -3285,10 +3285,10 @@ void Tracker::updateDisplayPalette()
 		palette[i].set(0, 0, 0);
 
 	// Fallback color to indicate missing color
-	palette[c++].set(0xff, 0x00, 0xff);
+	palette[c++].set(0x00, 0x00, 0x00);
 
 	// Black & White
-	palette[c++].set(0x00, 0x00, 0x00);
+	//palette[c++].set(0x00, 0x00, 0x00);
 	palette[c++].set(0xff, 0xff, 0xff);
 
 	// Transfer global color configuration into palette
@@ -3297,15 +3297,121 @@ void Tracker::updateDisplayPalette()
 		palette[c++] = GlobalColorConfig::getInstance()->getColor(colorIndex);
 	}
 
-	palette[c++] = PPColor(0x70, 0x70, 0x70);
-	palette[c++] = PPColor(0x60, 0x60, 0x60);
-	palette[c++] = PPColor(0x00, 0x00, 0x10);
+	if(displayDevice->getPaletteBitDepth() != 4) {
+		// Transfer PPUI configuration into palette
+		for(i = 0; i < PPUIConfig::ColorLast; i++) {
+			PPUIConfig::PPUIColors colorIndex = (PPUIConfig::PPUIColors) i;
+			palette[c++] = PPUIConfig::getInstance()->getColor(colorIndex);
+		}
 
-	//for(i = 0; i < 256; i++)
-	//	printf("%03d: %06x\n", i, palette[i].getRGB888());
+		// PatternEditorControl Channel Context Menu background
+		col = TrackerConfig::colorThemeMain;
+		col.scaleFixed(32768); col.invert(); palette[c++] = col;
+		col = TrackerConfig::colorThemeMain;
+		col.scaleFixed(87163); palette[c++] = col;
 
-	// For 4-bit mode remove color-reduced duplicates from palette
-	if(displayDevice->getPaletteBitDepth() == 4) {
+		col = TrackerConfig::colorPatternEditorCursorLine;
+		col.scaleFixed(87163); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorCursorLine;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorCursor;
+		col.scaleFixed(87163); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorCursor;
+		col.scaleFixed(32768); palette[c++] = col;
+
+		col = TrackerConfig::colorPatternEditorNote;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorInstrument;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorVolume;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorEffect;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = TrackerConfig::colorPatternEditorOperand;
+		col.scaleFixed(32768); palette[c++] = col;
+
+		// Button
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButton);
+		col.scaleFixed(87163); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButton);
+		col.scaleFixed(20000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButton);
+		col.scaleFixed(32768); palette[c++] = col;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorScrollBarBackground);
+		col.scaleFixed(87163); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorScrollBarBackground);
+		col.scaleFixed(20000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorScrollBarBackground);
+		col.scaleFixed(32768); palette[c++] = col;
+		col.scaleFixed(32768); palette[c++] = col;
+		col =  TrackerConfig::colorThemeMain;
+		col.scaleFixed(87163); palette[c++] = col;
+		col =  TrackerConfig::colorThemeMain;
+		col.scaleFixed(20000); palette[c++] = col;
+		col =  TrackerConfig::colorThemeMain;
+		col.scaleFixed(32768); palette[c++] = col;
+		col.scaleFixed(32768); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBackground);
+		col.scaleFixed(87163); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBackground);
+		col.scaleFixed(20000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBackground);
+		col.scaleFixed(32768); palette[c++] = col;
+		col.scaleFixed(32768); palette[c++] = col;
+
+		// Radio group
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorRadioGroupButton);
+		col.scaleFixed(40000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorRadioGroupButton);
+		col.scale(1.25f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorRadioGroupButton);
+		col.scale(0.75f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorRadioGroupButton);
+		col.scale(0.125f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = TrackerConfig::colorThemeMain;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = TrackerConfig::colorThemeMain;
+		col.scale(1.25f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = TrackerConfig::colorThemeMain;
+		col.scale(0.75f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = TrackerConfig::colorThemeMain;
+		col.scale(0.125f); palette[c++] = col;
+		col.scaleFixed(40000); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorStaticText);
+		col.scaleFixed(40000); palette[c++] = col;
+
+		// Slider
+		col = PPColor(64, 64, 64); palette[c++] = col;
+		col.scaleFixed(87163); palette[c++] = col;
+		col = PPColor(64, 64, 64);
+		col.scaleFixed(20000); palette[c++] = col;
+		col = PPColor(64, 64, 64);
+		col.scaleFixed(32768); palette[c++] = col;
+
+		// Disable buttopn
+		col = TrackerConfig::colorThemeMain;
+		col2 = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorStaticText);
+		palette[c++] = PPColor((col.r + col2.r) >> 1, (col.g + col2.g) >> 1,(col.b + col2.b) >> 1);
+
+		// Message box container
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorMessageBoxContainer);
+		col.scaleFixed(32768); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorMessageBoxContainer);
+		col.scaleFixed(87163); palette[c++] = col;
+		col = PPUIConfig::getInstance()->getColor(PPUIConfig::ColorMessageBoxContainer);
+		col.scaleFixed(131072); palette[c++] = col;
+	} else {
+		palette[c++] = PPColor(0x70, 0x70, 0x70);
+		palette[c++] = PPColor(0x60, 0x60, 0x60);
+		palette[c++] = PPColor(0x00, 0x00, 0x10);
+
+		// For 4-bit mode remove color-reduced duplicates from palette
 		PPColor mergedPalette[256];
 		int mergedColors = 0;
 

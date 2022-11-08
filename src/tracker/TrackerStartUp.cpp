@@ -220,7 +220,10 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 	// Pre-read some settings which initUI needs
 	sectionDiskMenu->specialMagic = settingsDatabase->restore("SPECIALMAGIC")->getIntValue() != 0;
 
-	settingsDatabase->store("ACTIVECOLORS", TrackerConfig::defaultColorPalette);
+	PPDisplayDeviceBase * displayDevice = screen->getDisplayDevice();
+	if(displayDevice && displayDevice->needsPalette() && displayDevice->getPaletteBitDepth() == 4) {
+		settingsDatabase->store("ACTIVECOLORS", TrackerConfig::defaultReducedColorPalette);
+	}
 
 	// Creates the user interface
 	initUI();
