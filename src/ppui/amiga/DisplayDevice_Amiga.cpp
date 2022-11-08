@@ -47,6 +47,9 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     unalignedScreenBuffer[0] = NULL;
     unalignedScreenBuffer[1] = NULL;
 
+    memset(palette, 0, (1 + (256 * 3) + 1) * sizeof(pp_uint32));
+    memset(paletteStore, 0, (1 + (256 * 3) + 1) * sizeof(pp_uint32));
+
     drawMutex = new PPMutex();
 }
 
@@ -293,7 +296,7 @@ DisplayDevice_Amiga::flush()
             renderInfo.BytesPerRow = pitch;
             renderInfo.Memory = (pp_uint16 *) alignedOffScreenBuffer;
             renderInfo.pad = 0;
-            renderInfo.RGBFormat = bpp == 16 ? RGBFB_R5G6B5 : RGBFB_CLUT;
+            renderInfo.RGBFormat = (screenMode == RTG_FULLSCREEN_8 || screenMode == RTG_WINDOWED_8) ? RGBFB_CLUT : RGBFB_R5G6B5;
 
             if(rtgDriver == P96) {
                 p96WritePixelArray(&renderInfo, 0, 0, rastPort, window->BorderLeft, window->BorderTop, width, height);

@@ -77,7 +77,7 @@ private:
 	std::vector<PPRect> drawCommands;
 
 	pp_uint32			palette[1 + (256 * 3) + 1];
-	pp_uint32           paletteStore[256];
+	pp_uint32           paletteStore[1 + (256 * 3) + 1];
 	bool                paletteStored;
 	struct Screen * 	screen;
 	struct Window *     window;
