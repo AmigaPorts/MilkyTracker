@@ -240,7 +240,7 @@ static bool checkHardware()
 		useSAGA = true;
 
 		driverNames[1] = "Arne (Apollo Core)";
-		driverDescs[1] = "8-ch/16-bit >= Core 7649";
+		driverDescs[1] = "16-ch/16-bit";
 
 		UWORD model = (*((UWORD *)0xdff3fc)) >> 8;
 		if(model == 0x03 || model == 0x05)

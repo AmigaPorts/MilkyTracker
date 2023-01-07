@@ -20,7 +20,7 @@
 
 #define DMA2F_AUDIO             0xfff
 
-#define MAX_CHANNELS            8
+#define MAX_CHANNELS            16
 
 AudioDriver_Arne::AudioDriver_Arne()
 {
@@ -39,7 +39,7 @@ AudioDriver_Arne::getChannels() const
 const char*
 AudioDriver_Arne::getDriverID()
 {
-    return "Apollo SAGA Arne 8-ch";
+    return "Apollo SAGA Arne 16-ch";
 }
 
 mp_sint32
@@ -369,20 +369,11 @@ AudioDriver_Arne_ResampleHW::setChannelFrequency(ChannelMixer::TMixerChannel * c
 void
 AudioDriver_Arne_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 {
-    mp_sint32 vol = 0;
+    mp_sint32 voll = (chn->finalvoll >> 21) + 6;
+    mp_sint32 volr = (chn->finalvolr >> 21) + 6;
 
-    switch (chn->index & 3) {
-        case 0:
-        case 3:
-            vol = chn->finalvoll;
-            break;
-        case 1:
-        case 2:
-            vol = chn->finalvolr;
-            break;
-    }
-
-    *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) = ((vol >> 21) + 6) >> 3;
+    *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) =
+        (((voll >> 3) & 0xff) << 8) | ((volr >> 3) & 0xff);
 }
 
 void
