@@ -389,6 +389,9 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 void
 DisplayDevice_Amiga::setSize(const PPSize& size)
 {
+    if(size.width == width && size.height == height)
+        return;
+
     INFO("Set size = %ldx%ld (current = %ld, %ld)", size.width, size.height, width, height);
 
     if(useSAGAPiP) {
