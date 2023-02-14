@@ -164,7 +164,8 @@ DisplayDevice_Amiga::init()
             switch(screenMode) {
             case SAGA_PIP_8:
             case SAGA_PIP_16:
-                WRITE16(SAGA_PIP_COLORKEY, 0);
+                WRITE16(SAGA_PIP_COLORKEY, 0x0000);
+                WRITE16(SAGA_PIP_DMAROWLEN, pitch);
                 WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
                 WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedScreenBuffer[1]);
                 break;
@@ -246,7 +247,6 @@ DisplayDevice_Amiga::flush()
     drawMutex->lock();
 
     if(drawCommands.size() > 0) {
-
         if(useSAGAMode) {
             pp_uint8 * ps = (pp_uint8 *) alignedScreenBuffer[dbPage];
 
@@ -389,17 +389,14 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 void
 DisplayDevice_Amiga::setSize(const PPSize& size)
 {
-    if(size.width == width && size.height == height)
-        return;
-
-    INFO("Set size = %ldx%ld (current = %ld, %ld)", size.width, size.height, width, height);
+    // INFO("Set size = %ldx%ld (current = %ld, %ld)", size.width, size.height, width, height);
 
     if(useSAGAPiP) {
         ULONG x0 = 0, y0 = 0;
         ULONG x1 = 0, y1 = 0;
 
         if (screen == IntuitionBase->FirstScreen) {
-            x0 = SAGA_PIP_DELTAX + window->LeftEdge + screen->LeftEdge + window->BorderLeft + 2;
+            x0 = SAGA_PIP_DELTAX + window->LeftEdge + screen->LeftEdge + window->BorderLeft + 1;
             y0 = SAGA_PIP_DELTAY + window->TopEdge + screen->TopEdge + window->BorderTop;
 
             if ((x0 + width - 16 - 64) < screen->Width) {

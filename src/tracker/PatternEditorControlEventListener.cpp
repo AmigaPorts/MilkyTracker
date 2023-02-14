@@ -357,10 +357,10 @@ unmuteAll:
 
 				pp_int32 visibleRows = (visibleHeight) / font->getCharHeight();
 				pp_int32 visibleChannels = (visibleWidth) / slotSize;
-				
+
 				// backup selection, so that it may be restored when context menu is activated by long-press
 				patternEditor->getSelection().backup();
-				
+
 				preCursor = patternEditor->getCursor();
 
 				if (newStartIndex < visibleRows && newStartIndex >= 0)
@@ -390,7 +390,7 @@ unmuteAll:
 
 					preCursor.channel = newStartPos + startPos;
 					preCursor.inner = 0;
-				
+
 					if (preCursor.channel >= patternEditor->getNumChannels())
 					{
 						// clicked beyond rightmost channel, start selection from the edge
@@ -412,7 +412,7 @@ unmuteAll:
 							}
 						}
 					}
-					
+
 					if (patternEditor->selectionContains(preCursor))
 					{
 						startSelection = false;
@@ -457,12 +457,12 @@ unmuteAll:
 			}
 
 			menuInvokeChannel = -1;
-			
+
 			if (moveSelection && moveSelectionFinalPos != moveSelectionInitialPos)
 			{
 				pp_int32 moveSelectionRows = moveSelectionFinalPos.row - moveSelectionInitialPos.row;
 				pp_int32 moveSelectionChannels = moveSelectionFinalPos.channel - moveSelectionInitialPos.channel;
-				
+
 				if (patternEditor->canMoveSelection(moveSelectionChannels, moveSelectionRows))
 				{
 					if (::getKeyModifier() & selectionKeyModifier)
@@ -492,7 +492,7 @@ unmuteAll:
 
 				patternEditor->resetSelection();
 			}
-			
+
 
 			startSelection = false;
 			moveSelection = false;
@@ -510,7 +510,7 @@ unmuteAll:
 				caughtControl->dispatchEvent(event);
 				break;
 			}
-			
+
 			if (!moveSelection && !startSelection)
 				break;
 
@@ -664,15 +664,15 @@ markOrMoveSelection:
 
 			pp_int32 visibleRows = (visibleHeight) / font->getCharHeight();
 			pp_int32 visibleChannels = (visibleWidth) / slotSize;
-			
+
 			mp_sint32 cursorPositionRow = newStartIndex + startIndex;
 			mp_sint32 cursorPositionChannel = newStartPos + startPos;
 			mp_sint32 cursorPositionInner;
-			
+
 			if (moveSelection)
 			{
 				moveSelectionFinalPos.channel = cursorPositionChannel;
-				moveSelectionFinalPos.row = cursorPositionRow;	
+				moveSelectionFinalPos.row = cursorPositionRow;
 			}
 			else
 			{
@@ -680,7 +680,7 @@ markOrMoveSelection:
 					cursorPositionRow = 0;
 				else if (cursorPositionRow >= patternEditor->getNumRows())
 					cursorPositionRow = patternEditor->getNumRows()-1;
-				
+
 				if (cursorPositionChannel < 0)
 				{
 					cursorPositionChannel = 0;
@@ -694,7 +694,7 @@ markOrMoveSelection:
 				else
 				{
 					pp_int32 innerPos = cp.x % slotSize;
-					
+
 					for (pp_uint32 i = 0; i < sizeof(cursorPositions) - 1; i++)
 					{
 						if (innerPos >= cursorPositions[i] &&
@@ -705,15 +705,15 @@ markOrMoveSelection:
 						}
 					}
 				}
-				
+
 				patternEditor->getSelection().end.row = cursorPositionRow;
 				patternEditor->getSelection().end.channel = cursorPositionChannel;
 				patternEditor->getSelection().end.inner = cursorPositionInner;
-				
+
 				setScrollbarPositions(startIndex, startPos);
-				
+
 			}
-			
+
 			parentScreen->paintControl(this);
 
 			break;

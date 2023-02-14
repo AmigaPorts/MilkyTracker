@@ -451,7 +451,7 @@ AmigaApplication::loop()
                                 key.sym = *buffer;
                             }
 
-                            //printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+                            //printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c / code = %d\n", msg->Code, msg->Qualifier, key.sym, key.sym, key.code);
 
                             keyUp = key.code >= 0x80;
                             if(keyUp)
@@ -567,9 +567,26 @@ AmigaApplication::loop()
                 }
 
                 ReplyMsg((struct Message *) msg);
-            }
 
-            displayDevice->setSize(windowSize);
+                if(SetSignal(0, vbMask) & vbMask) {
+                    if(!(vbCount & 1)) {
+                        PPEvent timerEvent(eTimer);
+                        raiseEventSynchronized(&timerEvent);
+                    }
+
+                    if(mouseLeftDown && (vbCount - mouseLeftVBStart) > 25) {
+                        PPEvent mouseRepeatEvent(eLMouseRepeat, &mousePosition, sizeof(PPPoint));
+                        raiseEventSynchronized(&mouseRepeatEvent);
+                    } else if(mouseRightDown && (vbCount - mouseRightVBStart) > 25) {
+                        PPEvent mouseRepeatEvent(eRMouseRepeat, &mousePosition, sizeof(PPPoint));
+                        raiseEventSynchronized(&mouseRepeatEvent);
+                    }
+
+                    // And draw the screen at last (@todo check if we have enough VBTime left for that)
+                    displayDevice->flush();
+                    displayDevice->setSize(windowSize);
+                }
+            }
         }
 
         if(signal & vbMask) {
@@ -588,6 +605,7 @@ AmigaApplication::loop()
 
             // And draw the screen at last (@todo check if we have enough VBTime left for that)
             displayDevice->flush();
+            displayDevice->setSize(windowSize);
         }
     }
 
