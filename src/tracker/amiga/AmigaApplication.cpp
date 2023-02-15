@@ -274,7 +274,7 @@ int AmigaApplication::start()
                 WA_ReportMouse   , TRUE,
                 WA_NoCareRefresh , TRUE,
                 WA_RMBTrap       , TRUE,
-                WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                WA_IDCMP         , IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
                 TAG_DONE);
             if(!window) {
                 ERROR("Could not create window!", NULL);
@@ -355,8 +355,8 @@ AmigaApplication::verticalBlankService(register AmigaApplication * that __asm("a
 pp_int32
 AmigaApplication::verticalBlank()
 {
-    vbCount++;
     Signal(task, vbMask);
+    vbCount++;
 
     return 0;
 }
@@ -407,7 +407,22 @@ AmigaApplication::loop()
             struct IntuiMessage * msg;
 
             while((msg = (struct IntuiMessage *) GetMsg(port))) {
+                bool verticalBlankSignaled = !!(SetSignal(0, vbMask) & vbMask);
+
+                if(verticalBlankSignaled) {
+                    AudioDriverInterface_Amiga * driverInterface = (AudioDriverInterface_Amiga *) tracker->playerMaster->getCurrentDriver();
+                    if(driverInterface) {
+                        driverInterface->bufferAudio();
+                    }
+                }
+
                 switch(msg->Class) {
+                case IDCMP_ACTIVEWINDOW:
+                    displayDevice->setActive(true);
+                    break;
+                case IDCMP_INACTIVEWINDOW:
+                    displayDevice->setActive(false);
+                    break;
                 case IDCMP_CLOSEWINDOW:
                     running = false;
                     break;
@@ -568,7 +583,7 @@ AmigaApplication::loop()
 
                 ReplyMsg((struct Message *) msg);
 
-                if(SetSignal(0, vbMask) & vbMask) {
+                if(verticalBlankSignaled) {
                     if(!(vbCount & 1)) {
                         PPEvent timerEvent(eTimer);
                         raiseEventSynchronized(&timerEvent);

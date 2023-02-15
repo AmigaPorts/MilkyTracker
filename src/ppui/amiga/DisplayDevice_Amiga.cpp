@@ -19,6 +19,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 , unalignedOffScreenBuffer(NULL)
 , alignedOffScreenBuffer(NULL)
 , paletteStored(false)
+, active(true)
 {
     screen = app->getScreen();
     window = app->getWindow();
@@ -239,6 +240,25 @@ DisplayDevice_Amiga::update(const PPRect &r)
         drawCommands.push_back(r);
     }
     drawMutex->unlock();
+}
+
+void
+DisplayDevice_Amiga::setActive(bool active)
+{
+    this->active = active;
+
+    if(useSAGAMode) {
+        switch(screenMode) {
+        case SAGA_PIP_8:
+        case SAGA_PIP_16:
+            if(this->active) {
+                WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
+            } else {
+                WRITE16(SAGA_PIP_PIXFMT, 0);
+            }
+            break;
+        }
+    }
 }
 
 void

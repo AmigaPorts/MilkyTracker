@@ -57,6 +57,8 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 private:
 	AmigaApplication * 	app;
 
+	bool				active;
+
 	bool                useRTGWindowed;
 	bool                useRTGFullscreen;
 	bool                useRTGMode;
@@ -95,6 +97,8 @@ private:
 	void				restorePalette();
 public:
 	void                flush();
+
+	void                setActive(bool active);
 
 	DisplayDevice_Amiga(AmigaApplication * app);
 	virtual ~DisplayDevice_Amiga();
