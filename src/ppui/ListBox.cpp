@@ -140,11 +140,13 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 	ColorQueryListener* colorQueryListener = this->colorQueryListener;
 
 	PPColor bColor = *borderColor, dColor = *borderColor;
-	// adjust dark color
-	dColor.scaleFixed(32768);
 
-	// adjust bright color
-	bColor.scaleFixed(87163);
+	if(g->getOperatingBitDepth() > 4) {
+		// adjust dark color
+		dColor.scaleFixed(32768);
+		// adjust bright color
+		bColor.scaleFixed(87163);
+	}
 
 	pp_int32 xOffset = 2;
 

@@ -226,7 +226,7 @@ extern AudioDriverInterface * CreateAudioDriver();
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	ALLOC_DRIVERLIST(2);
+	ALLOC_DRIVERLIST(1);
 	driverList[0] = CreateAudioDriver();
 }
 

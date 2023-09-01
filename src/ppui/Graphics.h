@@ -52,7 +52,7 @@ public:
 
 #define __EMPTY__
 
-#define SUBCLASS_GRAPHICS(baseclass, prologue, name, epilogue) \
+#define SUBCLASS_GRAPHICS(baseclass, prologue, name, bitdepth, epilogue) \
 class name : public baseclass \
 { \
 private: \
@@ -71,6 +71,7 @@ public: \
 	virtual void drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underlined = false); \
 	virtual void drawString(const char* str, pp_int32 x, pp_int32 y, bool underlined = false); \
 	virtual void drawStringVertical(const char* str, pp_int32 x, pp_int32 y, bool underlined = false); \
+	virtual int32_t getOperatingBitDepth() const { return bitdepth; }; \
 	epilogue \
 }; \
 
@@ -84,8 +85,19 @@ static inline void set_pixel_transp(PPGraphicsAbstract* g, pp_int32 x, pp_int32 
 	g->setPixel(x, y, newColor);
 }
 
-// Amiga
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_8BIT,
+// For platforms with indexed display modes (Amiga etc.)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer,
+	pp_int8 paletteIndexCache[4096];
+, PPGraphics_4BIT, 4,
+	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);
+	virtual void setColor(const PPColor& color);
+	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b);
+	virtual void fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
+	virtual void fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal);
+	virtual bool needsPalette() { return true; }
+	virtual pp_uint8 lookupPaletteIndex(const PPColor& color);
+)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_8BIT, 8,
 	virtual void setColor(pp_int32 r,pp_int32 g,pp_int32 b);
 	virtual void setColor(const PPColor& color);
 	virtual void setSafeColor(pp_int32 r,pp_int32 g,pp_int32 b);
@@ -94,15 +106,15 @@ SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_8BIT,
 	virtual bool needsPalette() { return true; }
 )
 // used for win32
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24, __EMPTY__)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24, 24, __EMPTY__)
 // OSX (carbon, 32 bits with alpha channel)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_ARGB32, __EMPTY__)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_ARGB32, 32, __EMPTY__)
 // used for wince (GAPI)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_16BIT, __EMPTY__)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_16BIT, 16, __EMPTY__)
 // OSX (carbon, 16 bit color, one unused bit)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_15BIT, __EMPTY__)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_15BIT, 15, __EMPTY__)
 // currently unused, big endian compatible version of PPGraphics_BGR24
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24_SLOW, __EMPTY__)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24_SLOW, 24, __EMPTY__)
 
 #define PROLOGUE \
 	pp_uint32 bitPosR, bitPosG, bitPosB;
@@ -114,8 +126,8 @@ SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, __EMPTY__, PPGraphics_BGR24_SLOW, __EMP
 	}
 
 // used in the SDL port, arbitrary bit positions but a little bit slower than the rest
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, PROLOGUE, PPGraphics_24bpp_generic, EPILOGUE)
-SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, PROLOGUE, PPGraphics_32bpp_generic, EPILOGUE)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, PROLOGUE, PPGraphics_24bpp_generic, 24, EPILOGUE)
+SUBCLASS_GRAPHICS(PPGraphicsFrameBuffer, PROLOGUE, PPGraphics_32bpp_generic, 32, EPILOGUE)
 
 #undef EPILOGUE
 #undef PROLOGUE

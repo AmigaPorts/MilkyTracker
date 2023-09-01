@@ -286,12 +286,13 @@ struct TScreenRes
 	const char* name;
 };
 
-#define NUMRESOLUTIONS	13
+#define NUMRESOLUTIONS	14
 #define MINWIDTH		640
-#define MINHEIGHT		480
+#define MINHEIGHT		256
 
 static TScreenRes resolutions[NUMRESOLUTIONS] =
 {
+	{640, 256, "640x256"},
 	{640, 480, "640x480"},
 	{720, 480, "720x480"},
 	{800, 480, "800x480"},

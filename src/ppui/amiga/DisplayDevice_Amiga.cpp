@@ -1,5 +1,6 @@
 #include "DisplayDevice_Amiga.h"
 #include "../../tracker/amiga/AmigaApplication.h"
+#include "../../tracker/amiga/Log.h"
 #include "Graphics.h"
 #include "PPMutex.h"
 
@@ -17,6 +18,8 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 , screenMode(INVALID)
 , unalignedOffScreenBuffer(NULL)
 , alignedOffScreenBuffer(NULL)
+, paletteStored(false)
+, active(true)
 {
     screen = app->getScreen();
     window = app->getWindow();
@@ -29,7 +32,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     size.height = height;
 
     bpp = app->getBpp();
-    pitch = width * bpp >> 3;
+    pitch = width * (bpp < 8 ? 8 : bpp) >> 3;
 
     useRTGFullscreen = app->isFullScreen();
     useRTGWindowed = !app->isFullScreen();
@@ -44,6 +47,9 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 
     unalignedScreenBuffer[0] = NULL;
     unalignedScreenBuffer[1] = NULL;
+
+    memset(palette, 0, (1 + (256 * 3) + 1) * sizeof(pp_uint32));
+    memset(paletteStore, 0, (1 + (256 * 3) + 1) * sizeof(pp_uint32));
 
     drawMutex = new PPMutex();
 }
@@ -67,6 +73,8 @@ DisplayDevice_Amiga::~DisplayDevice_Amiga()
             if(unalignedScreenBuffer[i])
                 FreeMem(unalignedScreenBuffer[i], (pitch * height) + 16);
     } else if(useRTGMode) {
+        restorePalette();
+
         if(unalignedOffScreenBuffer)
             FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
     }
@@ -109,29 +117,24 @@ DisplayDevice_Amiga::init()
 
             screenMode = bpp == 16 ? SAGA_PIP_16 : SAGA_PIP_8;
         }
-
-        if(bpp == 16) {
-            currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
-        } else {
-            currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
-        }
-	    currentGraphics->lock = true;
     } else if(useRTGFullscreen) {
         screenMode = bpp == 16 ? RTG_FULLSCREEN_16 : RTG_FULLSCREEN_8;
 
         if(useSAGADirectFB) {
             screenMode = bpp == 16 ? SAGA_DIRECT_16 : SAGA_DIRECT_8;
         }
+    }
 
+    if(screenMode != INVALID) {
         if(bpp == 16) {
             currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        } else if(bpp == 4) {
+            currentGraphics = new PPGraphics_4BIT(width, height, 0, NULL);
         } else {
             currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
         }
 	    currentGraphics->lock = true;
-    }
 
-    if(screenMode != INVALID) {
         if(useSAGAMode) {
             //
             // Partial double buffering in SAGA Modes
@@ -162,7 +165,8 @@ DisplayDevice_Amiga::init()
             switch(screenMode) {
             case SAGA_PIP_8:
             case SAGA_PIP_16:
-                WRITE16(SAGA_PIP_COLORKEY, 0);
+                WRITE16(SAGA_PIP_COLORKEY, 0x0000);
+                WRITE16(SAGA_PIP_DMAROWLEN, pitch);
                 WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
                 WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedScreenBuffer[1]);
                 break;
@@ -239,12 +243,30 @@ DisplayDevice_Amiga::update(const PPRect &r)
 }
 
 void
+DisplayDevice_Amiga::setActive(bool active)
+{
+    this->active = active;
+
+    if(useSAGAMode) {
+        switch(screenMode) {
+        case SAGA_PIP_8:
+        case SAGA_PIP_16:
+            if(this->active) {
+                WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
+            } else {
+                WRITE16(SAGA_PIP_PIXFMT, 0);
+            }
+            break;
+        }
+    }
+}
+
+void
 DisplayDevice_Amiga::flush()
 {
     drawMutex->lock();
 
     if(drawCommands.size() > 0) {
-
         if(useSAGAMode) {
             pp_uint8 * ps = (pp_uint8 *) alignedScreenBuffer[dbPage];
 
@@ -289,7 +311,7 @@ DisplayDevice_Amiga::flush()
             renderInfo.BytesPerRow = pitch;
             renderInfo.Memory = (pp_uint16 *) alignedOffScreenBuffer;
             renderInfo.pad = 0;
-            renderInfo.RGBFormat = bpp == 16 ? RGBFB_R5G6B5 : RGBFB_CLUT;
+            renderInfo.RGBFormat = (screenMode == RTG_FULLSCREEN_8 || screenMode == RTG_WINDOWED_8) ? RGBFB_CLUT : RGBFB_R5G6B5;
 
             if(rtgDriver == P96) {
                 p96WritePixelArray(&renderInfo, 0, 0, rastPort, window->BorderLeft, window->BorderTop, width, height);
@@ -306,10 +328,54 @@ DisplayDevice_Amiga::flush()
 }
 
 void
+DisplayDevice_Amiga::storePalette()
+{
+    if(paletteStored) {
+        return;
+    }
+
+    int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
+    if(useRTGMode) {
+        pp_uint16 * hi = (pp_uint16 *) screen->ViewPort.ColorMap->ColorTable;
+        pp_uint16 * lo = (pp_uint16 *) screen->ViewPort.ColorMap->LowColorBits;
+        int i = 0;
+
+        paletteStore[i++] = (screen->ViewPort.ColorMap->Count << 16) | 0;
+        for(int j = 0; j < screen->ViewPort.ColorMap->Count; j++) {
+            pp_uint32 h = hi[j], l = lo[j];
+
+            paletteStore[i++] = ((h & 0xf00) >> 4 | (l & 0xf00)     ) << 24;
+            paletteStore[i++] = ((h & 0x0f0)      | (l & 0x0f0) >> 4) << 24;
+            paletteStore[i++] = ((h & 0x00f) << 4 | (l & 0x00f)     ) << 24;
+        }
+        paletteStore[i] = 0;
+
+        paletteStored = true;
+    }
+}
+
+void
+DisplayDevice_Amiga::restorePalette()
+{
+    if(useRTGMode) {
+        if(paletteStored) {
+            LoadRGB32(&screen->ViewPort, (const ULONG *) paletteStore);
+            paletteStored = false;
+        }
+    }
+}
+
+void
 DisplayDevice_Amiga::setPalette(PPColor * pppal)
 {
 	if(!currentGraphics->needsPalette())
 		return;
+
+    int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
+    // Store old palette
+    storePalette();
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
@@ -318,7 +384,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
     if(useSAGAMode) {
         int i = 0;
 
-        for(i = 0; i < 256; i++) {
+        for(i = 0; i < nColors; i++) {
             ULONG col = (i << 24) | (pppal[i].r << 16) | (pppal[i].g << 8) | pppal[i].b;
             if(useSAGAPiP)
                 *((ULONG *)SAGA_VIDEO_CLUT_PIP) = col;
@@ -328,8 +394,8 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
     } else if(useRTGMode) {
 	    int i = 0, j = 0;
 
-        palette[j++] = (256 << 16) | 0;
-        for(i = 0; i < 256; i++) {
+        palette[j++] = (nColors << 16) | 0;
+        for(i = 0; i < nColors; i++) {
             palette[j++] = pppal[i].r << 24;
             palette[j++] = pppal[i].g << 24;
             palette[j++] = pppal[i].b << 24;
@@ -343,12 +409,14 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 void
 DisplayDevice_Amiga::setSize(const PPSize& size)
 {
+    // INFO("Set size = %ldx%ld (current = %ld, %ld)", size.width, size.height, width, height);
+
     if(useSAGAPiP) {
         ULONG x0 = 0, y0 = 0;
         ULONG x1 = 0, y1 = 0;
 
         if (screen == IntuitionBase->FirstScreen) {
-            x0 = SAGA_PIP_DELTAX + window->LeftEdge + screen->LeftEdge + window->BorderLeft + 2;
+            x0 = SAGA_PIP_DELTAX + window->LeftEdge + screen->LeftEdge + window->BorderLeft + 1;
             y0 = SAGA_PIP_DELTAY + window->TopEdge + screen->TopEdge + window->BorderTop;
 
             if ((x0 + width - 16 - 64) < screen->Width) {

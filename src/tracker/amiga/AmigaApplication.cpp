@@ -1,4 +1,5 @@
 #include "AmigaApplication.h"
+#include "Log.h"
 #include "Amiga_KeyTranslation.h"
 #include "PPUI.h"
 #include "DisplayDevice_Amiga.h"
@@ -120,6 +121,8 @@ int AmigaApplication::load(char * loadFile)
 	PPPath_Amiga path;
     PPSystemString newCwd = path.getCurrent();
 
+    INFO("Application tries to load %s now", loadFile);
+
     // Change to old path
     path.change(oldCwd);
 
@@ -176,6 +179,8 @@ int AmigaApplication::start()
 {
     int ret = 0;
 
+    INFO("Starting application", NULL);
+
     // Store old path
     PPPath_Amiga path;
     oldCwd = path.getCurrent();
@@ -183,7 +188,14 @@ int AmigaApplication::start()
     // Startup tracker
     globalMutex->lock();
     {
+        TRACE("Starting tracker", NULL);
+
         tracker = new Tracker();
+
+        TRACE("Starting tracker done", NULL);
+
+        INFO("Opening screen and window (fs=%ld, useP96=%ld, useCGX=%ld, w=%ld, h=%ld, displayID=%08lx, bpp=%ld)",
+            isFullScreen() ? 1 : 0, useP96 ? 1 : 0, useCGX ? 1 : 0, windowSize.width, windowSize.height, displayID, bpp);
 
         if(isFullScreen()) {
             // Open screen
@@ -194,7 +206,7 @@ int AmigaApplication::start()
                     P96SA_Top                   , 0,
                     P96SA_Width                 , windowSize.width,
                     P96SA_Height                , windowSize.height,
-                    P96SA_Depth                 , bpp,
+                    P96SA_Depth                 , bpp < 8 ? 8 : bpp,
                     P96SA_DetailPen             , 0,
                     P96SA_BlockPen              , 1,
                     P96SA_Quiet                 , FALSE,
@@ -212,7 +224,7 @@ int AmigaApplication::start()
                     SA_Top                      , 0,
                     SA_Width                    , windowSize.width,
                     SA_Height                   , windowSize.height,
-                    SA_Depth                    , bpp,
+                    SA_Depth                    , bpp < 8 ? 8 : bpp,
                     SA_DetailPen                , 0,
                     SA_BlockPen                 , 1,
                     SA_Quiet                    , FALSE,
@@ -240,11 +252,11 @@ int AmigaApplication::start()
                     WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
                     TAG_DONE);
                 if(!window) {
-                    fprintf(stderr, "Could not create window!\n");
+                    ERROR("Could not create window!", NULL);
                     ret = 7;
                 }
             } else {
-                fprintf(stderr, "Could not create P96/CGX screen!\n");
+                ERROR("Could not create P96/CGX screen!", NULL);
                 ret = 6;
             }
         } else if (pubScreen = LockPubScreen(NULL)) {
@@ -262,34 +274,40 @@ int AmigaApplication::start()
                 WA_ReportMouse   , TRUE,
                 WA_NoCareRefresh , TRUE,
                 WA_RMBTrap       , TRUE,
-                WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                WA_IDCMP         , IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
                 TAG_DONE);
             if(!window) {
-                fprintf(stderr, "Could not create window!\n");
+                ERROR("Could not create window!", NULL);
                 ret = 5;
             }
         } else {
-            fprintf(stderr, "Could not get public screen!\n");
+            ERROR("Could not get public screen!", NULL);
             ret = 4;
         }
 
         if(!ret) {
+            INFO("Initing display device", NULL);
+
             displayDevice = new DisplayDevice_Amiga(this);
             if(displayDevice->init()) {
                 displayDevice->allowForUpdates(false);
 
+                TRACE("Creating PP Screen (displayDevice=%08lx, tracker=%08lx)", displayDevice, tracker);
+
                 trackerScreen = new PPScreen(displayDevice, tracker);
                 tracker->setScreen(trackerScreen);
 
+                TRACE("Starting up tracker", NULL);
                 tracker->startUp(noSplash);
+                TRACE("Starting up tracker finished", NULL);
 
                 trackerStartUpFinished = true;
             } else {
-                fprintf(stderr, "Could not init display device!\n");
+                ERROR("Could not init display device!", NULL);
                 ret = 3;
             }
         } else {
-            fprintf(stderr, "Could not init Intuition objects!\n");
+            ERROR("Could not init Intuition objects!", NULL);
             ret = 2;
         }
     }
@@ -302,6 +320,8 @@ int AmigaApplication::start()
         }
 
         if(!ret) {
+            TRACE("Setting up IPC between Vertical Blank ISR and application loop", NULL);
+
             // Setup IPC VBISR<->loop
             task = FindTask(NULL);
             vbSignal = AllocSignal(-1);
@@ -317,7 +337,7 @@ int AmigaApplication::start()
                 irqVerticalBlank->is_Code = (void(*)()) verticalBlankService;
                 AddIntServer(INTB_VERTB, irqVerticalBlank);
             } else {
-                fprintf(stderr, "Could not alloc signal for VB<->loop IPC!\n");
+                ERROR("Could not alloc signal for VB<->loop IPC!", NULL);
                 ret = 1;
             }
         }
@@ -335,8 +355,8 @@ AmigaApplication::verticalBlankService(register AmigaApplication * that __asm("a
 pp_int32
 AmigaApplication::verticalBlank()
 {
-    vbCount++;
     Signal(task, vbMask);
+    vbCount++;
 
     return 0;
 }
@@ -355,6 +375,8 @@ AmigaApplication::loop()
     ULONG portMask = 1L << port->mp_SigBit;
     struct InputEvent ie = {0};
 
+    INFO("Starting application main loop", NULL);
+
     ie.ie_Class = IECLASS_RAWKEY;
     ie.ie_SubClass = 0;
 
@@ -366,6 +388,8 @@ AmigaApplication::loop()
     // Initial screen update
     displayDevice->allowForUpdates(true);
     displayDevice->update();
+
+    INFO("Going into crunch mode", NULL);
 
     while(running) {
 		ULONG signal = Wait(vbMask | portMask);
@@ -383,7 +407,22 @@ AmigaApplication::loop()
             struct IntuiMessage * msg;
 
             while((msg = (struct IntuiMessage *) GetMsg(port))) {
+                bool verticalBlankSignaled = !!(SetSignal(0, vbMask) & vbMask);
+
+                if(verticalBlankSignaled) {
+                    AudioDriverInterface_Amiga * driverInterface = (AudioDriverInterface_Amiga *) tracker->playerMaster->getCurrentDriver();
+                    if(driverInterface) {
+                        driverInterface->bufferAudio();
+                    }
+                }
+
                 switch(msg->Class) {
+                case IDCMP_ACTIVEWINDOW:
+                    displayDevice->setActive(true);
+                    break;
+                case IDCMP_INACTIVEWINDOW:
+                    displayDevice->setActive(false);
+                    break;
                 case IDCMP_CLOSEWINDOW:
                     running = false;
                     break;
@@ -427,7 +466,7 @@ AmigaApplication::loop()
                                 key.sym = *buffer;
                             }
 
-                            //printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+                            //printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c / code = %d\n", msg->Code, msg->Qualifier, key.sym, key.sym, key.code);
 
                             keyUp = key.code >= 0x80;
                             if(keyUp)
@@ -543,9 +582,26 @@ AmigaApplication::loop()
                 }
 
                 ReplyMsg((struct Message *) msg);
-            }
 
-            displayDevice->setSize(windowSize);
+                if(verticalBlankSignaled) {
+                    if(!(vbCount & 1)) {
+                        PPEvent timerEvent(eTimer);
+                        raiseEventSynchronized(&timerEvent);
+                    }
+
+                    if(mouseLeftDown && (vbCount - mouseLeftVBStart) > 25) {
+                        PPEvent mouseRepeatEvent(eLMouseRepeat, &mousePosition, sizeof(PPPoint));
+                        raiseEventSynchronized(&mouseRepeatEvent);
+                    } else if(mouseRightDown && (vbCount - mouseRightVBStart) > 25) {
+                        PPEvent mouseRepeatEvent(eRMouseRepeat, &mousePosition, sizeof(PPPoint));
+                        raiseEventSynchronized(&mouseRepeatEvent);
+                    }
+
+                    // And draw the screen at last (@todo check if we have enough VBTime left for that)
+                    displayDevice->flush();
+                    displayDevice->setSize(windowSize);
+                }
+            }
         }
 
         if(signal & vbMask) {
@@ -564,8 +620,11 @@ AmigaApplication::loop()
 
             // And draw the screen at last (@todo check if we have enough VBTime left for that)
             displayDevice->flush();
+            displayDevice->setSize(windowSize);
         }
     }
+
+    INFO("Leaving crunch mode", NULL);
 }
 
 int AmigaApplication::stop()

@@ -33,6 +33,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Enable IDE solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Export Compile commands for VSCode
+add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+
 # Enable tracker-specific functions in MilkyPlay
 add_definitions(-DMILKYTRACKER)
 

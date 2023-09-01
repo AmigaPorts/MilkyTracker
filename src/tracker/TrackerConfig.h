@@ -36,8 +36,8 @@ public:
 	static const PPString stringButtonDown;
 	static const PPString stringButtonExtended;
 	static const PPString stringButtonCollapsed;
-	
-	enum 
+
+	enum
 	{
 		MAXCHANNELS = 256,
 		MAXNOTES = 120, // 10 octaves, even though FT2 only uses 8
@@ -47,20 +47,20 @@ public:
 
 	static PPColor colorThemeMain;
 	static PPColor colorRecordModeButtonText;
-	
+
 	// Pattern colors
 	static PPColor colorPatternEditorBackground;
 	static PPColor colorPatternEditorCursor;
 	static PPColor colorPatternEditorCursorLine;
 	static PPColor colorPatternEditorCursorLineHighLight;
 	static PPColor colorPatternEditorSelection;
-	
+
 	static PPColor colorPatternEditorNote;
 	static PPColor colorPatternEditorInstrument;
 	static PPColor colorPatternEditorVolume;
 	static PPColor colorPatternEditorEffect;
 	static PPColor colorPatternEditorOperand;
-	
+
 	static PPColor colorHighLight_1;
 	static PPColor colorHighLight_2;
 	static PPColor colorScopes;
@@ -73,26 +73,27 @@ public:
 	static PPColor colorSampleEditorWaveform;
 
 	static pp_int32 numTabs;
-	
+
 	static pp_int32 numPlayerChannels;
 	static pp_int32 numVirtualChannels;
 	static pp_int32 totalPlayerChannels;
 	static const pp_int32 maximumPlayerChannels;
 
 	static bool useVirtualChannels;
-	
+
 	static const pp_int32 numPredefinedEnvelopes;
 	static const pp_int32 numPredefinedColorPalettes;
-	
+
 	static const PPString defaultPredefinedVolumeEnvelope;
 	static const PPString defaultPredefinedPanningEnvelope;
 	static const PPString defaultProTrackerPanning;
-	
-	static const PPString defaultColorPalette;	
+
+	static const PPString defaultColorPalette;
+	static const PPString defaultReducedColorPalette;
 	static const char* predefinedColorPalettes[];
-	
+
 	static const PPSystemString untitledSong;
-	
+
 	static const pp_int32 numMixFrequencies;
 	static const pp_int32 mixFrequencies[];
 

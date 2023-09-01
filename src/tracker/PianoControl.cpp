@@ -120,14 +120,14 @@ PianoControl::PianoControl(pp_int32 id,
 
 	hScrollbar = new PPScrollbar(0, parentScreen, this, PPPoint(location.x, location.y + size.height - SCROLLBARWIDTH - 1), size.width - 1, true);
 
-#ifndef __LOWRES__
-	xscale = 1;
-	yscale = 1;
-	pianoBitmap = PianoBitmapLarge::getInstance();
-#else
+#if defined(__LOWRES__) || defined(__AMIGA__)
 	xscale = 2;
 	yscale = 1;
 	pianoBitmap = PianoBitmapSmall::getInstance();
+#else
+	xscale = 1;
+	yscale = 1;
+	pianoBitmap = PianoBitmapLarge::getInstance();
 #endif
 
 	xMax = XMAX()*xscale;

@@ -40,7 +40,7 @@
 
 #undef FXTOGGLE
 
-#ifdef __LOWRES__
+#if defined(__LOWRES__) || defined(__AMIGA__)
 #define __SIMPLEFX__
 #endif
 
@@ -192,7 +192,6 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 
 #if !defined(__AMIGA__)
 	fx->render(vscreen);
-#endif
 
 	pp_uint8* vptr = vscreen;
 	const pp_uint8* iptr = LogoSmall::rawData;
@@ -226,6 +225,10 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 		}
 
 	g->blit(vscreen, p, s, visibleWidth*3, 3);
+#else
+	g->setColor(0, 0, 0);
+	g->fill();
+#endif
 
 	g->setRect(location.x+2, location.y+2, location.x + size.width-2, location.y + size.height-2);
 
@@ -306,7 +309,7 @@ void AnimatedFXControl::show(bool bShow)
 	PPControl::show(bShow);
 	if (!bShow)
 	{
-#if defined(FXTOGGLE) || defined(__LOWRES__)
+#if defined(FXTOGGLE) || defined(__LOWRES__) || defined(__AMIGA__)
 		delete fx;
 		fx = NULL;
 		delete[] vscreen;
@@ -316,7 +319,7 @@ void AnimatedFXControl::show(bool bShow)
 	}
 	else
 	{
-#if defined(FXTOGGLE) || defined(__LOWRES__)
+#if defined(FXTOGGLE) || defined(__LOWRES__) || defined(__AMIGA__)
 		createFX();
 #endif
 	}

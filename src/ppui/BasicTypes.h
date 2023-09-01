@@ -128,6 +128,11 @@ struct PPRect
 	pp_int32 width() const { return x2-x1; }
 	pp_int32 height() const { return y2-y1; }
 
+	void dump(const char * name)
+	{
+		printf("Rect %s @ %d, %d (%d * %d)\n", name, x1, y1, width(), height());
+	}
+
 	void scale(pp_int32 scaleFactor)
 	{
 		x1 *= scaleFactor;
@@ -173,6 +178,23 @@ struct PPColor
 
 	PPColor()
 	{}
+
+	pp_uint32 getRGB888() const
+	{
+		return (r<<16) | (g<<8) | b;
+	}
+
+	pp_uint32 getRGB444() const
+	{
+		return ((r&0xf0)<<4) | (g&0xf0) | ((b&0xf0)>>4);
+	}
+
+	void reduceToRGB444()
+	{
+		r = r & 0xf0;
+		g = g & 0xf0;
+		b = b & 0xf0;
+	}
 
 	void validate()
 	{

@@ -1,7 +1,7 @@
 /*
- *  ppui/Graphics_8BIT.cpp
+ *  ppui/Graphics_4BIT.cpp
  *
- *  Copyright 2020 neoman/titan
+ *  Copyright 2022 neoman/titan
  *
  *  This file is part of Milkytracker.
  *
@@ -24,12 +24,40 @@
 #include "Font.h"
 #include "fastfill.h"
 
-PPGraphics_8BIT::PPGraphics_8BIT(pp_int32 w, pp_int32 h, pp_int32 p, void* buff)
+PPGraphics_4BIT::PPGraphics_4BIT(pp_int32 w, pp_int32 h, pp_int32 p, void* buff)
 : PPGraphicsFrameBuffer(w, h, p, buff)
 {
+	for(int i = 0; i < 4096; i++) {
+		paletteIndexCache[i] = -1;
+	}
 }
 
-void PPGraphics_8BIT::setPixel(pp_int32 x, pp_int32 y)
+pp_uint8 PPGraphics_4BIT::lookupPaletteIndex(const PPColor& color)
+{
+	pp_int32 search = color.getRGB444();
+	pp_int8 cachedIndex = paletteIndexCache[search];
+	if(cachedIndex >= 0) {
+		return cachedIndex;
+	}
+	if(cachedIndex == -2) {
+		return 0;
+	}
+
+	for(int i = 0; i < 16; i++) {
+		pp_int32 candidate = currentPalette[i].getRGB444();
+		if(search == candidate) {
+			paletteIndexCache[search] = i;
+			printf("Caching %03x as %02d\n", search, i);
+			return i;
+		}
+	}
+	paletteIndexCache[search] = -2;
+	printf("Not found: %03x\n", search);
+
+	return 0;
+}
+
+void PPGraphics_4BIT::setPixel(pp_int32 x, pp_int32 y)
 {
 	if (y >= currentClipRect.y1 && y < currentClipRect.y2 &&
 		x >= currentClipRect.x1 && x < currentClipRect.x2)
@@ -39,7 +67,7 @@ void PPGraphics_8BIT::setPixel(pp_int32 x, pp_int32 y)
 	}
 }
 
-void PPGraphics_8BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
+void PPGraphics_4BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 {
 	if (y >= currentClipRect.y1 && y < currentClipRect.y2 &&
 		x >= currentClipRect.x1 && x < currentClipRect.x2)
@@ -49,7 +77,7 @@ void PPGraphics_8BIT::setPixel(pp_int32 x, pp_int32 y, const PPColor& color)
 	}
 }
 
-void PPGraphics_8BIT::setColor(pp_int32 r, pp_int32 g, pp_int32 b)
+void PPGraphics_4BIT::setColor(pp_int32 r, pp_int32 g, pp_int32 b)
 {
 	currentColor.r = r;
 	currentColor.g = g;
@@ -58,14 +86,14 @@ void PPGraphics_8BIT::setColor(pp_int32 r, pp_int32 g, pp_int32 b)
 	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
-void PPGraphics_8BIT::setColor(const PPColor& color)
+void PPGraphics_4BIT::setColor(const PPColor& color)
 {
 	currentColor = color;
 
 	currentColorIndex = lookupPaletteIndex(currentColor);
 }
 
-void PPGraphics_8BIT::setSafeColor(pp_int32 r, pp_int32 g, pp_int32 b)
+void PPGraphics_4BIT::setSafeColor(pp_int32 r, pp_int32 g, pp_int32 b)
 {
 	if (r > 255)
 		r = 255;
@@ -77,7 +105,7 @@ void PPGraphics_8BIT::setSafeColor(pp_int32 r, pp_int32 g, pp_int32 b)
 	setColor(r, g, b);
 }
 
-void PPGraphics_8BIT::fill(PPRect rect)
+void PPGraphics_4BIT::fill(PPRect rect)
 {
 	pp_int32 y, len;
 	pp_uint8 * d;
@@ -108,12 +136,12 @@ void PPGraphics_8BIT::fill(PPRect rect)
 	}
 }
 
-void PPGraphics_8BIT::fill()
+void PPGraphics_4BIT::fill()
 {
 	fill(currentClipRect);
 }
 
-void PPGraphics_8BIT::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
+void PPGraphics_4BIT::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
 {
 	pp_int32 len;
 	pp_uint8 * d;
@@ -142,7 +170,7 @@ void PPGraphics_8BIT::drawHLine(pp_int32 x1, pp_int32 x2, pp_int32 y)
 	memset(d, currentColorIndex, len);
 }
 
-void PPGraphics_8BIT::drawVLine(pp_int32 y1, pp_int32 y2, pp_int32 x)
+void PPGraphics_4BIT::drawVLine(pp_int32 y1, pp_int32 y2, pp_int32 x)
 {
 	pp_uint8 * d;
 
@@ -169,21 +197,21 @@ void PPGraphics_8BIT::drawVLine(pp_int32 y1, pp_int32 y2, pp_int32 x)
 	}
 }
 
-void PPGraphics_8BIT::drawLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
+void PPGraphics_4BIT::drawLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
 {
 	__PPGRAPHICSLINETEMPLATE
 }
 
-void PPGraphics_8BIT::drawAntialiasedLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
+void PPGraphics_4BIT::drawAntialiasedLine(pp_int32 x1, pp_int32 y1, pp_int32 x2, pp_int32 y2)
 {
 	__PPGRAPHICSAALINETEMPLATE
 }
 
-void PPGraphics_8BIT::blit(const pp_uint8* src, const PPPoint& p, const PPSize& size, pp_uint32 pitch, pp_uint32 bpp, pp_int32 intensity/* = 256*/)
+void PPGraphics_4BIT::blit(const pp_uint8* src, const PPPoint& p, const PPSize& size, pp_uint32 pitch, pp_uint32 bpp, pp_int32 intensity/* = 256*/)
 {
 }
 
-void PPGraphics_8BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underlined)
+void PPGraphics_4BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underlined)
 {
 	if (currentFont == NULL)
 		return;
@@ -249,7 +277,7 @@ void PPGraphics_8BIT::drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underl
 
 }
 
-void PPGraphics_8BIT::drawString(const char* str, pp_int32 x, pp_int32 y, bool underlined/* = false*/)
+void PPGraphics_4BIT::drawString(const char* str, pp_int32 x, pp_int32 y, bool underlined/* = false*/)
 {
 	if (currentFont == NULL)
 		return;
@@ -278,7 +306,7 @@ void PPGraphics_8BIT::drawString(const char* str, pp_int32 x, pp_int32 y, bool u
     }
 }
 
-void PPGraphics_8BIT::drawStringVertical(const char* str, pp_int32 x, pp_int32 y, bool underlined/* = false*/)
+void PPGraphics_4BIT::drawStringVertical(const char* str, pp_int32 x, pp_int32 y, bool underlined/* = false*/)
 {
 	if (currentFont == NULL)
 		return;
@@ -301,7 +329,7 @@ void PPGraphics_8BIT::drawStringVertical(const char* str, pp_int32 x, pp_int32 y
     }
 }
 
-void PPGraphics_8BIT::fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
+void PPGraphics_4BIT::fillVerticalShaded(PPRect r, const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
 {
 	// @todo invertShading
 	setColor(colOriginal);
@@ -311,7 +339,7 @@ void PPGraphics_8BIT::fillVerticalShaded(PPRect r, const PPColor& colSrc, const 
 	setRect(old);
 }
 
-void PPGraphics_8BIT::fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
+void PPGraphics_4BIT::fillVerticalShaded(const PPColor& colSrc, const PPColor& colDst, bool invertShading, const PPColor& colOriginal)
 {
 	// @todo invertShading
 	setColor(colOriginal);

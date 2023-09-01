@@ -32,15 +32,16 @@
 #include "Graphics.h"
 
 PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
-									 pp_int32 height, 
+									 pp_int32 height,
 									 pp_int32 scaleFactor,
 									 pp_int32 bpp,
-									 bool fullScreen, 
-									 Orientations theOrientation/* = ORIENTATION_NORMAL*/, 
+									 bool fullScreen,
+									 Orientations theOrientation/* = ORIENTATION_NORMAL*/,
 									 bool swapRedBlue/* = false*/) :
 	PPDisplayDevice(width, height, scaleFactor, bpp, fullScreen, theOrientation),
 	needsTemporaryBuffer((orientation != ORIENTATION_NORMAL) || (scaleFactor != 1)),
-	temporaryBuffer(NULL)
+	temporaryBuffer(NULL),
+	theTexture(NULL)
 {
 	// Create an SDL window and surface
 	theWindow = CreateWindow(realWidth, realHeight, bpp,
@@ -55,7 +56,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 		fprintf(stderr, "SDL: Could not create window.\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	// Create renderer for the window
 	theRenderer = SDL_CreateRenderer(theWindow, drv_index, 0);
 	if (theRenderer == NULL)
@@ -82,36 +83,45 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 
 	// Lock aspect ratio and scale the UI up to fit the window
 #ifdef HIDPI_SUPPORT
-	SDL_RenderSetLogicalSize(theRenderer, rendererW, rendererH);
+	if (SDL_RenderSetLogicalSize(theRenderer, rendererW, rendererH) < 0) {
 #else
-	SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight);
+	if (SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight) <0) {
 #endif
+		fprintf(stderr, "SDL: SDL_RenderSetLogicalSize failed: %s\n", SDL_GetError());
+	}
 
 	// Use linear filtering for the scaling (make this optional eventually)
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
 	// Create surface for rendering graphics
-	theSurface = SDL_CreateRGBSurface(0, realWidth, realHeight, bpp == -1 ? 32 : bpp, 0, 0, 0, 0);
+	theSurface = SDL_CreateRGBSurface(0, realWidth, realHeight, bpp == -1 ? 32 : (bpp < 8) ? 8 : bpp, 0, 0, 0, 0);
 	if (theSurface == NULL)
 	{
 		fprintf(stderr, "SDL: SDL_CreateSurface failed: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
-	
+
 	// Streaming texture for rendering the UI
-	theTexture = SDL_CreateTexture(theRenderer, theSurface->format->format, SDL_TEXTUREACCESS_STREAMING, realWidth, realHeight);
-	if (theTexture == NULL)
-	{
-		fprintf(stderr, "SDL: SDL_CreateTexture failed: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
+	if (bpp > 8) {
+		theTexture = SDL_CreateTexture(theRenderer, theSurface->format->format, SDL_TEXTUREACCESS_STREAMING, realWidth, realHeight);
+		if (theTexture == NULL)
+		{
+			fprintf(stderr, "SDL: SDL_CreateTexture failed: %s\n", SDL_GetError());
+			exit(EXIT_FAILURE);
+		}
 	}
-	
+
 	// We got a surface: update bpp value
-	bpp = theSurface->format->BitsPerPixel;
+	bpp = (bpp >= 0 && bpp < 8) ? bpp : theSurface->format->BitsPerPixel;
+
+	printf("SDL: Using bitdepth: %d.\n", bpp);
 
 	// Create a PPGraphics context based on bpp
 	switch (bpp)
 	{
+		case 4:
+			currentGraphics = new PPGraphics_4BIT(width, height, 0, NULL);
+			break;
 		case 8:
 			currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
 			break;
@@ -121,7 +131,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 		case 16:
 			currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
 			break;
-			
+
 		case 24:
 		{
 			PPGraphics_24bpp_generic* g = new PPGraphics_24bpp_generic(width, height, 0, NULL);
@@ -140,7 +150,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 			currentGraphics = static_cast<PPGraphicsAbstract*>(g);
 			break;
 		}
-			
+
 		case 32:
 		{
 			PPGraphics_32bpp_generic* g = new PPGraphics_32bpp_generic(width, height, 0, NULL);
@@ -159,24 +169,24 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 			currentGraphics = static_cast<PPGraphicsAbstract*>(g);
 			break;
 		}
-			
+
 		default:
 			fprintf(stderr, "SDL: Unsupported color depth (%i), try either 16, 24 or 32", bpp);
 			exit(EXIT_FAILURE);
 	}
-	
+
 	if (needsTemporaryBuffer)
 	{
-		temporaryBufferPitch = (width*bpp)/8;
-		temporaryBufferBPP = bpp;
-		temporaryBuffer = new pp_uint8[getSize().width*getSize().height*(bpp/8)];
+		temporaryBufferBPP = bpp < 8 ? 8 : bpp;
+		temporaryBufferPitch = (width*temporaryBufferBPP)/8;
+		temporaryBuffer = new pp_uint8[getSize().width*getSize().height*(temporaryBufferBPP/8)];
 	}
-	
+
 	currentGraphics->lock = true;
 }
 
 PPDisplayDeviceFB::~PPDisplayDeviceFB()
-{	
+{
 	SDL_FreeSurface(theSurface);
 	SDL_DestroyRenderer(theRenderer);
 	SDL_DestroyWindow(theWindow);
@@ -198,13 +208,13 @@ PPGraphicsAbstract* PPDisplayDeviceFB::open()
 		currentGraphics->lock = false;
 
 		if (needsTemporaryBuffer)
-			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(temporaryBufferPitch, (pp_uint8*)temporaryBuffer);		
+			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(temporaryBufferPitch, (pp_uint8*)temporaryBuffer);
 		else
-			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8*)theSurface->pixels);		
-		
+			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8*)theSurface->pixels);
+
 		return currentGraphics;
 	}
-	
+
 	return NULL;
 }
 
@@ -217,41 +227,48 @@ void PPDisplayDeviceFB::close()
 
 void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 {
-	int i;
-
 	if(!currentGraphics->needsPalette())
 		return;
+
+	int nColors = 1 << currentGraphics->getOperatingBitDepth();
+
+	printf("PPDisplayDeviceFB: Using palette with %d colors.\n", nColors);
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
 
 	// Pass palette to SDL
-	for(i = 0; i < 256; i++) {
+	for(int i = 0; i < nColors; i++) {
 		palette[i].r = pppal[i].r;
 		palette[i].g = pppal[i].g;
 		palette[i].b = pppal[i].b;
 	}
 
-	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, 256);
+	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, nColors);
 }
 
 void PPDisplayDeviceFB::update()
 {
 	if (!isUpdateAllowed() || !isEnabled())
 		return;
-	
+
 	if (theSurface->locked)
 	{
 		return;
 	}
-	
+
 	PPRect r(0, 0, getSize().width, getSize().height);
 	swap(r);
-	
+
 	// Update entire texture and copy to renderer
-	SDL_UpdateTexture(theTexture, NULL, theSurface->pixels, theSurface->pitch);
-	SDL_RenderClear(theRenderer);
-	SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+	if (theTexture != NULL) {
+		SDL_UpdateTexture(theTexture, NULL, theSurface->pixels, theSurface->pitch);
+		SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+	} else {
+		SDL_Texture * t = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+		SDL_RenderCopy(theRenderer, t, NULL, NULL);
+		SDL_DestroyTexture(t);
+	}
 	SDL_RenderPresent(theRenderer);
 }
 
@@ -259,28 +276,36 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 {
 	if (!isUpdateAllowed() || !isEnabled())
 		return;
-	
+
 	if (theSurface->locked)
 	{
 		return;
 	}
 
 	swap(r);
-	
+
 	PPRect r2(r);
 	r2.scale(scaleFactor);
-	
+
 	transformInverse(r2);
 
 	SDL_Rect r3 = { r2.x1, r2.y1, r2.width(), r2.height() };
-	
-	// Calculate destination pixel data offset based on row pitch and x coordinate
-	void* surfaceOffset = (char*) theSurface->pixels + r2.y1 * theSurface->pitch + r2.x1 * theSurface->format->BytesPerPixel;
-	
+
 	// Update dirty area of texture and copy to renderer
-	SDL_UpdateTexture(theTexture, &r3, surfaceOffset, theSurface->pitch);
-	SDL_RenderClear(theRenderer);
-	SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+	if (theTexture != NULL) {
+		// Calculate destination pixel data offset based on row pitch and x coordinate
+		void* surfaceOffset = (char*) theSurface->pixels +
+			r2.y1 * theSurface->pitch +
+			r2.x1 * theSurface->format->BytesPerPixel;
+
+		SDL_UpdateTexture(theTexture, &r3, surfaceOffset, theSurface->pitch);
+		SDL_RenderCopy(theRenderer, theTexture, NULL, NULL);
+	} else {
+		SDL_Texture * t = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+		SDL_RenderCopy(theRenderer, t, NULL, NULL);
+		SDL_DestroyTexture(t);
+	}
+
 	SDL_RenderPresent(theRenderer);
 }
 
@@ -291,39 +316,63 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 	if (r.x2 < r.x1)
 	{
 		h = r.x1; r.x1 = r.x2; r.x2 = h;
-	}	
+	}
 	if (r.y2 < r.y1)
 	{
 		h = r.y1; r.y1 = r.y2; r.y2 = h;
-	}	
-	
+	}
+
 	switch (orientation)
 	{
 		case ORIENTATION_NORMAL:
 		{
 			if (!needsTemporaryBuffer)
 				return;
-			
+
 			if (SDL_LockSurface(theSurface) < 0)
 				return;
-						
+
 			const pp_uint32 srcBPP = temporaryBufferBPP/8;
 			const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
 
-			PPRect destRect(r);		
+			PPRect destRect(r);
 			destRect.scale(scaleFactor);
 
 			const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 			const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
-			
+
 			switch (temporaryBufferBPP)
 			{
+				case 8:
+				{
+					pp_uint32 srcPitch = temporaryBufferPitch;
+					pp_uint32 dstPitch = theSurface->pitch;
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
+					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
+
+					pp_uint32 v = r.y1 * 65536;
+					for (pp_uint32 y = destRect.y1; y < destRect.y2; y++)
+					{
+						pp_uint32 u = r.x1 * 65536;
+						pp_uint8* dstPtr = (pp_uint8*)(dst + y*dstPitch + destRect.x1*dstBPP);
+						pp_uint8* srcPtr = src + (v>>16)*srcPitch;
+						for (pp_uint32 x = destRect.x1; x < destRect.x2; x++)
+						{
+							*dstPtr++ = *(pp_uint8*)(srcPtr + (u>>16) * srcBPP);
+							u += stepU;
+						}
+						v += stepV;
+					}
+
+					break;
+				}
 				case 16:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
 
 					pp_uint32 v = r.y1 * 65536;
@@ -340,7 +389,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 						v += stepV;
 					}
 
-					
+
 					break;
 				}
 
@@ -348,10 +397,10 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
 
@@ -371,18 +420,18 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 						}
 						v += stepV;
 					}
-																
+
 					break;
 				}
-				
+
 				case 32:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
 
@@ -402,40 +451,40 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 
 					break;
 				}
-				
+
 				default:
 					fprintf(stderr, "SDL: Unsupported color depth for requested orientation");
 					exit(2);
 			}
-			
-			SDL_UnlockSurface(theSurface);				
+
+			SDL_UnlockSurface(theSurface);
 
 			break;
 		}
-	
+
 		case ORIENTATION_ROTATE90CCW:
 		{
 			if (SDL_LockSurface(theSurface) < 0)
 				return;
-						
+
 			switch (temporaryBufferBPP)
 			{
 				case 16:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch >> 1;
 					pp_uint32 dstPitch = theSurface->pitch >> 1;
-					
-					pp_uint16* src = (pp_uint16*)temporaryBuffer; 
+
+					pp_uint16* src = (pp_uint16*)temporaryBuffer;
 					pp_uint16* dst = (pp_uint16*)theSurface->pixels;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
-						
+
 						pp_uint32 v = r.y1 * 65536;
 						for (pp_uint32 y = destRect.y1; y < destRect.y2; y++)
 						{
@@ -445,7 +494,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 							for (pp_uint32 x = destRect.x1; x < destRect.x2; x++)
 							{
 								*(dstPtr-=dstPitch) = *(srcPtr+(u>>16));
-								
+
 								u += stepU;
 							}
 							v += stepV;
@@ -461,7 +510,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 								*(dstPtr-=dstPitch) = *srcPtr++;
 						}
 					}
-					
+
 					break;
 				}
 
@@ -469,21 +518,21 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
-						
+
 						pp_uint32 v = r.y1 * 65536;
 						for (pp_uint32 y = destRect.y1; y < destRect.y2; y++)
 						{
@@ -496,7 +545,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 								dstPtr[1] = *(srcPtr+(u>>16) * srcBPP + 1);
 								dstPtr[2] = *(srcPtr+(u>>16) * srcBPP + 2);
 								dstPtr-=dstPitch;
-								
+
 								u += stepU;
 							}
 							v += stepV;
@@ -518,26 +567,26 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 							}
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				case 32:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
 
@@ -565,16 +614,16 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 								*(dstPtr-=(dstPitch>>2)) = *srcPtr++;
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				default:
 					fprintf(stderr, "SDL: Unsupported color depth for requested orientation");
 					exit(2);
 			}
-		
-			SDL_UnlockSurface(theSurface);				
+
+			SDL_UnlockSurface(theSurface);
 			break;
 		}
 
@@ -582,25 +631,25 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 		{
 			if (SDL_LockSurface(theSurface) < 0)
 				return;
-						
+
 			switch (temporaryBufferBPP)
 			{
 				case 16:
-				{					
+				{
 					pp_uint32 srcPitch = temporaryBufferPitch >> 1;
 					pp_uint32 dstPitch = theSurface->pitch >> 1;
-					
-					pp_uint16* src = (pp_uint16*)temporaryBuffer; 
+
+					pp_uint16* src = (pp_uint16*)temporaryBuffer;
 					pp_uint16* dst = (pp_uint16*)theSurface->pixels;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
-						
+
 						pp_uint32 v = r.y1 * 65536;
 						for (pp_uint32 y = destRect.y1; y < destRect.y2; y++)
 						{
@@ -610,7 +659,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 							for (pp_uint32 x = destRect.x1; x < destRect.x2; x++)
 							{
 								*(dstPtr+=dstPitch) = *(srcPtr+(u>>16));
-								
+
 								u += stepU;
 							}
 							v += stepV;
@@ -626,26 +675,26 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 								*(dstPtr+=dstPitch) = *srcPtr++;
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				case 24:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
 
@@ -683,26 +732,26 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 							}
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				case 32:
 				{
 					pp_uint32 srcPitch = temporaryBufferPitch;
 					pp_uint32 dstPitch = theSurface->pitch;
-					
-					pp_uint8* src = (pp_uint8*)temporaryBuffer; 
+
+					pp_uint8* src = (pp_uint8*)temporaryBuffer;
 					pp_uint8* dst = (pp_uint8*)theSurface->pixels;
-					
+
 					const pp_uint32 srcBPP = temporaryBufferBPP/8;
 					const pp_uint32 dstBPP = theSurface->format->BytesPerPixel;
-					
+
 					if (scaleFactor != 1)
 					{
-						PPRect destRect(r);		
+						PPRect destRect(r);
 						destRect.scale(scaleFactor);
-						
+
 						const pp_uint32 stepU = (r.x2 - r.x1) * 65536 / (destRect.x2 - destRect.x1);
 						const pp_uint32 stepV = (r.y2 - r.y1) * 65536 / (destRect.y2 - destRect.y1);
 
@@ -730,10 +779,10 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 								*(dstPtr+=(dstPitch>>2)) = *srcPtr++;
 						}
 					}
-					
+
 					break;
 				}
-				
+
 				default:
 					fprintf(stderr, "SDL: Unsupported color depth for requested orientation");
 					exit(EXIT_FAILURE);
@@ -743,7 +792,7 @@ void PPDisplayDeviceFB::swap(const PPRect& r2)
 			break;
 		}
 	}
-	
+
 }
 
 // This is unused at the moment, could be useful if we manage to get the GUI resizable in the future.
@@ -751,6 +800,8 @@ void PPDisplayDeviceFB::setSize(const PPSize& size)
 {
 	this->size = size;
 	theSurface = SDL_CreateRGBSurface(0, size.width, size.height, theSurface->format->BitsPerPixel, 0, 0, 0, 0);
-	theTexture = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+	if (theTexture != NULL) {
+		theTexture = SDL_CreateTextureFromSurface(theRenderer, theSurface);
+	}
 	theRenderer = SDL_GetRenderer(theWindow);
 }
