@@ -81,20 +81,39 @@ def buildStep(dockerImage, os, flags) {
 					).trim()
 					sh "VERBOSE=1 cmake --build . --config Release -- -j${_NPROCESSORS_ONLN}"
 					sh "VERBOSE=1 cmake --build . --config Release --target package -- -j${_NPROCESSORS_ONLN}"
-					
+					def archive_date = sh (
+						script: 'date +"-%Y%m%d-%H%M"',
+						returnStdout: true
+					).trim()
+					def release_type = ("${fixed_job_name}-").replace('/','-').replace('MilkyTracker-','').replace('master-','');
+					if (env.TAG_NAME) {
+						archive_date = '';
+					}
 					dir("milkytracker") {
 						sh "unzip ../*.zip"
 						sh "mv -fv ./* ./MilkyTracker"
 						sh "cp ../../../resources/packaging/amigaos/milkytracker_dir.info ./MilkyTracker.info"
-						def archive_date = sh (
-							script: 'date +"%Y%m%d-%H%M"',
-							returnStdout: true
-						).trim()
-						def release_type = ("${fixed_job_name}-").replace('/','-').replace('MilkyTracker-','').replace('master-','');
 
-						sh "lha -c ../milkytracker-${os}-${release_type}${archive_date}.lha *"
+						sh "lha -c ../milkytracker-${release_type}${os}${archive_date}.lha *"
 					}
 					
+					if (!env.CHANGE_ID) {
+					    def release_type_tag = 'develop';
+					    def pre_release = '--pre-release';
+					    if (env.TAG_NAME) {
+					        pre_release = '';
+					        release_type_tag = env.TAG_NAME;
+					    } else if (env.BRANCH_NAME.equals('master')) {
+					        release_type_tag = 'nightly';
+					    }
+					    
+    					try {
+    					    sh "github-release release --user amigaports --repo milkytracker --tag ${release_type_tag} --name \"milkytracker ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+    					} catch(err) {
+                 
+                    	}
+    					sh "github-release upload --user amigaports --repo milkytracker --tag ${release_type_tag} --name \"milkytracker-${release_type}${os}${archive_date}.lha\" --file milkytracker-${release_type}${os}${archive_date}.lha --replace"
+					}
 					archiveArtifacts artifacts: "**.lha"
 					stash includes: "**.lha", name: "${os}"
 				}

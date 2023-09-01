@@ -7,6 +7,14 @@
             "Dockerfile": "",
             "BuildIfSuccessful": "",
             "BuildParam": "-DM68K_CPU=68040 -DM68K_FPU=hard"
+        },
+        {
+            "DockerRoot": "amigadev",
+            "DockerImage": "crosstools",
+            "DockerTag": "x86_64-linux",
+            "Dockerfile": "",
+            "BuildIfSuccessful": "",
+            "BuildParam": ""
         }
     ]
 }

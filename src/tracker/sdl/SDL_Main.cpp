@@ -84,8 +84,7 @@
 #endif
 // --------------------------------------------------------------------------
 
-#ifdef AMIGA
-SDL_Surface*			screen			= NULL;
+#ifdef __AMIGA__
 static 
 #endif
 SDL_TimerID			timer;
