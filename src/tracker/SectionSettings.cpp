@@ -176,7 +176,6 @@ enum ControlIDs
 	BUTTON_RESOLUTIONS_CUSTOM,
 	BUTTON_RESOLUTIONS_FULL,
 	STATICTEXT_SETTINGS_MAGNIFY,
-	STATICTEXT_SETTINGS_WINDOWED_ONLY,
 	RADIOGROUP_SETTINGS_MAGNIFY,
 	LISTBOX_COLORS,
 	SLIDER_COLOR_RED,
@@ -1251,7 +1250,12 @@ public:
 
 		y2+=12;
 
-		pp_int32 lbheight = container->getSize().height - (y2 - y) - (18);
+		pp_int32 lbheight = container->getSize().height - (y2 - y);
+#ifdef __AMIGA__
+		lbheight -= 4;
+#else
+		lbheight -= 18;
+#endif
 		PPListBox* listBox;
 		listBox = new PPListBox(LISTBOX_SETTINGS_RESOLUTIONS, screen, this, PPPoint(x2+2, y2+2), PPSize(153,lbheight), true, false, true, true);
 		listBox->setBorderColor(TrackerConfig::colorThemeMain);
@@ -1265,9 +1269,7 @@ public:
 
 		y2+=lbheight + 6;
 
-#ifdef __AMIGA__
-		container->addControl(new PPStaticText(STATICTEXT_SETTINGS_WINDOWED_ONLY, NULL, NULL, PPPoint(x2 + 2, y2), "Windowed mode only", true));
-#else
+#ifndef __AMIGA__
 		container->addControl(new PPStaticText(STATICTEXT_SETTINGS_MAGNIFY, NULL, NULL, PPPoint(x2 + 2, y2), "Scale:", true));
 
 		PPRadioGroup* radioGroup = new PPRadioGroup(RADIOGROUP_SETTINGS_MAGNIFY, screen, this, PPPoint(x2 + 2 + 7*8, y2 - 4), PPSize(120, 16));

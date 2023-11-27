@@ -129,6 +129,10 @@ static char ** displayModeNames = NULL;
 static UWORD * displayModeDepths = NULL;
 static AudioDriverInterface * audioDriver = NULL;
 
+static struct {
+	long nosetup;
+} args;
+
 APTR AllocSample(ULONG size) {
 	if(app && app->isSAGA() && app->isV4()) {
 		return AllocVec(size, MEMF_FAST | MEMF_CLEAR);
@@ -414,214 +418,217 @@ static int setup()
     app->setAudioDriver(audioDriverIndex);
 
     // Create Gadtools UI
-	gadget = CreateContext(&gadgetList);
-	if(!gadget) {
-		ERROR("Cannot create context!", NULL);
-		return -2;
-	}
+	if(!args.nosetup) {
+		gadget = CreateContext(&gadgetList);
+		if(!gadget) {
+			ERROR("Cannot create context!", NULL);
+			return -2;
+		}
 
-	newGadget.ng_VisualInfo = GetVisualInfo(pubScreen, TAG_END);
-	newGadget.ng_TextAttr 	= pubScreen->Font;
-	newGadget.ng_Flags 		= 0;
+		newGadget.ng_VisualInfo = GetVisualInfo(pubScreen, TAG_END);
+		newGadget.ng_TextAttr 	= pubScreen->Font;
+		newGadget.ng_Flags 		= 0;
 
-	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
-	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
-	newGadget.ng_Width      = 30 * pubScreen->RastPort.TxWidth + 20;
-	newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
+		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
+		newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
+		newGadget.ng_Width      = 30 * pubScreen->RastPort.TxWidth + 20;
+		newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
 
-	sprintf(detected, "Specs: %ld, FPU: %s, SAGA: %s, AMMX: %s, V4: %s",
-		cpuType,
-		hasFPU ? "Y" : "N",
-		useSAGA ? "Y" : "N",
-		hasAMMX ? "Y" : "N",
-		isV4Core ? "Y" : "N");
+		sprintf(detected, "Specs: %ld, FPU: %s, SAGA: %s, AMMX: %s, V4: %s",
+			cpuType,
+			hasFPU ? "Y" : "N",
+			useSAGA ? "Y" : "N",
+			hasAMMX ? "Y" : "N",
+			isV4Core ? "Y" : "N");
 
-	INFO("%s", detected);
+		INFO("%s", detected);
 
-	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = GID_DETECTED;
-	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, detected,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_GadgetText = NULL;
+		newGadget.ng_GadgetID   = GID_DETECTED;
+		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+			GTTX_Text, detected,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "Screen mode";
-	newGadget.ng_GadgetID   = GID_SCREEN_MODE;
-	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
-		GTCY_Labels, displayModeNames,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
+		newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+		newGadget.ng_GadgetText = "Screen mode";
+		newGadget.ng_GadgetID   = GID_SCREEN_MODE;
+		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+			GTCY_Labels, displayModeNames,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "Audio driver";
-	newGadget.ng_GadgetID   = GID_AUDIO_DRV;
-	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
-		GTCY_Labels, driverNames,
-		GTCY_Active, audioDriverIndex,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+		newGadget.ng_GadgetText = "Audio driver";
+		newGadget.ng_GadgetID   = GID_AUDIO_DRV;
+		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+			GTCY_Labels, driverNames,
+			GTCY_Active, audioDriverIndex,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height;
-	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = GID_AUDIO_DRV_DESC;
-	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, driverDescs[audioDriverIndex],
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
-	driverDesc = gadget;
+		newGadget.ng_TopEdge   += newGadget.ng_Height;
+		newGadget.ng_GadgetText = NULL;
+		newGadget.ng_GadgetID   = GID_AUDIO_DRV_DESC;
+		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+			GTTX_Text, driverDescs[audioDriverIndex],
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
+		driverDesc = gadget;
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "Mixer type";
-	newGadget.ng_GadgetID   = GID_AUDIO_MIXER;
-	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
-		GTCY_Labels, mixTypeNames,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+		newGadget.ng_GadgetText = "Mixer type";
+		newGadget.ng_GadgetID   = GID_AUDIO_MIXER;
+		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+			GTCY_Labels, mixTypeNames,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height;
-	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = GID_AUDIO_MIXER_DESC;
-	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, mixTypeDescs[0],
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
-	mixTypeDesc = gadget;
+		newGadget.ng_TopEdge   += newGadget.ng_Height;
+		newGadget.ng_GadgetText = NULL;
+		newGadget.ng_GadgetID   = GID_AUDIO_MIXER_DESC;
+		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+			GTTX_Text, mixTypeDescs[0],
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
+		mixTypeDesc = gadget;
 
-	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 8;
-	newGadget.ng_Width      = 22 * pubScreen->RastPort.TxWidth + 8;
-	newGadget.ng_GadgetText = (UBYTE *) "Run";
-	newGadget.ng_GadgetID   = GID_RUN;
-	gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
+		newGadget.ng_TopEdge   += newGadget.ng_Height + 8;
+		newGadget.ng_Width      = 22 * pubScreen->RastPort.TxWidth + 8;
+		newGadget.ng_GadgetText = "Run";
+		newGadget.ng_GadgetID   = GID_RUN;
+		gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-	newGadget.ng_LeftEdge  += newGadget.ng_Width + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "Quit";
-	newGadget.ng_GadgetID   = GID_QUIT;
-	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
-		TAG_END);
-	if(!gadget) {
-		ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
-		return -2;
-	}
+		newGadget.ng_LeftEdge  += newGadget.ng_Width + 4;
+		newGadget.ng_GadgetText = "Quit";
+		newGadget.ng_GadgetID   = GID_QUIT;
+		gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
 
-    // Open setup dialog
-	winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
-	winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
+		// Open setup dialog
+		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
+		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
 
-	window = OpenWindowTags(NULL,
-		WA_Width,  		winWidth,
-		WA_Height, 		winHeight,
-		WA_Left,   		(pubScreen->Width - winWidth) >> 1,
-		WA_Top,    		(pubScreen->Height - winHeight) >> 1,
-		WA_PubScreen,	pubScreen,
-		WA_Title,		"MilkyTracker Setup",
-		WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
-		WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
-		WA_Gadgets,		gadgetList,
-		TAG_END
-	);
+		window = OpenWindowTags(NULL,
+			WA_Width,  		winWidth,
+			WA_Height, 		winHeight,
+			WA_Left,   		(pubScreen->Width - winWidth) >> 1,
+			WA_Top,    		(pubScreen->Height - winHeight) >> 1,
+			WA_PubScreen,	pubScreen,
+			WA_Title,		"MilkyTracker Setup",
+			WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
+			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
+			WA_Gadgets,		gadgetList,
+			TAG_END
+		);
 
-	if(window) {
-		struct IntuiMessage *imsg;
+		if(window) {
+			struct IntuiMessage *imsg;
 
-		GT_RefreshWindow(window, NULL);
-		UnlockPubScreen(NULL, pubScreen);
-		pubScreen = NULL;
+			GT_RefreshWindow(window, NULL);
+			UnlockPubScreen(NULL, pubScreen);
+			pubScreen = NULL;
 
-		INFO("Starting setup window loop", NULL);
-		do {
-			if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-				setupRunning = false;
+			INFO("Starting setup window loop", NULL);
+			do {
+				if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+					setupRunning = false;
 
-			while(imsg = GT_GetIMsg(window->UserPort)) {
-				switch(imsg->Class) {
-				case IDCMP_GADGETUP:
-					gadget = (struct Gadget *) imsg->IAddress;
-					switch (gadget->GadgetID) {
-					case GID_SCREEN_MODE: {
-							long num;
-							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-							app->setDisplayID(displayModeIDs[num]);
-							app->setWindowSize(displayModeSizes[num]);
-							app->setBpp(displayModeDepths[num]);
+				while(imsg = GT_GetIMsg(window->UserPort)) {
+					switch(imsg->Class) {
+					case IDCMP_GADGETUP:
+						gadget = (struct Gadget *) imsg->IAddress;
+						switch (gadget->GadgetID) {
+						case GID_SCREEN_MODE: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								app->setDisplayID(displayModeIDs[num]);
+								app->setWindowSize(displayModeSizes[num]);
+								app->setBpp(displayModeDepths[num]);
+							}
+							break;
+						case GID_AUDIO_DRV: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
+								app->setAudioDriver(drivers[num]);
+							}
+							break;
+						case GID_AUDIO_MIXER: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
+								app->setAudioMixer(mixTypes[num]);
+							}
+							break;
+						case GID_RUN:
+							setupRunning = false;
+							break;
+						case GID_QUIT:
+							setupRunning = false;
+							ret = 1;
+							break;
 						}
 						break;
-					case GID_AUDIO_DRV: {
-							long num;
-							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-							GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
-							app->setAudioDriver(drivers[num]);
+					case IDCMP_VANILLAKEY:
+						if(imsg->Code == 0x1b) {
+							setupRunning = false;
+							ret = -1;
 						}
 						break;
-					case GID_AUDIO_MIXER: {
-							long num;
-							GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
-							GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
-							app->setAudioMixer(mixTypes[num]);
-						}
-						break;
-					case GID_RUN:
-						setupRunning = false;
-						break;
-					case GID_QUIT:
-						setupRunning = false;
-						ret = 1;
-						break;
-					}
-					break;
-				case IDCMP_VANILLAKEY:
-					if(imsg->Code == 0x1b) {
+					case IDCMP_CLOSEWINDOW:
 						setupRunning = false;
 						ret = -1;
+						break;
+					case IDCMP_REFRESHWINDOW:
+						GT_BeginRefresh(window);
+						GT_EndRefresh(window, TRUE);
+						break;
 					}
-					break;
-				case IDCMP_CLOSEWINDOW:
-					setupRunning = false;
-					ret = -1;
-					break;
-				case IDCMP_REFRESHWINDOW:
-					GT_BeginRefresh(window);
-					GT_EndRefresh(window, TRUE);
-					break;
+
+					GT_ReplyIMsg (imsg);
 				}
+			} while(setupRunning);
 
-				GT_ReplyIMsg (imsg);
-			}
-		} while(setupRunning);
+			CloseWindow(window);
+		} else {
+			INFO("Could not open setup window", NULL);
+			ret = -3;
+		}
 
-		CloseWindow(window);
-	} else {
-		INFO("Could not open setup window", NULL);
-		ret = -3;
+		FreeGadgets(gadgetList);
+		FreeVisualInfo(newGadget.ng_VisualInfo);
 	}
 
-	FreeGadgets(gadgetList);
-	FreeVisualInfo(newGadget.ng_VisualInfo);
 	if(pubScreen)
 		UnlockPubScreen(NULL, pubScreen);
 
@@ -635,7 +642,7 @@ static int setup()
 
 static int boot(int argc, char * argv[])
 {
-	int ret;
+	int ret = 0;
 	EasyStruct easyStruct;
 	bool fromWorkbench;
 	char exePath[256] = {0};
@@ -712,84 +719,90 @@ static int boot(int argc, char * argv[])
 
 int main2(int argc, char * argv[])
 {
+	struct RDArgs * rd;
 	int ret = 0;
+
+	rd = ReadArgs("NOSETUP/S", (LONG *) &args, NULL);
 
 	INFO("Checking hardware", NULL);
 
 	// Check hardware
-	if(!checkHardware()) {
-		return 1;
-	}
+	if(checkHardware()) {
+		// Open libraries and boot application
+		if(KeymapBase = OpenLibrary("keymap.library", 39)) {
+			if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
+				if(IconBase = OpenLibrary("icon.library", 37)) {
+					if(GfxBase = OpenLibrary("graphics.library", 39)) {
+						P96Base = OpenLibrary(P96NAME, 2);
+						CyberGfxBase = OpenLibrary("cybergraphics.library", 39);
 
-	// Open libraries and boot application
-    if(KeymapBase = OpenLibrary("keymap.library", 39)) {
-		if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
-			if(IconBase = OpenLibrary("icon.library", 37)) {
-				if(GfxBase = OpenLibrary("graphics.library", 39)) {
-					P96Base = OpenLibrary(P96NAME, 2);
-					CyberGfxBase = OpenLibrary("cybergraphics.library", 39);
+						if(P96Base || CyberGfxBase) {
+							BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
+							if(err == 0) {
+								TimerBase = timereq.io_Device;
+								GetSysTime(&startTime);
 
-					if(P96Base || CyberGfxBase) {
-						BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
-						if(err == 0) {
-							TimerBase = timereq.io_Device;
-							GetSysTime(&startTime);
+								if(hasAMMX) {
+									INFO("AMMX detected, trying to load vampire.resource", NULL);
 
-							if(hasAMMX) {
-								INFO("AMMX detected, trying to load vampire.resource", NULL);
+									if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
+										ERROR("Could not find vampire.resource!", NULL);
+										ret = 2;
+									} else if(VampireBase->lib_Version < 45) {
+										ERROR("Vampire.resource version needs to be 45 or higher!", NULL);
+										ret = 2;
+									} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
+										ERROR("Cannot enable AMMX V2+!", NULL);
+										ret = 2;
+									}
 
-								if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
-									ERROR("Could not find vampire.resource!", NULL);
-									ret = 2;
-								} else if(VampireBase->lib_Version < 45) {
-									ERROR("Vampire.resource version needs to be 45 or higher!", NULL);
-									ret = 2;
-								} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
-									ERROR("Cannot enable AMMX V2+!", NULL);
-									ret = 2;
+									INFO("vampire.resource loaded", NULL);
 								}
 
-								INFO("vampire.resource loaded", NULL);
+								if(!ret) {
+									ret = boot(argc, argv);
+								}
+
+								CloseDevice(&timereq);
+							} else {
+								ERROR("Could not open timer.device! (err = %ld)", NULL);
+								ret = 1;
 							}
 
-							if(!ret) {
-								ret = boot(argc, argv);
-							}
-
-							CloseDevice(&timereq);
+							if(P96Base)
+								CloseLibrary(P96Base);
+							if(CyberGfxBase)
+								CloseLibrary(CyberGfxBase);
 						} else {
-							ERROR("Could not open timer.device! (err = %ld)", NULL);
+							ERROR("Could not open %s V2! This program needs RTG installed.", P96NAME);
 							ret = 1;
 						}
-
-						if(P96Base)
-							CloseLibrary(P96Base);
-						if(CyberGfxBase)
-							CloseLibrary(CyberGfxBase);
+						CloseLibrary(GfxBase);
 					} else {
-						ERROR("Could not open %s V2! This program needs RTG installed.", P96NAME);
+						ERROR("Could not open graphics.library V39!", NULL);
 						ret = 1;
 					}
-					CloseLibrary(GfxBase);
+					CloseLibrary(IconBase);
 				} else {
-					ERROR("Could not open graphics.library V39!", NULL);
+					ERROR("Could not open icon.library V37!", NULL);
 					ret = 1;
 				}
-				CloseLibrary(IconBase);
-			} else {
-				ERROR("Could not open icon.library V37!", NULL);
+				CloseLibrary(IntuitionBase);
+			}  else {
+				ERROR("Could not open intuition.library V39!", NULL);
 				ret = 1;
 			}
-			CloseLibrary(IntuitionBase);
-		}  else {
-			ERROR("Could not open intuition.library V39!", NULL);
+			CloseLibrary(KeymapBase);
+		} else {
+			ERROR("Could not open keymap.library V39!", NULL);
 			ret = 1;
 		}
-		CloseLibrary(KeymapBase);
 	} else {
-		ERROR("Could not open keymap.library V39!", NULL);
+		ERROR("Hardware does not fulfil requirements!", NULL);
 		ret = 1;
 	}
+
+	FreeArgs(rd);
 
 	return ret;
 }
