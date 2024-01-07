@@ -63,6 +63,7 @@ private:
 	mp_sbyte *          zeroSample;
 	mp_uint32			channelLoopStart[16];
 	mp_uint32			channelRepeatLength[16];
+	float               channelSampleExactPos[16];
 	mp_sint32           channelSamplePos[16];
 	mp_sint32          	channelPeriod[16];
 
@@ -90,6 +91,7 @@ public:
     virtual void 		playSample(ChannelMixer::TMixerChannel * chn);
     virtual void 		stopSample(ChannelMixer::TMixerChannel * chn);
 	virtual void 		tickDone(ChannelMixer::TMixerChannel * chn);
+    virtual int 		getOperationFrequency();
 };
 
 #endif

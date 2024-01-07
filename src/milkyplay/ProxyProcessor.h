@@ -39,6 +39,7 @@ public:
     virtual void playSample(ChannelMixer::TMixerChannel * chn) { }
     virtual void stopSample(ChannelMixer::TMixerChannel * chn) { }
     virtual void tickDone(ChannelMixer::TMixerChannel * chn) { }
+    virtual int getOperationFrequency() { }
 };
 
 #endif /* __PROXY_PROCESSOR_H__ */

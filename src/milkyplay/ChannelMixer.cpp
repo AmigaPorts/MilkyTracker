@@ -1086,13 +1086,15 @@ void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 	mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
 	mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
 
-	for(nb = 0; nb < 250 / 50; nb++) {
+	// Internally we run with 250hz, so operate as much as necessary!
+	for(nb = 0; nb < 250 / mixerProxy->getProcessor()->getOperationFrequency(); nb++) {
 		timer(nb);
 
 		for(c = 0; c < nChannels; c++) {
 			hardwareOutChannel(mixerProxy, c);
 		}
 	}
+
 	mixerProxy->getProcessor()->tickDone(channel);
 }
 

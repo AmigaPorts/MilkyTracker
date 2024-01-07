@@ -570,3 +570,9 @@ AudioDriver_Paula_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
         channelSamplePos[i] += (PAULA_CLK / REFRESHRATE) / channelPeriod[i];
     }
 }
+
+int
+AudioDriver_Paula_ResampleHW::getOperationFrequency()
+{
+    return REFRESHRATE;
+}

@@ -228,6 +228,7 @@ AudioDriver_Arne_ResampleHW::initHardware()
     for(int i = 0; i < MAX_CHANNELS; i++) {
         channelLoopStart[i] = 0;
         channelRepeatLength[i] = 1;
+        channelSampleExactPos[i] = 0.0f;
         channelSamplePos[i] = 0;
         channelPeriod[i] = 1;
     }
@@ -292,8 +293,8 @@ AudioDriver_Arne_ResampleHW::enableIRQ()
 
     // Reset Timer A
     ciab.ciacra = CIACRAF_LOAD | CIACRAF_START;
-    ciab.ciatalo = (1773447/125)&0xff;
-    ciab.ciatahi = (1773447/125)>>8;
+    ciab.ciatalo = (1773447/(125 * 5))&0xff;
+    ciab.ciatahi = (1773447/(125 * 5))>>8;
 
     // Reset Timer B
     ciab.ciacrb = CIACRBF_LOAD;
@@ -416,6 +417,7 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     }
     *((volatile mp_uint32 *) AUDIO_LENHI(chn->index)) = (mp_uint32) ((chn->loopend - smppos) >> 1);
 
+    channelSampleExactPos[chn->index] = (float) smppos;
     channelSamplePos[chn->index] = smppos;
 
     setChannelFrequency(chn);
@@ -454,6 +456,7 @@ AudioDriver_Arne_ResampleHW::stopSample(ChannelMixer::TMixerChannel * chn)
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
     }
 
+    channelSampleExactPos[chn->index] = 0.0f;
     channelSamplePos[chn->index] = 0;
     channelLoopStart[chn->index] = 0;
     channelRepeatLength[chn->index] = 1;
@@ -479,6 +482,7 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
             channelLoopStart[i] = (mp_uint32) chn->sample;
             channelRepeatLength[i] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
             channelSamplePos[i] = ((channelSamplePos[i] - chn->loopstart) % (chn->loopend - chn->loopstart)) + chn->loopstart;
+            channelSampleExactPos[i] = (float) channelSamplePos[i];
 
             newDMACON |= DMAF_AUD0 << i;
         }
@@ -492,11 +496,19 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
         ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
     }
 
+    // Record exact position inside sample
     for(i = 0; i < MAX_CHANNELS; i++) {
         //
         // Period is bound to Paula/Video clock !
-        // @todo Is bound to 50Hz so can be inprecise for some operations
         //
-        channelSamplePos[i] += (PAULA_CLK / REFRESHRATE) / channelPeriod[i];
+        float a = ((float) PAULA_CLK / 250.0f) / (float) channelPeriod[i];
+        channelSampleExactPos[i] += a;
+        channelSamplePos[i] = (mp_sint32) channelSampleExactPos[i];
     }
+}
+
+int
+AudioDriver_Arne_ResampleHW::getOperationFrequency()
+{
+    return 250;
 }
