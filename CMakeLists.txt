@@ -54,7 +54,7 @@ string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER)
 # Version number in format X.YY.ZZ
 set(VER_X  1)
 set(VER_YY 03)
-set(VER_ZZ 00)
+set(VER_ZZ 01)
 set(VER_FULL "${VER_X}.${VER_YY}.${VER_ZZ}")
 
 # Build date Information
@@ -92,7 +92,7 @@ elseif(WIN32)
 elseif(AMIGA)
     set(CPACK_GENERATOR ZIP)
 else()
-    set(CPACK_GENERATOR "TGZ;DEB;RPM")
+    set(CPACK_GENERATOR ZIP)
 endif()
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
 set(CPACK_PACKAGE_VENDOR "MilkyTracker Team")
