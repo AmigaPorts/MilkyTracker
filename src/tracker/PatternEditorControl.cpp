@@ -83,8 +83,6 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	transposeHandlerResponder(NULL),
 	playerMaster(playerMaster)
 {
-	fprintf(stderr, "%d %d\n", undoInfo.startIndex, undoInfo.startPos);
-
 	// default color
 	bgColor.r = 0;
 	bgColor.g = 0;

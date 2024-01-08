@@ -51,6 +51,9 @@
 #include "AmigaApplication.h"
 #include "Log.h"
 #include "PPUI.h"
+#include "XMFile.h"
+#include "TrackerSettingsDatabase.h"
+#include "PPSystem_Amiga.h"
 
 #define MAX_DISPLAY_MODES 		128
 
@@ -127,6 +130,7 @@ static const char *mixTypeDescs[] = {
 	NULL
 };
 
+static LONG displayCount = 0;
 static LONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
@@ -134,7 +138,7 @@ static UWORD * displayModeDepths = NULL;
 static AudioDriverInterface * audioDriver = NULL;
 
 static struct {
-	long nosetup;
+	long setup;
 } args;
 
 APTR AllocSample(ULONG size) {
@@ -219,6 +223,51 @@ bool QueryClassicBrowser(bool currentSetting) {
 	return currentSetting;
 }
 
+static void loadBootConfig(AmigaApplication * app)
+{
+	TrackerSettingsDatabase * settingsDatabase = new TrackerSettingsDatabase();
+
+	if (XMFile::exists(System::getConfigFileName())) {
+		XMFile f(System::getConfigFileName());
+		settingsDatabase->serialize(f);
+	}
+
+	if(settingsDatabase->hasKey("AMIGA_DISPLAY_ID")) {
+		app->setDisplayID(settingsDatabase->restore("AMIGA_DISPLAY_ID")->getIntValue());
+	} else {
+		app->setDisplayID(-255);
+		args.setup = 1;
+	}
+
+	if(settingsDatabase->hasKey("AMIGA_AUDIO_DRIVER")) {
+		app->setAudioDriver(static_cast<AmigaApplication::AudioDriver>(settingsDatabase->restore("AMIGA_AUDIO_DRIVER")->getIntValue()));
+	} else {
+		app->setAudioDriver((cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula);
+	}
+
+	if(settingsDatabase->hasKey("AMIGA_AUDIO_MIXER")) {
+		app->setAudioMixer(static_cast<AmigaApplication::AudioMixer>(settingsDatabase->restore("AMIGA_AUDIO_MIXER")->getIntValue()));
+	} else {
+		app->setAudioMixer(AmigaApplication::ResampleHW);
+	}
+
+	delete settingsDatabase;
+}
+
+static void saveBootConfig(AmigaApplication * app)
+{
+	TrackerSettingsDatabase * settingsDatabase = new TrackerSettingsDatabase();
+	XMFile f(System::getConfigFileName(), true);
+
+	settingsDatabase->store("AMIGA_DISPLAY_ID", app->getDisplayID());
+	settingsDatabase->store("AMIGA_AUDIO_DRIVER", app->getAudioDriver());
+	settingsDatabase->store("AMIGA_AUDIO_MIXER", app->getAudioMixer());
+
+	settingsDatabase->serialize(f);
+
+	delete settingsDatabase;
+}
+
 static bool checkHardware()
 {
 	cpuType = 0;
@@ -260,7 +309,6 @@ static bool checkHardware()
 
 static Screen * discoverDisplayModes()
 {
-	int i = 0;
 	ULONG modeID, readID;
 	ULONG result;
 	bool firstRun = true;
@@ -273,6 +321,8 @@ static Screen * discoverDisplayModes()
 
 	if(!(pubScreen = LockPubScreen(NULL)))
 		return NULL;
+
+	displayCount = 0;
 
 	displayModeIDs = new LONG[MAX_DISPLAY_MODES];
 	memset(displayModeIDs, 0, MAX_DISPLAY_MODES * sizeof(LONG));
@@ -330,56 +380,56 @@ static Screen * discoverDisplayModes()
 		else if(CyberGfxBase && !IsCyberModeID(readID))
 			continue;
 
-		TRACE("%03ld: %08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s", i, modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
+		TRACE("%03ld: %08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s", displayCount, modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
 			dimensionInfo.MaxDepth, displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
 			displayInfo.PropertyFlags, nameInfo.Name);
 
 		// Insert display mode
 		if(isWindowed) {
 			if(useSAGA && isV4Core) {
-				displayModeIDs[i] = -1;
-				displayModeNames[i] = new char[256];
-				strcpy(displayModeNames[i], "Win: 640x480 PiP 16-bit");
-				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = 16;
-				i++;
+				displayModeIDs[displayCount] = -1;
+				displayModeNames[displayCount] = new char[256];
+				strcpy(displayModeNames[displayCount], "Win: 640x480 PiP 16-bit");
+				displayModeSizes[displayCount] = PPSize(640, 480);
+				displayModeDepths[displayCount] = 16;
+				displayCount++;
 
-				displayModeIDs[i] = -1;
-				displayModeNames[i] = new char[256];
-				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
-				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = 8;
+				displayModeIDs[displayCount] = -2;
+				displayModeNames[displayCount] = new char[256];
+				strcpy(displayModeNames[displayCount], "Win: 640x480 PiP 8-bit");
+				displayModeSizes[displayCount] = PPSize(640, 480);
+				displayModeDepths[displayCount] = 8;
 			} else {
-				displayModeIDs[i] = -1;
-				displayModeNames[i] = new char[256];
-				strcpy(displayModeNames[i], "Win: 640x480 4-bit");
-				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = 4;
-				i++;
+				displayModeIDs[displayCount] = -3;
+				displayModeNames[displayCount] = new char[256];
+				strcpy(displayModeNames[displayCount], "Win: 640x480 4-bit");
+				displayModeSizes[displayCount] = PPSize(640, 480);
+				displayModeDepths[displayCount] = 4;
+				displayCount++;
 
-				displayModeIDs[i] = -1;
-				displayModeNames[i] = new char[256];
-				sprintf(displayModeNames[i], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
-				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = dimensionInfo.MaxDepth;
+				displayModeIDs[displayCount] = -4;
+				displayModeNames[displayCount] = new char[256];
+				sprintf(displayModeNames[displayCount], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
+				displayModeSizes[displayCount] = PPSize(640, 480);
+				displayModeDepths[displayCount] = dimensionInfo.MaxDepth;
 			}
 		} else {
-			displayModeIDs[i] = readID;
-			displayModeNames[i] = new char[256];
-			sprintf(displayModeNames[i], "FS: %s", nameInfo.Name);
-			displayModeSizes[i] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
-			displayModeDepths[i] = dimensionInfo.MaxDepth;
+			displayModeIDs[displayCount] = readID;
+			displayModeNames[displayCount] = new char[256];
+			sprintf(displayModeNames[displayCount], "FS: %s", nameInfo.Name);
+			displayModeSizes[displayCount] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
+			displayModeDepths[displayCount] = dimensionInfo.MaxDepth;
 		}
-		i++;
+		displayCount++;
 
 		// Bail out when we reached the max number of display modes
-		if(i == MAX_DISPLAY_MODES-1)
+		if(displayCount == MAX_DISPLAY_MODES-1)
 			break;
 
 	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
 
 	// If no screen mode has been detected, bail out
-	if(i == 0) {
+	if(displayCount == 0) {
 		UnlockPubScreen(NULL, pubScreen);
 		pubScreen = NULL;
 
@@ -396,7 +446,7 @@ static const char * setupErrors[] = {
 	"Cannot detect valid screen modes",
 };
 
-static int setup()
+static int setup(AmigaApplication * app)
 {
 	int ret = 0;
 	struct Gadget * gadgetList = NULL, * gadget;
@@ -406,9 +456,10 @@ static int setup()
 	long winWidth, winHeight;
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
-	AmigaApplication::AudioDriver audioDriverIndex = (cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula;
 	char detected[256] = {0};
 	char winTitle[256] = {0};
+	bool foundDisplay = false;
+	int displayIndex;
 
 	INFO("Starting setup", NULL);
 
@@ -417,14 +468,26 @@ static int setup()
 		return -4;
 	}
 
-    // Set default application configuration
-    app->setDisplayID(displayModeIDs[0]);
-    app->setWindowSize(displayModeSizes[0]);
-    app->setBpp(displayModeDepths[0]);
-    app->setAudioDriver(audioDriverIndex);
+	// Search selected display
+	for(displayIndex = 0; displayIndex < displayCount; displayIndex++) {
+		if(displayModeIDs[displayIndex] == app->getDisplayID()) {
+			foundDisplay = true;
+			break;
+		}
+	}
 
-    // Create Gadtools UI
-	if(!args.nosetup) {
+	// If not found, take first
+	if(!foundDisplay) {
+		displayIndex = 0;
+	}
+
+    app->setDisplayID(displayModeIDs[displayIndex]);
+    app->setWindowSize(displayModeSizes[displayIndex]);
+    app->setBpp(displayModeDepths[displayIndex]);
+
+	// Show setup only if forced or if prefs have not been stored already
+	if(args.setup) {
+		// Create Gadtools UI
 		gadget = CreateContext(&gadgetList);
 		if(!gadget) {
 			ERROR("Cannot create context!", NULL);
@@ -465,6 +528,7 @@ static int setup()
 		newGadget.ng_GadgetID   = GID_SCREEN_MODE;
 		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 			GTCY_Labels, displayModeNames,
+			GTCY_Active, displayIndex,
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -476,7 +540,7 @@ static int setup()
 		newGadget.ng_GadgetID   = GID_AUDIO_DRV;
 		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 			GTCY_Labels, driverNames,
-			GTCY_Active, audioDriverIndex,
+			GTCY_Active, app->getAudioDriver(),
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -487,7 +551,7 @@ static int setup()
 		newGadget.ng_GadgetText = NULL;
 		newGadget.ng_GadgetID   = GID_AUDIO_DRV_DESC;
 		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-			GTTX_Text, driverDescs[audioDriverIndex],
+			GTTX_Text, driverDescs[app->getAudioDriver()],
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -500,6 +564,7 @@ static int setup()
 		newGadget.ng_GadgetID   = GID_AUDIO_MIXER;
 		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 			GTCY_Labels, mixTypeNames,
+			GTCY_Active, app->getAudioMixer(),
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -510,7 +575,7 @@ static int setup()
 		newGadget.ng_GadgetText = NULL;
 		newGadget.ng_GadgetID   = GID_AUDIO_MIXER_DESC;
 		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-			GTTX_Text, mixTypeDescs[0],
+			GTTX_Text, mixTypeDescs[app->getAudioMixer()],
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -660,6 +725,10 @@ static int boot(int argc, char * argv[])
 	INFO("Booting application", NULL);
 
 	app = new AmigaApplication();
+
+	INFO("Reading boot configuration", NULL);
+	loadBootConfig(app);
+
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
@@ -686,23 +755,12 @@ static int boot(int argc, char * argv[])
 		strncpy(exePath, argv[0], 255);
 	}
 
-	// Process tool types (if any)
-	if(diskObj = GetDiskObject(exePath)) {
-		char * toolTypeVal;
-
-		/*if(toolTypeVal = (char *) FindToolType(diskObj->do_ToolTypes, (STRPTR) "EXAMPLE")) {
-			app->setExample(*toolTypeVal == '1');
-		}*/
-
-		FreeDiskObject(diskObj);
-	}
-
 	if(fromWorkbench) {
 		CurrentDir(oldDir);
 	}
 
 	// Show setup dialog
-	ret = setup();
+	ret = setup(app);
 	if(ret < 0) {
 		ERROR("Setup failed: %s", setupErrors[(-ret)-1]);
 	} else if(ret == 0) {
@@ -717,12 +775,15 @@ static int boot(int argc, char * argv[])
 			do {
 				app->loop();
 			} while(app->stop() > 0);
+
+			// Only save boot config if application ran successfully
+			saveBootConfig(app);
 		}
 	}
 
 	delete app;
 
-	return ret;
+	return ret == -1 ? 0 : ret;
 }
 
 int main2(int argc, char * argv[])
@@ -730,7 +791,7 @@ int main2(int argc, char * argv[])
 	struct RDArgs * rd;
 	int ret = 0;
 
-	rd = ReadArgs("NOSETUP/S", (LONG *) &args, NULL);
+	rd = ReadArgs("SETUP/S", (LONG *) &args, NULL);
 
 	INFO("Checking hardware", NULL);
 
