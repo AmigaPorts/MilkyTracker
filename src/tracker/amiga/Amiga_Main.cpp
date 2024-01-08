@@ -63,6 +63,9 @@
 #define GID_QUIT				(GID_BASE + 7)
 #define GID_DETECTED			(GID_BASE + 8)
 
+#define STR2(a) #a
+#define STR(a) STR2(a)
+
 extern struct ExecBase * SysBase;
 
 struct Library * IntuitionBase = NULL;
@@ -318,7 +321,8 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(dimensionInfo.Nominal.MaxY+1 < 480)
 			continue;
-		if(dimensionInfo.MaxDepth != 8 && dimensionInfo.MaxDepth != 16)
+		// On V4 we can always use PiP modes in all depths so no need to check for depth here
+		if(!(isWindowed && useSAGA && isV4Core) && dimensionInfo.MaxDepth != 8 && dimensionInfo.MaxDepth != 16)
 			continue;
 		if(P96Base && !p96GetModeIDAttr(readID, P96IDA_ISP96))
 			continue;
@@ -334,16 +338,16 @@ static Screen * discoverDisplayModes()
 			if(useSAGA && isV4Core) {
 				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
-				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
+				strcpy(displayModeNames[i], "Win: 640x480 PiP 16-bit");
 				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = 8;
+				displayModeDepths[i] = 16;
 				i++;
 
 				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
-				strcpy(displayModeNames[i], "Win: 640x480 PiP 16-bit");
+				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
 				displayModeSizes[i] = PPSize(640, 480);
-				displayModeDepths[i] = 16;
+				displayModeDepths[i] = 8;
 			} else {
 				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
@@ -403,6 +407,7 @@ static int setup()
 	struct Gadget * driverDesc, * mixTypeDesc;
 	AmigaApplication::AudioDriver audioDriverIndex = (cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula;
 	char detected[256] = {0};
+	char winTitle[256] = {0};
 
 	INFO("Starting setup", NULL);
 
@@ -538,13 +543,15 @@ static int setup()
 		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
 		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
 
+		sprintf(winTitle, "Setup (Built for " STR(AMIGA_ARCH) " @ " STR(NOW) ")");
+
 		window = OpenWindowTags(NULL,
 			WA_Width,  		winWidth,
 			WA_Height, 		winHeight,
 			WA_Left,   		(pubScreen->Width - winWidth) >> 1,
 			WA_Top,    		(pubScreen->Height - winHeight) >> 1,
 			WA_PubScreen,	pubScreen,
-			WA_Title,		"MilkyTracker Setup",
+			WA_Title,		winTitle,
 			WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
 			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
 			WA_Gadgets,		gadgetList,

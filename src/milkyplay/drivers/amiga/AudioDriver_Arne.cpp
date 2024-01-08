@@ -392,7 +392,7 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     }
 
     // Get sample position
-    mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : channelSamplePos[chn->index];
+    mp_sint32 smppos = (chn->flags & ChannelMixer::MP_SAMPLE_RESTART) ? chn->smppos : channelSamplePos[chn->index];
 
     /*printf("ch %ld play = $%08lx smppos = $%08lx, $%08lx, $%08lx, loopend = $%08lx\n",
         chn->index, chn->sample, chn->smppos, smppos, hwChannelPos[chn->index], chn->loopend);*/
@@ -474,8 +474,8 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
 
     // Handle one-shot
     for(i = 0; i < MAX_CHANNELS; i++) {
-        if((chn->flags & 3) == 0 && chn->flags & 8192 && channelSamplePos[i] >= chn->loopend) {
-            chn->flags &= ~8192;
+        if((chn->flags & 3) == 0 && chn->flags & ChannelMixer::MP_SAMPLE_ONESHOT && channelSamplePos[i] >= chn->loopend) {
+            chn->flags &= ~ChannelMixer::MP_SAMPLE_ONESHOT;
             chn->flags |= 1;
             chn->loopend = chn->loopendcopy;
 
