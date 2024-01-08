@@ -176,7 +176,8 @@ struct PPColor
 		r(red), g(green), b(blue)
 	{}
 
-	PPColor()
+	PPColor() :
+		r(), g(), b()
 	{}
 
 	pp_uint32 getRGB888() const

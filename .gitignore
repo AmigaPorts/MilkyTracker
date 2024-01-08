@@ -12,6 +12,7 @@ resources/pictures/docicons/osx/docerator/
 
 # Editor config files
 .vscode/
+.vs/
 
 # Don't include objects
 *.o
