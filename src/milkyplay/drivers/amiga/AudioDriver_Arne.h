@@ -65,6 +65,7 @@ private:
 	mp_uint32			channelRepeatLength[16];
 	float               channelSampleExactPos[16];
 	mp_sint32           channelSamplePos[16];
+	float               channelExactPeriod[16];
 	mp_sint32          	channelPeriod[16];
 
 protected:

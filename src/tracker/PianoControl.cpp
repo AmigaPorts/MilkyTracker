@@ -122,7 +122,11 @@ PianoControl::PianoControl(pp_int32 id,
 
 #if defined(__LOWRES__) || defined(__AMIGA__)
 	xscale = 2;
+#	if defined(__AMIGA__)
+	yscale = 2;
+#	else
 	yscale = 1;
+#	endif
 	pianoBitmap = PianoBitmapSmall::getInstance();
 #else
 	xscale = 1;

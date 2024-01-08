@@ -230,6 +230,7 @@ AudioDriver_Arne_ResampleHW::initHardware()
         channelRepeatLength[i] = 1;
         channelSampleExactPos[i] = 0.0f;
         channelSamplePos[i] = 0;
+        channelExactPeriod[i] = 1.0f;
         channelPeriod[i] = 1;
     }
 }
@@ -363,8 +364,10 @@ AudioDriver_Arne_ResampleHW::setChannelFrequency(ChannelMixer::TMixerChannel * c
 {
     //printf("ch %ld per = %ld\n", chn->index, chn->period);
 
-    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = chn->period >> 10;
-    channelPeriod[chn->index] = chn->period >> 10;
+    channelExactPeriod[chn->index] = (float) chn->period / 1024.0f;
+
+    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = (mp_uword) channelExactPeriod[chn->index];
+    channelPeriod[chn->index] = (mp_uword) channelExactPeriod[chn->index];
 }
 
 void
@@ -460,6 +463,7 @@ AudioDriver_Arne_ResampleHW::stopSample(ChannelMixer::TMixerChannel * chn)
     channelSamplePos[chn->index] = 0;
     channelLoopStart[chn->index] = 0;
     channelRepeatLength[chn->index] = 1;
+    channelExactPeriod[chn->index] = 1.0f;
     channelPeriod[chn->index] = 1;
 
     //
@@ -501,7 +505,7 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
         //
         // Period is bound to Paula/Video clock !
         //
-        float a = ((float) PAULA_CLK / 250.0f) / (float) channelPeriod[i];
+        float a = ((float) PAULA_CLK / 250.0f) / channelExactPeriod[i];
         channelSampleExactPos[i] += a;
         channelSamplePos[i] = (mp_sint32) channelSampleExactPos[i];
     }
