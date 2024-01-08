@@ -189,6 +189,15 @@ elseif(WIN32)
     endif()
 elseif(AMIGA OR AROS)
     install(FILES ${PROJECT_SOURCE_DIR}/resources/packaging/amigaos/milkytracker.info DESTINATION .)
+	
+	if(AMIGAOS4 OR MORPHOS)
+		if(AMIGAOS4)
+			#add_custom_command()
+		endif()
+
+		find_package(SDL 2.0 REQUIRED)
+		find_package(OpenGL REQUIRED)
+	endif()
 
     # AROS will provide the SDL dependency via makefile.
 else()

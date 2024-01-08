@@ -40,10 +40,9 @@ typedef signed int		pp_int32;
 #endif
 
 #if !defined(__PPUI_WINDOWS__)
-	#include <stdio.h>
-	#include <stdlib.h>
+	#include <cstdio>
+	#include <cstdlib>
 	#include <cstring>
-	#include <string.h>
 	#include <strings.h>
 	#include "VirtualKeys.h"
 	#include "PPSystemString_POSIX.h"

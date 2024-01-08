@@ -13,7 +13,7 @@
 #include "ProxyProcessor.h"
 
 #include <exec/exec.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
