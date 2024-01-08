@@ -58,7 +58,7 @@ MixerProxyMixDown::~MixerProxyMixDown()
 
 bool MixerProxyMixDown::lock(mp_uint32 bufferSize, mp_uint32 sampleShift)
 {
-    if(this->bufferSize != bufferSize) {
+    if(this->bufferSize != bufferSize || !getBuffer<mp_sint32>(MixBuffer)) {
         deleteBuffer<mp_sint32>(MixBuffer);
         setBuffer<mp_sint32>(MixBuffer, new mp_sint32[bufferSize * MP_NUMCHANNELS]);
     }
