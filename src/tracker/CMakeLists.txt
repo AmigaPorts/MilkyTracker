@@ -411,4 +411,23 @@ if(NOT AROS AND NOT AMIGA)
     )
 endif()
 
+add_custom_command(
+    OUTPUT ${PROJECT_BINARY_DIR}/src/tracker/timestamp.h
+    COMMAND ${CMAKE_COMMAND}
+    -DHEADER_FILE=${PROJECT_BINARY_DIR}/src/tracker/timestamp.h
+    -P "${CMAKE_SOURCE_DIR}/cmake/UpdateTimestamp.cmake"
+    COMMENT "Generating \"timestamp.h\" header file..."
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    VERBATIM
+)
+
+add_custom_command(
+    TARGET tracker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm ${PROJECT_BINARY_DIR}/src/tracker/timestamp.h
+    VERBATIM
+)
+
+add_custom_target(timestamp_h DEPENDS ${PROJECT_BINARY_DIR}/src/tracker/timestamp.h)
+add_dependencies(tracker timestamp_h)
+
 install(TARGETS tracker DESTINATION ${INSTALL_DEST})

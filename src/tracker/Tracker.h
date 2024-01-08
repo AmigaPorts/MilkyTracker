@@ -99,7 +99,7 @@ private:
 		PanelTop_Sample,
 		PanelTop_Instrument
 	};
-	PanelRotate panelrotate = PanelRotate::PanelTop;
+	PanelRotate panelrotate;
 
 	// I've replaced some constants
 #ifndef __LOWRES__

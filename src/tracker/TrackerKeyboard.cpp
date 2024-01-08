@@ -180,7 +180,7 @@ void Tracker::initKeyBindings()
 
 	eventKeyDownBindingsMilkyTracker->addBinding('V', KeyModifierCTRL | KeyModifierSHIFT, &Tracker::eventKeyDownBinding_InvokePatternCapture);
 
-  // brujo's secret sauce 
+  // brujo's secret sauce
   eventKeyDownBindingsMilkyTracker->addBinding('J', KeyModifierCTRL, &Tracker::eventKeyDownBinding_BpmPlus);
   eventKeyDownBindingsMilkyTracker->addBinding('H', KeyModifierCTRL, &Tracker::eventKeyDownBinding_BpmMinus);
   eventKeyDownBindingsMilkyTracker->addBinding('K', KeyModifierCTRL, &Tracker::eventKeyDownBinding_CoarseBpmPlus);
@@ -218,7 +218,7 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsFastTracker->addBinding(VK_RCONTROL, 0xFFFF, &Tracker::eventKeyDownBinding_PlaySong);
 	eventKeyDownBindingsFastTracker->addBinding(VK_RMENU, 0xFFFF, &Tracker::eventKeyDownBinding_PlayPattern);
 	eventKeyDownBindingsFastTracker->addBinding('U', KeyModifierSHIFT, &Tracker::eventKeyDownBinding_UnmuteAll);
-	
+
 	// Transpose all instruments
 	eventKeyDownBindingsFastTracker->addBinding(VK_F1, KeyModifierSHIFT, &Tracker::eventKeyDownBinding_TransposeAllInsTrackDown);
 	eventKeyDownBindingsFastTracker->addBinding(VK_F2, KeyModifierSHIFT, &Tracker::eventKeyDownBinding_TransposeAllInsTrackUp);
@@ -451,21 +451,18 @@ void Tracker::eventKeyDownBinding_RotatePanels()
 		return;
 
 	switch( panelrotate ){
-		case PanelRotate::PanelTop:{
-			panelrotate = PanelRotate::PanelTop_Sample;
+		case PanelTop:
+			panelrotate = PanelTop_Sample;
 			eventKeyDownBinding_InvokeSectionSamples();
 			break;
-		}
-		case PanelRotate::PanelTop_Sample:{
-			panelrotate = PanelRotate::PanelTop_Instrument;
+		case PanelTop_Sample:
+			panelrotate = PanelTop_Instrument;
 			eventKeyDownBinding_InvokeSectionInstruments();
 			break;
-		}
-		case PanelRotate::PanelTop_Instrument:{
-			panelrotate = PanelRotate::PanelTop;
+		case PanelTop_Instrument:
+			panelrotate = PanelTop;
 			sectionSwitcher->showBottomSection(SectionSwitcher::ActiveBottomSectionNone);
 			break;
-		}
 	}
 	screen->paint(true, true);
 }
@@ -1071,7 +1068,7 @@ void Tracker::eventKeyDownBinding_InvokePatternCapture()
 
 void Tracker::eventKeyDownBinding_InvokeHelp()
 {
-  dialog = new DialogHelp(screen, responder,PP_DEFAULT_ID,"Help",true);	
+  dialog = new DialogHelp(screen, responder,PP_DEFAULT_ID,"Help",true);
   dialog->show();
 }
 

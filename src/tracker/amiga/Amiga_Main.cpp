@@ -47,6 +47,7 @@
 #	include "amigaversion.h"
 #endif
 
+#include "timestamp.h"
 #include "AmigaApplication.h"
 #include "Log.h"
 #include "PPUI.h"

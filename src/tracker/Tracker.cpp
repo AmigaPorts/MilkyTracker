@@ -144,7 +144,8 @@ Tracker::Tracker() :
 	caughtMouseInUpperLeftCorner(false),
 	useClassicBrowser(false),
 	savePanel(NULL),
-	fileSystemChangedListener(NULL)
+	fileSystemChangedListener(NULL),
+	panelrotate(PanelTop)
 {
 	resetStateMemories();
 
