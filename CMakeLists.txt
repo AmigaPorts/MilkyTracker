@@ -53,8 +53,8 @@ string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER)
 
 # Version number in format X.YY.ZZ
 set(VER_X  1)
-set(VER_YY 03)
-set(VER_ZZ 01)
+set(VER_YY 04)
+set(VER_ZZ 00)
 set(VER_FULL "${VER_X}.${VER_YY}.${VER_ZZ}")
 
 # Build date Information
@@ -223,8 +223,9 @@ if(UNIX AND AMIGA)
 
         # Linux MIDI support requires ALSA and RtMidi
         if(ALSA_FOUND)
-            find_package(RTMIDI 2.1.0)
-            if(RTMIDI_FOUND)
+            find_package(RTMIDI 2.1)              # 2.1.0 and compatible versions
+            if(RTMIDI_FOUND)                      # https://github.com/milkytracker/MilkyTracker/issues/309
+                set(CMAKE_CXX_STANDARD 11)        # https://github.com/milkytracker/MilkyTracker/issues/262  
                 message(STATUS "Enabled MIDI support (ALSA/RtMidi)")
                 add_subdirectory(src/midi)
             else()

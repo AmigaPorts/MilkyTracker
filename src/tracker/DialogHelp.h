@@ -1,7 +1,7 @@
 /*
- *  fx/TexturedGrid.h
+ *  tracker/DialogHelp.h
  *
- *  Copyright 2009 Peter Barth
+ *  Copyright 2022 coderofsalvation / Leon van Kammen 
  *
  *  This file is part of Milkytracker.
  *
@@ -20,36 +20,34 @@
  *
  */
 
-#ifndef TEXTUREDGRID__H
-#define TEXTUREDGRID__H
+/*
+ *  DialogHelp.h
+ *  MilkyTracker
+ *
+ *  Created by coderofsalvation / Leon van Kammen on 13-07-2022 
+ *
+ */
 
-#include "FXInterface.h"
+#ifndef __DIALOGHELP_H__
+#define __DIALOGHELP_H__
 
-struct VectorFP;
+#include "DialogBase.h"
 
-class TexturedGrid : public FXInterface
+#define HELP_MAX_LINE 255
+
+class DialogHelp : public PPDialogBase
 {
-protected:
-	int				fov;
-	int				gridshift;
-	int				gridsize;		// must be 1 << GRIDSHIFT
-
-	VectorFP*		grid;
-	int				gridWidth, gridHeight;
-
-	unsigned short* texture;
-
-	int				sintab[1024];
+private:
+	class PPListBox* listBox;
 
 public:
-	TexturedGrid(int width, int height, int gridshift);
-	virtual ~TexturedGrid();
-
-	void setTexture(unsigned short* texture) { this->texture = texture; }
-
-	// from FXInterface
-	virtual void render(unsigned short* vscreen, unsigned int pitch);
-	virtual void update(float syncFrac);
+	DialogHelp(PPScreen* screen, 
+				  DialogResponder* responder,
+				  pp_int32 id,
+				  const PPString& caption,
+				  bool okCancel = false);
+	
+	PPListBox* getListBox() { return listBox; }
 
 };
 
