@@ -7,7 +7,7 @@ set -e
 export TARGET='m68k-amigaos'
 export SYSROOT=/opt/${TARGET}/usr
 export M68K_CPU="-m68040 -mhard-float"
-export M68K_COMMON="-s -ffast-math -fomit-frame-pointer -noixemul"
+export M68K_COMMON="-s -ffast-math -fomit-frame-pointer"
 export M68K_CFLAGS="${CFLAGS} ${M68K_CPU} ${M68K_COMMON}"
 export M68K_CXXFLAGS="${CXXFLAGS} ${M68K_CPU} ${M68K_COMMON}"
 export CURPATH="${PWD}"
@@ -17,7 +17,7 @@ export SUBMODULES="${CURPATH}/src/submodules"
 rm -rf "${SUBMODULES}"/zlib/build
 mkdir -p "${SUBMODULES}"/zlib/build
 cd "${SUBMODULES}"/zlib/build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SYSROOT} -DM68K_CPU=68040 -DM68K_FPU=hard -DM68K_COMMON="${M68K_COMMON} -O3 -fno-exceptions -w -DBIG_ENDIAN -DAMIGA -fpermissive -std=c++14"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SYSROOT} -DM68K_CRT=nix20 -DM68K_CPU=68040 -DM68K_FPU=hard -DM68K_COMMON="${M68K_COMMON} -O3 -fno-exceptions -w -DBIG_ENDIAN -DAMIGA -fpermissive -std=c++14"
 cmake --build . --config Release --target install -- -j$(getconf _NPROCESSORS_ONLN)
 cd "${SUBMODULES}"
 
@@ -31,7 +31,7 @@ git pull
 rm -rf "${SUBMODULES}"/SDL/build
 mkdir -p "${SUBMODULES}"/SDL/build
 cd "${SUBMODULES}"/SDL/build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SYSROOT} -DM68K_CPU=68040 -DM68K_FPU=hard -DM68K_COMMON="${M68K_COMMON} -O3 -fno-exceptions -w -DBIG_ENDIAN -DAMIGA -fpermissive -std=c++14"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SYSROOT} -DM68K_CRT=nix20 -DM68K_CPU=68040 -DM68K_FPU=hard -DM68K_COMMON="${M68K_COMMON} -O3 -fno-exceptions -w -DBIG_ENDIAN -DAMIGA -fpermissive -std=c++14"
 cmake --build . --config Release --target install -- -j$(getconf _NPROCESSORS_ONLN)
 cd "${SUBMODULES}"
 

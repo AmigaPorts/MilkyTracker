@@ -23,7 +23,6 @@
 #include "PPMutex.h"
 
 #include <stdio.h>
-#include <string.h>
 
 PPMutex::PPMutex()
 {

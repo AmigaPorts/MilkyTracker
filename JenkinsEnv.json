@@ -6,7 +6,17 @@
             "DockerTag": "m68k-amigaos",
             "Dockerfile": "",
             "BuildIfSuccessful": "",
-            "BuildParam": "-DM68K_CPU=68040 -DM68K_FPU=hard"
+            "BuildParam": "-DM68K_CRT=nix20 -DM68K_CPU=68040 -DM68K_FPU=hard",
+            "ReleaseSuffix": "-68040"
+        },
+        {
+            "DockerRoot": "amigadev",
+            "DockerImage": "crosstools",
+            "DockerTag": "m68k-amigaos",
+            "Dockerfile": "",
+            "BuildIfSuccessful": "",
+            "BuildParam": "-DM68K_CRT=nix20 -DM68K_CPU=68080 -DM68K_FPU=hard",
+            "ReleaseSuffix": "-68080"
         },
         {
             "DockerRoot": "amigadev",
@@ -14,7 +24,8 @@
             "DockerTag": "x86_64-linux",
             "Dockerfile": "",
             "BuildIfSuccessful": "",
-            "BuildParam": ""
+            "BuildParam": "-DSDL2_DIR=/tmp/libs/lib/cmake/SDL2/",
+            "ReleaseSuffix": ""
         }
     ]
 }

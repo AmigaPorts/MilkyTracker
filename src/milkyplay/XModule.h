@@ -39,7 +39,7 @@
 #include "XMFile.h"
 
 #ifdef __AMIGA__
-#	include <clib/exec_protos.h>
+#	include <proto/exec.h>
 #endif
 #include "tmm.h"
 

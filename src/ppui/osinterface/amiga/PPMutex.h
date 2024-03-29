@@ -24,7 +24,7 @@
 #define PPMUTEX__H
 
 #include <exec/semaphores.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 class PPMutex
 {

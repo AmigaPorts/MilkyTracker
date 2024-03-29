@@ -25,8 +25,8 @@
 
 #include "PPPath.h"
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 class PPPathEntry_Amiga : public PPPathEntry
 {

@@ -38,20 +38,20 @@ def killall_jobs() {
 	echo "Done killing"
 }
 
-def buildStep(dockerImage, os, flags) {
+def buildStep(dockerImage, os, flags, suffix) {
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
 	def commondir = env.WORKSPACE + '/../' + env.JOB_NAME.replace('%2F','/') + '/';
-	
+
 	try {
-		stage("Building on \"${dockerImage}\" for \"${os}\"...") {
+		stage("Building on \"${dockerImage}\" for \"${os}${suffix}\"...") {
 			properties([pipelineTriggers([githubPush()])])
 
 			def dockerImageRef = docker.image("${dockerImage}")
 			dockerImageRef.pull()
 			dockerImageRef.inside("-e HOME='/tmp' --privileged --network=host -w /tmp/work") {
-			
+
 				checkout scm
-		
+
 				if (env.CHANGE_ID) {
 					echo 'Trying to build pull request'
 				}
@@ -74,7 +74,7 @@ def buildStep(dockerImage, os, flags) {
 				}
 
 				dir("build/${os}") {
-					sh "PKG_CONFIG_PATH=/opt/${os}/lib/pkgconfig/:/opt/${os}/share/pkgconfig/:/opt/${os}/usr/lib/pkgconfig/:/opt/${os}/usr/share/pkgconfig/ cmake -DCMAKE_BUILD_TYPE=Release ${flags} ../.."
+					sh "PKG_CONFIG_PATH=/tmp/libs:/opt/${os}/lib/pkgconfig/:/opt/${os}/share/pkgconfig/:/opt/${os}/usr/lib/pkgconfig/:/opt/${os}/usr/share/pkgconfig/ cmake -DCMAKE_BUILD_TYPE=Release ${flags} ../.."
 					def _NPROCESSORS_ONLN = sh (
 						script: 'getconf _NPROCESSORS_ONLN',
 						returnStdout: true
@@ -94,9 +94,9 @@ def buildStep(dockerImage, os, flags) {
 						sh "mv -fv ./* ./MilkyTracker"
 						sh "cp ../../../resources/packaging/amigaos/milkytracker_dir.info ./MilkyTracker.info"
 
-						sh "lha -c ../milkytracker-${release_type}${os}${archive_date}.lha *"
+						sh "lha -c ../milkytracker-${release_type}${os}${suffix}${archive_date}.lha *"
 					}
-					
+
 					if (!env.CHANGE_ID) {
 					    def release_type_tag = 'develop';
 					    def pre_release = '--pre-release';
@@ -106,13 +106,13 @@ def buildStep(dockerImage, os, flags) {
 					    } else if (env.BRANCH_NAME.equals('master')) {
 					        release_type_tag = 'nightly';
 					    }
-					    
+
     					try {
     					    sh "github-release release --user amigaports --repo milkytracker --tag ${release_type_tag} --name \"milkytracker ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
     					} catch(err) {
-                 
+
                     	}
-    					sh "github-release upload --user amigaports --repo milkytracker --tag ${release_type_tag} --name \"milkytracker-${release_type}${os}${archive_date}.lha\" --file milkytracker-${release_type}${os}${archive_date}.lha --replace"
+    					sh "github-release upload --user amigaports --repo milkytracker --tag ${release_type_tag} --name \"milkytracker-${release_type}${os}${suffix}${archive_date}.lha\" --file milkytracker-${release_type}${os}${suffix}${archive_date}.lha --replace"
 					}
 					archiveArtifacts artifacts: "**.lha"
 					stash includes: "**.lha", name: "${os}"
@@ -140,20 +140,20 @@ node('master') {
 	killall_jobs();
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
 	slackSend color: "good", channel: "#jenkins", message: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)";
-	
+
 	checkout scm;
 
 	def branches = [:]
 	def project = readJSON file: "JenkinsEnv.json";
 
 	project.builds.each { v ->
-		branches["Build ${v.DockerTag}"] = { 
+		branches["Build ${v.DockerTag}${v.ReleaseSuffix}"] = {
 			node {
-				buildStep("${v.DockerRoot}/${v.DockerImage}:${v.DockerTag}", "${v.DockerTag}", "${v.BuildParam}");
+				buildStep("${v.DockerRoot}/${v.DockerImage}:${v.DockerTag}", "${v.DockerTag}", "${v.BuildParam}", "${v.ReleaseSuffix}");
 			}
 		}
 	}
-	
+
 	sh "rm -rf ./*"
 
 	parallel branches;
