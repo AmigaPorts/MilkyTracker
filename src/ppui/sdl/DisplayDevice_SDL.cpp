@@ -28,7 +28,8 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 	size_t namelen = 0;
 	char rendername[256] = { 0 };
 	PFNGLGETSTRINGPROC glGetStringAPI = NULL;
-  bool opengl_disable = getenv("NO_OPENGL") != NULL;
+	SDL_RendererInfo info;
+  	bool opengl_disable = getenv("NO_OPENGL") != NULL;
 
 	for (int it = 0; it < SDL_GetNumRenderDrivers(); it++)
 	{
@@ -48,26 +49,13 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 		}
 	}
 
-	// Check GL capatibilities
-	if(drv_opengl >= 0) {
-		// If opengl is supported, prefer it
-		drv_index = drv_opengl;
-		flags |= SDL_WINDOW_OPENGL;
-	} else if(drv_opengles2 >= 0) {
-		// OpenGL ES 2 basically for mobile devices, not fully supported by Linux nvidia driver btw
-		drv_index = drv_opengles2;
-		flags |= SDL_WINDOW_OPENGL;
-
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-	}
-
 	// Show some renderer info
-	SDL_GetRenderDriverInfo(drv_index, &info);
-	printf("Available renderers: %s\n", rendername);
-	printf("Selected renderer: %s\n", info.name);
+	if(drv_index >= 0) {
+		SDL_GetRenderDriverInfo(drv_index, &info);
+
+		printf("Available renderers: %s\n", rendername);
+		printf("Selected renderer: %s\n", info.name);
+	}
 
 	// Create SDL window
 	SDL_Window* theWindow = SDL_CreateWindow("MilkyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, opengl_disable ? flags : SDL_WINDOW_OPENGL | flags);
@@ -91,7 +79,7 @@ SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 	}
 
 	// Setup GL
-	if(drv_opengl >= 0 || drv_opengles2 >= 0) {
+	if(drv_index >= 0) {
 		SDL_GLContext ctx = SDL_GL_CreateContext(theWindow);
 		SDL_GL_MakeCurrent(theWindow, ctx);
 

@@ -1159,7 +1159,7 @@ void Tracker::initListboxesSection(pp_int32 x, pp_int32 y)
 
 	screen->addControl(container);
 
-#ifndef __AMIGA__
+#if 0
   PPString str = PPString("welcome 2 Milkytracker");
   getModuleEditor()->setInstrumentName(2,str.getStrBuffer(),str.length());
   str.replace("CTRL+h     = help");

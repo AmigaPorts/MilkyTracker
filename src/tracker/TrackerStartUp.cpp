@@ -223,6 +223,8 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 	PPDisplayDeviceBase * displayDevice = screen->getDisplayDevice();
 	if(displayDevice && displayDevice->needsPalette() && displayDevice->getPaletteBitDepth() == 4) {
 		settingsDatabase->store("ACTIVECOLORS", TrackerConfig::defaultReducedColorPalette);
+	} else {
+		settingsDatabase->store("ACTIVECOLORS", TrackerConfig::defaultColorPalette);
 	}
 
 	// Creates the user interface

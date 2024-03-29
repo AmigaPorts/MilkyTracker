@@ -1711,7 +1711,7 @@ public:
 		y2+=4+11;
 
 #ifndef __AMIGA__
-		PPCheckBox* checkBox = new PPCheckBox(CHECKBOX_SETTINGS_INTERNALDISKBROWSER, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
+		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_INTERNALDISKBROWSER, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
 		container->addControl(checkBox);
 		container->addControl(new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Internal browser:", checkBox, true));
 		y2+=12;
