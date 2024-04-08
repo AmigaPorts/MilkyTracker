@@ -103,6 +103,8 @@ public:
 private:
 	TXMSample* sample;
 	TXMSample lastSample;
+	pp_int32 lastRelNote = 0;
+	pp_int32 lastFineTune = 0;
 	
 	// Current selection
 	pp_int32 selectionStart, selectionEnd;
@@ -253,6 +255,8 @@ public:
 	void minimizeSample();
 	void cropSample();
 	void clearSample();
+	void mixSpreadPasteSample();
+	void mixOverflowPasteSample();
 	void mixPasteSample();
 	void AMPasteSample();
 	void FMPasteSample();
@@ -326,6 +330,7 @@ public:
 	void tool_FMPasteSample(const FilterParameters* par);
 	void tool_PHPasteSample(const FilterParameters* par);
 	void tool_FLPasteSample(const FilterParameters* par);
+	void tool_foldSample(const FilterParameters* par);
 	
 	// convert sample resolution
 	void tool_convertSampleResolution(const FilterParameters* par);

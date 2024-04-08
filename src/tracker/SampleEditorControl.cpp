@@ -33,6 +33,7 @@
 #include "TrackerConfig.h"
 #include "PlayerController.h"
 #include "DialogBase.h"
+#include "FilterParameters.h"
 
 #include <algorithm>
 #include <math.h>
@@ -117,14 +118,24 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	static const char* seperatorStringLarge = "\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 	static const char* seperatorStringMed = "\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 
+	subMenuFX = new PPContextMenu(6, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain);
+	subMenuFX->addEntry("Volume" PPSTR_PERIODS, MenuCommandIDVolumeBoost);
+	subMenuFX->addEntry("Fade in" PPSTR_PERIODS, MenuCommandIDVolumeFadeIn);
+	subMenuFX->addEntry("Fade out" PPSTR_PERIODS, MenuCommandIDVolumeFadeOut);
+	subMenuFX->addEntry("Fade custom" PPSTR_PERIODS, MenuCommandIDVolumeFade);
+	subMenuFX->addEntry(seperatorStringLarge, -1);
+	subMenuFX->addEntry("Compress", MenuCommandIDCompress);
+	subMenuFX->addEntry(seperatorStringLarge, -1);
+	subMenuFX->addEntry("3 Band EQ" PPSTR_PERIODS, MenuCommandIDEQ3Band);
+	subMenuFX->addEntry("10 Band EQ" PPSTR_PERIODS, MenuCommandIDEQ10Band);
+	subMenuFX->addEntry("Exciter [protracker boost]", MenuCommandIDPTBoost);
+	subMenuFX->addEntry(seperatorStringLarge, -1);
+	subMenuFX->addEntry("Normalize", MenuCommandIDNormalize);
+	subMenuFX->addEntry("Backwards", MenuCommandIDReverse);
+	subMenuFX->addEntry("Loop fold" PPSTR_PERIODS, MenuCommandIDVolumeFold);
+
 	subMenuAdvanced = new PPContextMenu(5, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain);
 	subMenuAdvanced->setSubMenu(true);
-	subMenuAdvanced->addEntry("Volume boost" PPSTR_PERIODS, MenuCommandIDVolumeBoost);
-	subMenuAdvanced->addEntry("Volume fade" PPSTR_PERIODS, MenuCommandIDVolumeFade);
-	subMenuAdvanced->addEntry("Normalize", MenuCommandIDNormalize);
-	subMenuAdvanced->addEntry("Compress", MenuCommandIDCompress);
-	subMenuAdvanced->addEntry(seperatorStringLarge, -1);
-	subMenuAdvanced->addEntry("Backwards", MenuCommandIDReverse);
 	subMenuAdvanced->addEntry("Cross-fade", MenuCommandIDXFade);
 	subMenuAdvanced->addEntry(seperatorStringLarge, -1);
 	subMenuAdvanced->addEntry("Change sign", MenuCommandIDChangeSign);
@@ -135,17 +146,17 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	subMenuAdvanced->addEntry(seperatorStringLarge, -1);
 	subMenuAdvanced->addEntry("Smooth (rect.)", MenuCommandIDRectangularSmooth);
 	subMenuAdvanced->addEntry("Smooth (tri.)", MenuCommandIDTriangularSmooth);
-	subMenuAdvanced->addEntry("3 Band EQ" PPSTR_PERIODS, MenuCommandIDEQ3Band);
-	subMenuAdvanced->addEntry("10 Band EQ" PPSTR_PERIODS, MenuCommandIDEQ10Band);
 	subMenuAdvanced->addEntry(seperatorStringLarge, -1);
 	subMenuAdvanced->addEntry("Resample" PPSTR_PERIODS, MenuCommandIDResample);
 
 	subMenuXPaste = new PPContextMenu(8, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain);
 	subMenuXPaste->setSubMenu(true);
 	subMenuXPaste->addEntry("Mix", MenuCommandIDMixPaste);
-	subMenuXPaste->addEntry("Amp Modulate", MenuCommandIDAMPaste);
-	subMenuXPaste->addEntry("Freq Modulate", MenuCommandIDFMPaste);
-	subMenuXPaste->addEntry("Phase Modulate", MenuCommandIDPHPaste);
+	subMenuXPaste->addEntry("Mix (overflow)", MenuCommandIDMixOverflowPaste);
+	subMenuXPaste->addEntry("Mix (spread)", MenuCommandIDMixSpreadPaste);
+	subMenuXPaste->addEntry("Modulate Amp", MenuCommandIDAMPaste);
+	subMenuXPaste->addEntry("Modulate Freq", MenuCommandIDFMPaste);
+	subMenuXPaste->addEntry("Modulate Phase", MenuCommandIDPHPaste);
 	subMenuXPaste->addEntry("Flanger", MenuCommandIDFLPaste);
 	subMenuXPaste->addEntry("Selective EQ" PPSTR_PERIODS, MenuCommandIDSelectiveEQ10Band);
 	subMenuXPaste->addEntry("Capture pattern" PPSTR_PERIODS, MenuCommandIDCapturePattern);
@@ -172,17 +183,17 @@ SampleEditorControl::SampleEditorControl(pp_int32 id,
 	editMenuControl->addEntry("Undo", MenuCommandIDUndo);
 	editMenuControl->addEntry("Redo", MenuCommandIDRedo);
 	editMenuControl->addEntry(seperatorStringMed, -1);
+	editMenuControl->addEntry("FX           \x10", 0xFFFF, subMenuFX);
+	editMenuControl->addEntry("Generators   \x10", 0xFFFF, subMenuGenerators);
+	editMenuControl->addEntry("Paste        \x10", 0xFFFF, subMenuXPaste);
+	editMenuControl->addEntry("Advanced     \x10", 0xFFFF, subMenuAdvanced);
+	editMenuControl->addEntry(seperatorStringMed, -1);
 	editMenuControl->addEntry("Cut", MenuCommandIDCut);
 	editMenuControl->addEntry("Copy", MenuCommandIDCopy);
 	editMenuControl->addEntry("Paste", MenuCommandIDPaste);
 	editMenuControl->addEntry("Crop", MenuCommandIDCrop);
 	editMenuControl->addEntry("Range all", MenuCommandIDSelectAll);
 	editMenuControl->addEntry("Loop range", MenuCommandIDLoopRange);
-	editMenuControl->addEntry(seperatorStringMed, -1);
-	editMenuControl->addEntry("Advanced   \x10", 0xFFFF, subMenuAdvanced);
-	editMenuControl->addEntry("Ext. Paste \x10", 0xFFFF, subMenuXPaste);
-	editMenuControl->addEntry("Protracker \x10", 0xFFFF, subMenuPT);
-	editMenuControl->addEntry("Generators \x10", 0xFFFF, subMenuGenerators);
 
 	// Create tool handler responder
 	toolHandlerResponder = new ToolHandlerResponder(*this);
@@ -208,6 +219,7 @@ SampleEditorControl::~SampleEditorControl()
 	delete editMenuControl;
 	delete subMenuAdvanced;
 	delete subMenuXPaste;
+  delete subMenuFX;
 	delete subMenuPT;
 	delete subMenuGenerators;
 }
@@ -1210,6 +1222,7 @@ pp_int32 SampleEditorControl::handleEvent(PPObject* sender, PPEvent* event)
 			 sender == reinterpret_cast<PPObject*>(subMenuAdvanced) ||
 			 sender == reinterpret_cast<PPObject*>(subMenuXPaste) ||
 			 sender == reinterpret_cast<PPObject*>(subMenuPT) ||
+			 sender == reinterpret_cast<PPObject*>(subMenuFX) ||
 			 sender == reinterpret_cast<PPObject*>(subMenuGenerators)) &&
 			 event->getID() == eCommand)
 	{
@@ -1689,6 +1702,9 @@ void SampleEditorControl::invokeContextMenu(const PPPoint& p, bool translatePoin
 	subMenuAdvanced->setState(MenuCommandIDNormalize, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDCompress, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDVolumeFade, isEmptySample);
+	subMenuAdvanced->setState(MenuCommandIDVolumeFadeIn, isEmptySample);
+	subMenuAdvanced->setState(MenuCommandIDVolumeFadeOut, isEmptySample);
+	subMenuAdvanced->setState(MenuCommandIDVolumeFold, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDVolumeBoost, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDReverse, isEmptySample);
 	subMenuAdvanced->setState(MenuCommandIDXFade, !sampleEditor->isValidxFadeSelection() || isEmptySample || !sampleEditor->getLoopType());
@@ -1703,6 +1719,8 @@ void SampleEditorControl::invokeContextMenu(const PPPoint& p, bool translatePoin
 	subMenuAdvanced->setState(MenuCommandIDResample, isEmptySample);
 
 	subMenuXPaste->setState(MenuCommandIDMixPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
+	subMenuXPaste->setState(MenuCommandIDMixOverflowPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
+	subMenuXPaste->setState(MenuCommandIDMixSpreadPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
 	subMenuXPaste->setState(MenuCommandIDAMPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
 	subMenuXPaste->setState(MenuCommandIDFMPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
 	subMenuXPaste->setState(MenuCommandIDPHPaste, sampleEditor->clipBoardIsEmpty() || isEmptySample);
@@ -1750,7 +1768,17 @@ void SampleEditorControl::executeMenuCommand(pp_int32 commandId)
 			sampleEditor->paste();
 			break;
 
-		// mix-paste
+		// mix-paste spread
+		case MenuCommandIDMixOverflowPaste:
+			sampleEditor->mixOverflowPasteSample();
+			break;
+
+		// mix-paste spread
+		case MenuCommandIDMixSpreadPaste:
+			sampleEditor->mixSpreadPasteSample();
+			break;
+
+		// mix-paste stencil-like (preserves pitch)
 		case MenuCommandIDMixPaste:
 			sampleEditor->mixPasteSample();
 			break;
@@ -1816,6 +1844,27 @@ void SampleEditorControl::executeMenuCommand(pp_int32 commandId)
 		case MenuCommandIDVolumeFade:
 			invokeToolParameterDialog(ToolHandlerResponder::SampleToolTypeFade);
 			break;
+
+		case MenuCommandIDVolumeFadeOut:{
+			FilterParameters par(2);
+			par.setParameter(0, FilterParameters::Parameter(1.0f));
+			par.setParameter(1, FilterParameters::Parameter(0.0f));
+			sampleEditor->tool_scaleSample(&par);
+			break;
+		}
+
+		case MenuCommandIDVolumeFadeIn:{
+			FilterParameters par(2);
+			par.setParameter(0, FilterParameters::Parameter(0.0f));
+			par.setParameter(1, FilterParameters::Parameter(1.0f));
+			sampleEditor->tool_scaleSample(&par);
+			break;
+		}
+
+		case MenuCommandIDVolumeFold:{
+			sampleEditor->tool_foldSample(NULL);
+			break;
+		}
 
 		case MenuCommandIDResample:
 			invokeToolParameterDialog(ToolHandlerResponder::SampleToolTypeResample);
