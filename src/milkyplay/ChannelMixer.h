@@ -493,6 +493,8 @@ public:
 
 	void			playSample(mp_sint32 c, // channel
 							   mp_sbyte* smp, // sample buffer
+							   mp_sbyte* smp2x, // sped up sample buffer
+							   mp_sbyte* smp4x, // sped up sample buffer
 							   mp_sint32 smplen, // sample size
 							   mp_sint32 smpoffs, // sample offset
 							   mp_sint32 smpoffsfrac,

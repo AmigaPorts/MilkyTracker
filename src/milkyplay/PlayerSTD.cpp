@@ -641,6 +641,8 @@ void PlayerSTD::playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRe
 				{
 					playSample(chn,
 							   (mp_sbyte*)module->smp[i].sample,
+							   (mp_sbyte*)module->smp[i].sample2x,
+							   (mp_sbyte*)module->smp[i].sample4x,
 							   module->smp[i].samplen,
 							   smpoffs[chn],
 							   0, // sample offset fraction
@@ -657,6 +659,8 @@ void PlayerSTD::playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRe
 
 					playSample(chn,
 							   (mp_sbyte*)module->smp[i].sample,
+							   (mp_sbyte*)module->smp[i].sample2x,
+							   (mp_sbyte*)module->smp[i].sample4x,
 							   module->smp[i].samplen,
 							   smpoffset,
 							   smpoffsetfrac, // sample offset fraction
@@ -673,6 +677,8 @@ void PlayerSTD::playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRe
 				if (!bNoRestart)
 				{
 					playSample(chn,(mp_sbyte*)module->smp[i].sample,
+							   (mp_sbyte*)module->smp[i].sample2x,
+							   (mp_sbyte*)module->smp[i].sample4x,
 							   module->smp[i].samplen,
 							   smpoffs[chn],
 							   0, // sample offset fraction
@@ -688,6 +694,8 @@ void PlayerSTD::playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRe
 					mp_sint32 smpoffsetfrac = smpoffs[chn] ? 0 : getSamplePosFrac(chn);
 
 					playSample(chn,(mp_sbyte*)module->smp[i].sample,
+							   (mp_sbyte*)module->smp[i].sample2x,
+							   (mp_sbyte*)module->smp[i].sample4x,
 							   module->smp[i].samplen,
 							   smpoffset,
 							   smpoffsetfrac, // sample offset fraction
