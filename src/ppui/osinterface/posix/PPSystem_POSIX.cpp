@@ -127,9 +127,17 @@ const SYSCHAR* System::getConfigFileName()
 		strncpy(buffer, home, PATH_MAX);
 		strncat(buffer, "/.config", PATH_MAX);
 	}
+#ifdef __MINGW32__
+	mkdir(buffer);
+#else
 	mkdir(buffer, S_IRWXU);
+#endif
 	strncat(buffer, "/milkytracker", PATH_MAX);
+#ifdef __MINGW32__
+	mkdir(buffer);
+#else
 	mkdir(buffer, S_IRWXU);
+#endif
 	strncat(buffer, "/config", PATH_MAX);
 	// Move possible existing config into new location if not already present
 	if(home && access(oldLoc, F_OK) == 0 && access(buffer, F_OK) != 0)

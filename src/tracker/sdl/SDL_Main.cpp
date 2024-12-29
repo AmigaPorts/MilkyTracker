@@ -104,6 +104,10 @@ static PPMutex*			timerMutex		= NULL;
 #endif
 static bool			ticking			= false;
 
+#ifdef __MINGW32__
+#	define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
+#endif
+
 struct MouseState {
 	pp_uint32 myTime;
 	PPPoint lastClickPosition;

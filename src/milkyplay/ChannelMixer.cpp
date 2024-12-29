@@ -745,7 +745,7 @@ void ChannelMixer::setActiveChannels(mp_uint32 num)
 // Default lo precision calculations
 void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f, mp_sint32 per)
 {
-	printf("per: %.2f\n", (float)per / 1024.0f);
+	//printf("per: %.2f\n", (float)per / 1024.0f);
 
 	f /= 2;
 	per /= 2;

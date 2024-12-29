@@ -381,7 +381,7 @@ public:
 		return 0;
 	}
 
-	virtual int32_t getOperatingBitDepth() const = 0;
+	virtual pp_int32 getOperatingBitDepth() const = 0;
 
 	virtual void setPalette(PPColor * palette)
 	{

@@ -228,7 +228,7 @@ public:
 	virtual PPSize getDisplayResolution() const { return PPSize(-1, -1); }
 
 	virtual bool needsPalette() const { return currentGraphics ? currentGraphics->needsPalette() : false; }
-	virtual int32_t getPaletteBitDepth() const { return currentGraphics ? currentGraphics->getOperatingBitDepth() : 0; }
+	virtual pp_int32 getPaletteBitDepth() const { return currentGraphics ? currentGraphics->getOperatingBitDepth() : 0; }
 	virtual void setPalette(PPColor * palette) { }
 
 	virtual void shutDown()	= 0;

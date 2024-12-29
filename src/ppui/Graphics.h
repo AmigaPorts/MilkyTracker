@@ -71,7 +71,7 @@ public: \
 	virtual void drawChar(pp_uint8 chr, pp_int32 x, pp_int32 y, bool underlined = false); \
 	virtual void drawString(const char* str, pp_int32 x, pp_int32 y, bool underlined = false); \
 	virtual void drawStringVertical(const char* str, pp_int32 x, pp_int32 y, bool underlined = false); \
-	virtual int32_t getOperatingBitDepth() const { return bitdepth; }; \
+	virtual pp_int32 getOperatingBitDepth() const { return bitdepth; }; \
 	epilogue \
 }; \
 

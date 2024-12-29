@@ -23,7 +23,7 @@
 #include "DisplayDevice_SDL.h"
 #include "Graphics.h"
 
-SDL_Window* PPDisplayDevice::CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags)
+SDL_Window* PPDisplayDevice::createWindow(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags)
 {
 	size_t namelen = 0;
 	char rendername[256] = { 0 };

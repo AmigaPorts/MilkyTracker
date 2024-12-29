@@ -44,7 +44,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 	theTexture(NULL)
 {
 	// Create an SDL window and surface
-	theWindow = CreateWindow(realWidth, realHeight, bpp,
+	theWindow = createWindow(realWidth, realHeight, bpp,
 #ifdef HIDPI_SUPPORT
 							  SDL_WINDOW_ALLOW_HIGHDPI |							// Support for 'Retina'/Hi-DPI displays
 #endif
