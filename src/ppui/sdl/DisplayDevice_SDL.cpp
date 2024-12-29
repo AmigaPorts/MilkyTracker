@@ -39,12 +39,14 @@ SDL_Window* PPDisplayDevice::createWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 		strncat(rendername, info.name, sizeof(rendername) - namelen);
 		strncat(rendername, " ", sizeof(rendername) - namelen);
 
-		if ( !opengl_disable && strncmp("opengles2", info.name, 9) == 0)
-		{
+		if (drv_index < 0 && !opengl_disable && strncmp("opengles2", info.name, 9) == 0) {
 			drv_index = it;
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+			SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+		} else if(drv_index < 0 && !opengl_disable && strncmp("opengl", info.name, 6) == 0) {
+			drv_index = it;
 			SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 		}
 	}
@@ -90,7 +92,7 @@ SDL_Window* PPDisplayDevice::createWindow(pp_int32& w, pp_int32& h, pp_int32& bp
 			fprintf(stdout, "GL: Renderer: %s\n", glGetStringAPI(GL_RENDERER));
 			fprintf(stdout, "GL: Version: %s\n", glGetStringAPI(GL_VERSION));
 	#ifdef DEBUG
-			fprintf(stdout, "Extensions : %s\n", glGetStringAPI(GL_EXTENSIONS));
+			fprintf(stdout, "GL: Extensions : %s\n", glGetStringAPI(GL_EXTENSIONS));
 	#endif
 		}
 	}

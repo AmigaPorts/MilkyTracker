@@ -53,7 +53,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 
 	if (theWindow == NULL)
 	{
-		fprintf(stderr, "SDL: Could not create window.\n");
+		fprintf(stderr, "SDL: Could not create window\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -75,17 +75,17 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 	SDL_RendererInfo theRendererInfo;
 	if (!SDL_GetRendererInfo(theRenderer, &theRendererInfo))
 	{
-		if (theRendererInfo.flags & SDL_RENDERER_SOFTWARE) printf("SDL: Using software renderer.\n");
-		if (theRendererInfo.flags & SDL_RENDERER_ACCELERATED) printf("SDL: Using accelerated renderer.\n");
-		if (theRendererInfo.flags & SDL_RENDERER_PRESENTVSYNC) printf("SDL: Vsync enabled.\n");
-		if (theRendererInfo.flags & SDL_RENDERER_TARGETTEXTURE) printf("SDL: Renderer supports rendering to texture.\n");
+		if (theRendererInfo.flags & SDL_RENDERER_SOFTWARE) printf("SDL: Using software renderer\n");
+		if (theRendererInfo.flags & SDL_RENDERER_ACCELERATED) printf("SDL: Using accelerated renderer\n");
+		if (theRendererInfo.flags & SDL_RENDERER_PRESENTVSYNC) printf("SDL: Vsync enabled\n");
+		if (theRendererInfo.flags & SDL_RENDERER_TARGETTEXTURE) printf("SDL: Renderer supports rendering to texture\n");
 	}
 
 	// Lock aspect ratio and scale the UI up to fit the window
 #ifdef HIDPI_SUPPORT
 	if (SDL_RenderSetLogicalSize(theRenderer, rendererW, rendererH) < 0) {
 #else
-	if (SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight) <0) {
+	if (SDL_RenderSetLogicalSize(theRenderer, realWidth, realHeight) < 0) {
 #endif
 		fprintf(stderr, "SDL: SDL_RenderSetLogicalSize failed: %s\n", SDL_GetError());
 	}
@@ -114,7 +114,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 	// We got a surface: update bpp value
 	bpp = (bpp >= 0 && bpp < 8) ? bpp : theSurface->format->BitsPerPixel;
 
-	printf("SDL: Using bitdepth: %d.\n", bpp);
+	printf("SDL: Using bitdepth: %d\n", bpp);
 
 	// Create a PPGraphics context based on bpp
 	switch (bpp)
@@ -175,6 +175,8 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(pp_int32 width,
 			exit(EXIT_FAILURE);
 	}
 
+	printf("SDL: Needs temporary buffer: %c\n", needsTemporaryBuffer ? 'Y' : 'N');
+
 	if (needsTemporaryBuffer)
 	{
 		temporaryBufferBPP = bpp < 8 ? 8 : bpp;
@@ -232,7 +234,7 @@ void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 
 	int nColors = 1 << currentGraphics->getOperatingBitDepth();
 
-	printf("PPDisplayDeviceFB: Using palette with %d colors.\n", nColors);
+	printf("SDL: Using palette with %d colors\n", nColors);
 
 	// Pass palette to graphics context
 	currentGraphics->setPalette(pppal);
@@ -269,6 +271,7 @@ void PPDisplayDeviceFB::update()
 		SDL_RenderCopy(theRenderer, t, NULL, NULL);
 		SDL_DestroyTexture(t);
 	}
+	
 	SDL_RenderPresent(theRenderer);
 }
 
