@@ -61,9 +61,9 @@ mp_uword PlayerFAR::Freqs[120] = {
 	472,500,530,559,592,630,667,705,746,792,838,890,
 	939,995,1057,1115,1179,1252,1318,1410,1493,1561,1664,1750,
 	1880,2051,2071,2206,2360,2476,2603,2743,3076,3275,3661,3797,
-	3905,4061,4415,4615,4836,5077,5344,5641,5973,6346,6769,7254,
+	3905,4061,4415,4615,4836,5077,5344,5641,5973,6346,6769,7254,	
 	7718,8181,8703,9090,9739,10226,11055,11687,12395,13195,13635,14609*/
-
+	
 	14,15,16,17,18,19,20,22,23,24,26,27,29,
 	31,33,34,37,39,41,44,46,49,52,55,58,62,
 	66,70,74,78,83,88,93,99,105,111,117,124,
@@ -77,7 +77,7 @@ mp_uword PlayerFAR::Freqs[120] = {
 	5041,5377,5680,6019,6401,6721,7201,7609,
 	8065,8580,8962,9602,10082,10899,11522,
 	12221,13009,13443,14403
-
+	
 	// with finetune to 22
 	/*14,15,16,17,18,19,20,22,23,24,26,28,29,
 	31,33,35,37,39,41,44,47,49,52,56,59,62,
@@ -122,9 +122,9 @@ void PlayerFAR::SetBalance(mp_sint32 chn, mp_ubyte balance)
 ///////////////////////////////////////
 // FAR player constructor
 ///////////////////////////////////////
-PlayerFAR::PlayerFAR(mp_uint32 frequency) :
+PlayerFAR::PlayerFAR(mp_uint32 frequency) : 
 	PlayerBase(frequency),
-	OverFlow(0), OCount(0), PlayOrder(0),
+	OverFlow(0), OCount(0), PlayOrder(0), 
 	VibAmp(4),TempoType(1), PlayTempo(4),
 	TempoBend(0)
 
@@ -135,7 +135,7 @@ PlayerFAR::PlayerFAR(mp_uint32 frequency) :
 	mp_sint32 i = 0;
 
 	static bool done = false;
-
+	
 	// create sine table used for vibrato
 	if (!done)
 	{
@@ -145,11 +145,11 @@ PlayerFAR::PlayerFAR(mp_uint32 frequency) :
 				y=sin(2*3.1415*f*t)*amp;
 				SinTable[(mp_sint32)amp][(mp_sint32)(t*128)]=(mp_sint32)y;
 			}
-
+		
 		// create volume table for volumes 0-512
 		for (i = 0; i < 64; i++)
 			VolTab[i] = i<<3;
-
+			
 		done = true;
 	}
 
@@ -190,7 +190,7 @@ PlayerFAR::PlayerFAR(mp_uint32 frequency) :
 		CurNote[i]		= 0;
 		CurEff[i]		= 0;
 	}
-
+	
 	CalcTempo();
 }
 
@@ -210,7 +210,7 @@ void PlayerFAR::restart(mp_uint32 startPosition/* = 0*/, mp_uint32 startRow/* = 
 	PlayerBase::restart(startPosition, startRow, resetMixer, customPanningTable, playOneRowOnly);
 
 	VibAmp=4;
-
+	
 	// 669 uses a different tempo scheme
 	switch (module->getType())
 	{
@@ -231,14 +231,14 @@ void PlayerFAR::restart(mp_uint32 startPosition/* = 0*/, mp_uint32 startRow/* = 
 	memset(VibPtr,0,sizeof(VibPtr));
 	memset(VibInc,0,sizeof(VibInc));
 	memset(RetLeft,0,sizeof(RetLeft));
-
+	
 	for (mp_sint32 i = 0; i < 16; i++)
 	{
 		CurVols[i] = 0xF;
 		CurBalance[i] = 0x8;
 	}
-
-	CalcTempo();
+	
+	CalcTempo();	
 }
 
 ///////////////////////////////////////
@@ -250,23 +250,23 @@ void PlayerFAR::CalcTempo()
 
 	mTempo[0]=256;
 	for (q=1;q<16;q++) mTempo[q]=128/q;
-
+			
 	UpdateTempo(mTempo[4]);
 }
 
 ///////////////////////////////////////
 // Set new tempo
-// My mixer class emulates a
+// My mixer class emulates a 
 // 250Hz timer so we need to convert
 // the PC-Int8 timing into our 250Hz
 // model
 ///////////////////////////////////////
-void PlayerFAR::UpdateTempo(mp_sint32 tps)
+void PlayerFAR::UpdateTempo(mp_sint32 tps) 
 {
 
 	// original FAR replaying... 669 tempo not supported because of hi timer resolution
 	mp_uint32 eax,di,cx;
-
+	
 	eax=1197255/tps;
 	cx=0; di=0;
 	while (eax>0xFFFF) {
@@ -276,22 +276,22 @@ void PlayerFAR::UpdateTempo(mp_sint32 tps)
 	if (cx>=2) di++;
 	di+=3;
 	OverFlow=di; OCount=di;
-
+	
 	// convert timer frequency into 250Hz base
 	float t = (1197255.0f / (float)eax);
-
+	
 	t = 1.0f/(250.0f/t);
-
+	
 	// for tempo 0 we get a period that is slightly shorter than what we can
 	// do with 250Hz but the difference is very small so just correct it by
 	// clamping
 	if (t > 1.0f) t = 1.0f;
-
+	
 	adder = (mp_uint32)((mp_int64)(t*65536.0*65536.0));
-
+	
 	// see above
 	if (!adder) adder = 0xFFFFFFFF;
-
+	
 }
 
 ///////////////////////////////////////
@@ -307,9 +307,9 @@ void PlayerFAR::timerHandler(mp_sint32 currentBeatPacket)
 
 	if (module == NULL)
 		return;
-
+	
 	// make sure this is a FAR tune
-	if (module->getType() != XModule::ModuleType_FAR &&
+	if (module->getType() != XModule::ModuleType_FAR && 
 		module->getType() != XModule::ModuleType_669)
 		return;
 
@@ -317,29 +317,29 @@ void PlayerFAR::timerHandler(mp_sint32 currentBeatPacket)
 	if (module->header.channum > 16)
 		return;
 
-	setActiveChannels(/*numChannels*/module->header.channum);
+	setActiveChannels(/*numChannels*/module->header.channum);	
 
 	mp_int64 dummy = (mp_int64)BPMCounter;
 	dummy+=(mp_int64)adder;
 	BPMCounter=(mp_sint32)dummy;
-
-	// check overflow-carry
-	if ((dummy>>32))
+	
+	// check overflow-carry 
+	if ((dummy>>32)) 
 	{
-
+		
 		mp_uword c,/*ov,*/m,q;
 		mp_sint32 fp,sp,t,ch;
 		mp_ubyte fekt;
-
+		
 		mp_ubyte* Pattern = module->phead[module->header.ord[poscnt]].patternData;
-
+		
 		mp_sint32 numChannels = module->phead[module->header.ord[poscnt]].channum;
-
+		
 		mp_sint32 BreakLoc = module->phead[module->header.ord[poscnt]].rows - 2;
-
+		
 		mp_sint32 CurSpot = rowcnt * module->header.channum * 6;
-
-		for (ch=0;ch<numChannels;ch++) {
+		
+		for (ch=0;ch<numChannels;ch++) {		
 			CurVoice = ch;
 			if (VibOn[ch]) {
 				VibPtr[ch]+=VibInc[ch];              // Update vibrato table cntr
@@ -373,7 +373,7 @@ void PlayerFAR::timerHandler(mp_sint32 currentBeatPacket)
 			}
 			PitchWheel[ch]=PresPitch[ch]/256;
 			SetFreq(ch,CurFreqs[ch]+PitchWheel[ch]+SinTable[VibAmp][VibPtr[ch]]);
-
+			
 			if (VIncrement[ch]) {                   // Deal with vol port
 				t=(CurVols[ch]*4)+VolWheel[ch];
 				if (VIncrement[ch]<0) {
@@ -406,9 +406,9 @@ void PlayerFAR::timerHandler(mp_sint32 currentBeatPacket)
 				}
 				else
 					SetVolume(ch,VolTab[(CurVols[ch]*4)+VolWheel[ch]]);
-
+				
 			}
-
+			
 			if (RetLeft[ch]) {               // Deal with retrigger
 				CurSpc[ch]+=2;
 				if (CurSpc[ch]>=RetSpc[ch]) {
@@ -422,12 +422,10 @@ DoNote1:
 					CurChSmp[ch]=q;
 					if ((m&3) && module->instr[q].snum[0] != -1)
 					{
-						playSample(CurVoice,
+						playSample(CurVoice, 
 										   module->smp[module->instr[q].snum[0]].sample, // sample buffer
-										   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
-										   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].samplen, // sample size
-										   0, // sample offset
+										   0, // sample offset 
 										   0, // sample offset fraction
 										   false, // wrap sample offset when exceeding sample length
 										   module->smp[module->instr[q].snum[0]].loopstart, // loop start
@@ -436,12 +434,10 @@ DoNote1:
 					}
 					else
 					{
-						playSample(CurVoice,
+						playSample(CurVoice, 
 										   module->smp[module->instr[q].snum[0]].sample, // sample buffer
-										   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
-										   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].samplen, // sample size
-										   0, // sample offset
+										   0, // sample offset 
 										   0, // sample offset fraction
 										   false, // wrap sample offset when exceeding sample length
 										   0, // loop start
@@ -456,19 +452,19 @@ NoNote1:
 				}
 			}
 		}
-
+		
 //oo:
-			if (OCount--)
+			if (OCount--) 
 				return;
-
+		
 		OCount=OverFlow;
-
+		
 		for (c=0;c<numChannels;c++) {
 			CurVoice=c;
-
+			
 			CurNote[CurVoice] = Pattern[CurSpot];
 			CurEff[CurVoice] = Pattern[CurSpot+5];
-
+		
 			OfftCnt[CurVoice]=0; RetCnt[CurVoice]=0; RetLeft[CurVoice]=0;
 			//    if (Bars[CurVoice]<(PlayTempo*2)) Bars[CurVoice]=0;
 			//    if (Bars[CurVoice]) Bars[CurVoice]-=PlayTempo*2;
@@ -480,7 +476,7 @@ NoNote1:
 				CurFreqs[CurVoice]=Freqs[Pattern[CurSpot]-1/*-3*12*/];
 				SetFreq(CurVoice,CurFreqs[CurVoice]);
 				CurChSmp[CurVoice]=q;
-
+				
 				/*if (m&(1<<2))
 					PlaySample(module->smp[module->instr[q].snum[0]].Seg/2,
 							   module->smp[module->instr[q].snum[0]].Off/2,
@@ -493,15 +489,13 @@ NoNote1:
 							   module->smp[module->instr[q].snum[0]].Rep,
 							   module->smp[module->instr[q].snum[0]].RepEnd,
 							   CurVoice,m);*/
-
+				
 				if ((m&3) && module->instr[q].snum[0] != -1)
 				{
-					playSample(CurVoice,
+					playSample(CurVoice, 
 									   module->smp[module->instr[q].snum[0]].sample, // sample buffer
-									   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
-									   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].samplen, // sample size
-									   0, // sample offset
+									   0, // sample offset 
 									   0, // sample offset fraction
 									   false, // wrap sample offset when exceeding sample length
 									   module->smp[module->instr[q].snum[0]].loopstart, // loop start
@@ -510,20 +504,18 @@ NoNote1:
 				}
 				else
 				{
-					playSample(CurVoice,
+					playSample(CurVoice, 
 									   module->smp[module->instr[q].snum[0]].sample, // sample buffer
-									   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
-									   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].samplen, // sample size
-									   0, // sample offset
+									   0, // sample offset 
 									   0, // sample offset fraction
 									   false, // wrap sample offset when exceeding sample length
 									   0, // loop start
 									   module->smp[module->instr[q].snum[0]].samplen, // loop end
 									   m);
 				}
-
-
+				
+				
 				PresPitch[CurVoice]=0;
 				DestPitch[CurVoice]=0; Increment[CurVoice]=0;
 				//      Bars[CurVoice]=(Pattern[CurSpot+2]*fs)/16;
@@ -532,7 +524,7 @@ NoNote1:
 			if ((Pattern[CurSpot+3]) && fekt!=0xa0) {
 				PresVol[CurVoice]=0; VolWheel[CurVoice]=0;
 				DestVol[CurVoice]=0; VIncrement[CurVoice]=0;
-
+				
 				CurVols[CurVoice]=((Pattern[CurSpot+3]>>4)-1);
 				SetVolume(CurVoice,VolTab[(CurVols[CurVoice]*4)]);
 				//      Bars[CurVoice]=(Pattern[CurSpot+2]*fs)/16;
@@ -596,7 +588,7 @@ NoNote1:
 							sp=Freqs[Pattern[CurSpot]-1/*-3*12*/];
 							DestPitch[CurVoice]=sp;
 							if (fp>sp) {t=sp;sp=fp;fp=t;}
-
+							
 							if (module->getType() == XModule::ModuleType_669)
 							{
 								if (Pattern[CurSpot+5]&0xF)
@@ -615,7 +607,7 @@ NoNote1:
 									Increment[CurVoice]=((sp-fp)*256)/(1*
 																	   (mTempo[PlayTempo]+TempoBend));
 							}
-
+							
 							Increment[CurVoice]*=8;
 							if (t) Increment[CurVoice]=-Increment[CurVoice];
 						}
@@ -733,9 +725,9 @@ NoNote1:
 			}
 			/*    if (Bars[CurVoice]>=fs) Bars[CurVoice]=fs-1;
 			if (Bars[CurVoice]<1) Bars[CurVoice]=1; */
-
+			
 			CurSpot+=6;
-
+			
 		}
 		//CurVoice=ov;
 		if (rowcnt<=BreakLoc) {
@@ -764,7 +756,7 @@ NoNote1:
 			//GetPat(CurPattern);
 			rowcnt=0;
 		}
-
+		
 	}
 }
 
@@ -777,7 +769,7 @@ void PlayerFAR::clearEffectMemory()
 	mp_sint32 i;
 
 	OCount=OverFlow;
-
+	
 	memset(PitchWheel,0,sizeof(PitchWheel));
 	memset(VibOn,0,sizeof(VibOn));
 	memset(VibPtr,0,sizeof(VibPtr));
@@ -815,13 +807,13 @@ bool PlayerFAR::grabChannelInfo(mp_sint32 chn, TPlayerChannelInfo& channelInfo) 
 	channelInfo.numeffects = 2;
 	memset(channelInfo.effects, 0, sizeof(channelInfo.effects));
 	memset(channelInfo.operands, 0, sizeof(channelInfo.operands));
-
+	
 	channelInfo.effects[0] = 0x70;
 	channelInfo.operands[0] = CurEff[chn];
-
+	
 	//memcpy(channelInfo.effects, chninfo[chn].eff, sizeof(chninfo[chn].eff));
 	//memcpy(channelInfo.operands, chninfo[chn].eop, sizeof(chninfo[chn].eop));
-
+	
 	return true;
 }
 

@@ -174,9 +174,9 @@ private:
 			flags |= smp->type & 3;
 
 			if (flags & 3)
-				player.playSample(chn, smp->sample, smp->sample2x, smp->sample4x, smp->samplen, 0, 0, false, smp->loopstart, smp->loopstart+smp->looplen, flags);
+				player.playSample(chn, smp->sample, smp->samplen, 0, 0, false, smp->loopstart, smp->loopstart+smp->looplen, flags);
 			else
-				player.playSample(chn, smp->sample, smp->sample2x, smp->sample4x, smp->samplen, 0, 0, false, 0, smp->samplen, flags);
+				player.playSample(chn, smp->sample, smp->samplen, 0, 0, false, 0, smp->samplen, flags);
 		}
 		else
 		{
@@ -186,7 +186,7 @@ private:
 			if (rangeEnd > (signed)smp->samplen)
 				rangeEnd = smp->samplen;
 
-			player.playSample(chn, smp->sample, smp->sample2x, smp->sample4x, smp->samplen, rangeStart, 0, false, 0, rangeEnd, flags);
+			player.playSample(chn, smp->sample, smp->samplen, rangeStart, 0, false, 0, rangeEnd, flags);
 		}
 	}
 

@@ -171,7 +171,6 @@ void TXMSample::postProcessSamples()
 
 	if (looplen == 0)
 		type &= ~3;
-
 	if (sample == NULL)
 		return;
 
@@ -192,16 +191,6 @@ void TXMSample::postProcessSamples()
 	{
 		restoreLoopArea();
 	}
-
-	if(this->sample2x) {
-		freePaddedMem((mp_ubyte *) this->sample2x);
-	}
-	this->sample2x = (mp_sbyte *) allocPaddedMem(type & 16 ? this->samplen : this->samplen >> 1);
-
-	if(this->sample4x) {
-		freePaddedMem((mp_ubyte *) this->sample4x);
-	}
-	this->sample4x = (mp_sbyte *) allocPaddedMem(type & 16 ? this->samplen >> 1 : this->samplen >> 2);
 
 	// 16 bit sample
 	if (type&16)
@@ -259,18 +248,6 @@ void TXMSample::postProcessSamples()
 				data[loopend+2] = data[loopend-3];
 				data[loopend+3] = data[loopend-4];
 			}
-		}
-
-		// Copy over a twice as fast sample for Amiga
-		mp_sword * s = data, * d = reinterpret_cast<mp_sword *>(this->sample2x);
-		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=2, j++) {
-			d[j] = s[i];
-		}
-
-		s = data;
-		d = reinterpret_cast<mp_sword *>(this->sample4x);
-		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=4, j++) {
-			d[j] = s[i];
 		}
 	}
 	// 8 bit sample
@@ -330,18 +307,6 @@ void TXMSample::postProcessSamples()
 				data[loopend+2] = data[loopend-3];
 				data[loopend+3] = data[loopend-4];
 			}
-		}
-
-		// Copy over a twice as fast sample for Amiga
-		mp_sbyte * s = data, * d = this->sample2x;
-		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=2, j++) {
-			d[j] = s[i];
-		}
-
-		s = data;
-		d = reinterpret_cast<mp_sbyte *>(this->sample4x);
-		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=4, j++) {
-			d[j] = s[i];
 		}
 	}
 }
@@ -1554,7 +1519,7 @@ bool XModule::loadSample(XMFileBase& f,void* buffer,mp_uint32 size,mp_uint32 len
 		// unsigned sample data
 		if (flags & ST_UNSIGNED)
 		{
-			for (i = 0; i < length; i++)
+			for (i = 0; i < length; i++) 
 				dstPtr[i] = (dstPtr[i]^32768);
 		}
 	}
@@ -1574,7 +1539,7 @@ bool XModule::loadSample(XMFileBase& f,void* buffer,mp_uint32 size,mp_uint32 len
 		// unsigned sample data
 		if (flags & ST_UNSIGNED)
 		{
-			for (mp_uint32 i = 0; i < length; i++)
+			for (mp_uint32 i = 0; i < length; i++) 
 				smpPtr[i] ^= 128;
 		}
 	}
