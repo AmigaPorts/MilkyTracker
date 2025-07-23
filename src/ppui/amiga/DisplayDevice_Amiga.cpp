@@ -86,12 +86,12 @@ DisplayDevice_Amiga::~DisplayDevice_Amiga()
 void *
 DisplayDevice_Amiga::allocMemAligned(pp_uint32 size, void ** aligned)
 {
-    void * b = (void *) AllocMem((pitch * height) + 16, MEMF_FAST | MEMF_CLEAR);
+    void * b = (void *) AllocMem((pitch * height) + 32, MEMF_FAST | MEMF_CLEAR);
     if(!b)
         return NULL;
 
     // And align
-    void * a = (void *) (((pp_uint32) b + 15) & ~ (pp_uint32) 0xf);
+    void * a = (void *) (((pp_uint32) b + 31) & ~ (pp_uint32) 0x1f);
     memset(a, 0, pitch * height);
     *aligned = a;
 

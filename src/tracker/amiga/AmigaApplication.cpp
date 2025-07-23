@@ -450,11 +450,12 @@ AmigaApplication::loop()
                                 mouseWheelParams.pos.x = mousePosition.x;
                                 mouseWheelParams.pos.y = mousePosition.y;
                                 mouseWheelParams.deltaX = msg->Code == 0x7a ? 1 : -1;
-                                mouseWheelParams.deltaY = msg->Code == 0x7a ? 1 : -1;
+                                mouseWheelParams.deltaY = (msg->Code == 0x7a ? 1 : -1) * 3;
 
                                 PPEvent mouseWheelEvent(eMouseWheelMoved, &mouseWheelParams, sizeof (mouseWheelParams));
 		                        raiseEventSynchronized(&mouseWheelEvent);
                             }
+							break;
                         default:
                             key.code = msg->Code;
                             key.qual = msg->Qualifier;
