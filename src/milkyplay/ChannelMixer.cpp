@@ -745,6 +745,11 @@ void ChannelMixer::setActiveChannels(mp_uint32 num)
 // Default lo precision calculations
 void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f, mp_sint32 per)
 {
+	//printf("per: %.2f\n", (float)per / 1024.0f);
+
+	f /= 2;
+	per /= 2;
+
 	channel[c].smpadd = ((mp_sint32)(((mp_int64)((mp_int64)f*(mp_int64)rMixFrequency))>>15))<<0;
 	channel[c].period = per;
 
@@ -804,6 +809,8 @@ void ChannelMixer::setFilterAttributes(mp_sint32 chn, mp_sint32 cutoff, mp_sint3
 
 void ChannelMixer::playSample(mp_sint32 c, // channel
 							  mp_sbyte* smp, // sample buffer
+							  mp_sbyte* smp2x, // 2x sped up sample buffer
+							  mp_sbyte* smp4x, // 4x sped up sample buffer
 							  mp_sint32 smplen, // sample size
 							  mp_sint32 smpoffs, // sample offset
 							  mp_sint32 smpoffsfrac,
@@ -816,6 +823,12 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 	// doesn't play
 	if (smp == NULL)
 		return;
+
+	smp = smp2x;
+	smplen >>= 1;
+	smpoffs >>= 1;
+	lstart >>= 1;
+	len >>= 1;
 
 	// disable looping when loopstart = loopend
 	if (lstart == len)
