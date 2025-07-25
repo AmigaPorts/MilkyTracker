@@ -130,10 +130,11 @@ static const char *mixTypeDescs[] = {
 	NULL
 };
 
-static LONG displayCount = 0;
+static LONG displayCount = -1;
 static LONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
+static struct List * displayModeLabels; 
 static UWORD * displayModeDepths = NULL;
 static AudioDriverInterface * audioDriver = NULL;
 
@@ -300,12 +301,55 @@ static bool checkHardware()
 		driverDescs[1] = "16-ch/16-bit";
 
 		UWORD model = (*((UWORD *)0xdff3fc)) >> 8;
-		if(model == 0x03 || model == 0x05)
+		TRACE("Apollo model: %08x", model);
+		if(model == 0x03 || model == 0x05 || model == 0x08)
 			isV4Core = true;
 	}
 
 	return hasFPU;
 }
+
+static void reallocDisplayModes(BOOL renew)
+{	
+	struct Node * c, * n;
+
+	if(displayCount >= 0) {
+		if(c = displayModeLabels->lh_Head) {
+			while(displayModeLabels->lh_Head->ln_Succ) {
+				n = c->ln_Succ;
+				if(c->ln_Name) {
+					free(c->ln_Name);
+				}
+				Remove(c);
+				FreeMem(c, sizeof(struct Node));
+				c = n;
+			}
+		}
+		FreeMem(displayModeLabels, sizeof(struct List *));
+		displayModeLabels = NULL;
+	}
+	
+	if(renew) {
+		displayCount = 0;
+		displayModeLabels = (struct List *) AllocMem(sizeof(struct List), MEMF_CLEAR);
+		NewList(displayModeLabels);
+	} else {
+		displayCount = -1;
+	}
+}
+
+#define ADD_DISPLAY_MODE(ID, W, H, DEPTH)                             \
+	do {                                                              \
+		struct Node * n = NULL;                                       \
+		displayModeIDs[displayCount] = ID;                            \
+		displayModeSizes[displayCount] = PPSize(W, H);                \
+		displayModeDepths[displayCount] = DEPTH;                      \
+		if(n = (Node *) AllocMem(sizeof(struct Node), MEMF_CLEAR)) {  \
+			n->ln_Name = displayModeNames[displayCount];              \
+			AddTail(displayModeLabels, n);                           \
+		}                                                             \
+		displayCount++;                                               \
+	} while(0);
 
 static Screen * discoverDisplayModes()
 {
@@ -321,9 +365,9 @@ static Screen * discoverDisplayModes()
 
 	if(!(pubScreen = LockPubScreen(NULL)))
 		return NULL;
-
-	displayCount = 0;
-
+	
+	reallocDisplayModes(TRUE);
+	
 	displayModeIDs = new LONG[MAX_DISPLAY_MODES];
 	memset(displayModeIDs, 0, MAX_DISPLAY_MODES * sizeof(LONG));
 	displayModeNames = new char *[MAX_DISPLAY_MODES];
@@ -380,47 +424,39 @@ static Screen * discoverDisplayModes()
 		else if(CyberGfxBase && !IsCyberModeID(readID))
 			continue;
 
-		TRACE("%03ld: %08lx: %5ldx%5ld %2ldbpp PAL: %c PF: %08lx Name: %s", displayCount, modeID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
-			dimensionInfo.MaxDepth, displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
+		TRACE("%03ld: %08lx: %5ldx%5ld %2ldbpp Win: %c PAL: %c PF: %08lx Name: %s", 
+			displayCount, 
+			modeID, 
+			dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1,
+			dimensionInfo.MaxDepth,
+			isWindowed ? 'Y' : 'N',
+			displayInfo.PropertyFlags & DIPF_IS_PAL ? 'Y' : 'N',
 			displayInfo.PropertyFlags, nameInfo.Name);
 
 		// Insert display mode
 		if(isWindowed) {
 			if(useSAGA && isV4Core) {
-				displayModeIDs[displayCount] = -1;
 				displayModeNames[displayCount] = new char[256];
-				strcpy(displayModeNames[displayCount], "Win: 640x480 PiP 16-bit");
-				displayModeSizes[displayCount] = PPSize(640, 480);
-				displayModeDepths[displayCount] = 16;
-				displayCount++;
+				strcpy(displayModeNames[displayCount], "Win: 640x480 SAGA-PiP 16-bit");
+				ADD_DISPLAY_MODE(-1, 640, 480, 16);
 
-				displayModeIDs[displayCount] = -2;
 				displayModeNames[displayCount] = new char[256];
-				strcpy(displayModeNames[displayCount], "Win: 640x480 PiP 8-bit");
-				displayModeSizes[displayCount] = PPSize(640, 480);
-				displayModeDepths[displayCount] = 8;
+				strcpy(displayModeNames[displayCount], "Win: 640x480 SAGA-PiP 8-bit");
+				ADD_DISPLAY_MODE(-2, 640, 480, 8);
 			} else {
-				displayModeIDs[displayCount] = -3;
 				displayModeNames[displayCount] = new char[256];
 				strcpy(displayModeNames[displayCount], "Win: 640x480 4-bit");
-				displayModeSizes[displayCount] = PPSize(640, 480);
-				displayModeDepths[displayCount] = 4;
-				displayCount++;
+				ADD_DISPLAY_MODE(-3, 640, 480, 4);
 
-				displayModeIDs[displayCount] = -4;
 				displayModeNames[displayCount] = new char[256];
 				sprintf(displayModeNames[displayCount], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
-				displayModeSizes[displayCount] = PPSize(640, 480);
-				displayModeDepths[displayCount] = dimensionInfo.MaxDepth;
+				ADD_DISPLAY_MODE(-4, 640, 480, dimensionInfo.MaxDepth);
 			}
 		} else {
-			displayModeIDs[displayCount] = readID;
 			displayModeNames[displayCount] = new char[256];
 			sprintf(displayModeNames[displayCount], "FS: %s", nameInfo.Name);
-			displayModeSizes[displayCount] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
-			displayModeDepths[displayCount] = dimensionInfo.MaxDepth;
+			ADD_DISPLAY_MODE(readID, dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1, dimensionInfo.MaxDepth);
 		}
-		displayCount++;
 
 		// Bail out when we reached the max number of display modes
 		if(displayCount == MAX_DISPLAY_MODES-1)
@@ -524,11 +560,15 @@ static int setup(AmigaApplication * app)
 
 		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
 		newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+		newGadget.ng_Height     = pubScreen->RastPort.TxHeight * 7;
 		newGadget.ng_GadgetText = "Screen mode";
 		newGadget.ng_GadgetID   = GID_SCREEN_MODE;
-		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
-			GTCY_Labels, displayModeNames,
-			GTCY_Active, displayIndex,
+		newGadget.ng_Flags      = PLACETEXT_LEFT;
+		gadget = CreateGadget(LISTVIEW_KIND, gadget, &newGadget,
+			GTLV_Labels, displayModeLabels,
+			GTLV_Selected, displayIndex,
+			GTLV_MakeVisible, displayIndex,
+			GTLV_ShowSelected, NULL,
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -536,6 +576,7 @@ static int setup(AmigaApplication * app)
 		}
 
 		newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+		newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
 		newGadget.ng_GadgetText = "Audio driver";
 		newGadget.ng_GadgetID   = GID_AUDIO_DRV;
 		gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
@@ -588,6 +629,7 @@ static int setup(AmigaApplication * app)
 		newGadget.ng_Width      = 22 * pubScreen->RastPort.TxWidth + 8;
 		newGadget.ng_GadgetText = "Run";
 		newGadget.ng_GadgetID   = GID_RUN;
+		newGadget.ng_Flags      = 0;
 		gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
 			TAG_END);
 		if(!gadget) {
@@ -619,7 +661,7 @@ static int setup(AmigaApplication * app)
 			WA_PubScreen,	pubScreen,
 			WA_Title,		winTitle,
 			WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
-			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
+			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP | LISTVIEWIDCMP,
 			WA_Gadgets,		gadgetList,
 			TAG_END
 		);
@@ -643,7 +685,7 @@ static int setup(AmigaApplication * app)
 						switch (gadget->GadgetID) {
 						case GID_SCREEN_MODE: {
 								long num;
-								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &num, TAG_END);
 								app->setDisplayID(displayModeIDs[num]);
 								app->setWindowSize(displayModeSizes[num]);
 								app->setBpp(displayModeDepths[num]);
@@ -780,6 +822,8 @@ static int boot(int argc, char * argv[])
 			saveBootConfig(app);
 		}
 	}
+	
+	reallocDisplayModes(FALSE);
 
 	delete app;
 

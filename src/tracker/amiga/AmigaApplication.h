@@ -4,6 +4,7 @@
 #include "BasicTypes.h"
 
 #include <exec/exec.h>
+#include <exec/execbase.h>
 #include <intuition/intuition.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
@@ -25,6 +26,7 @@
 #include <clib/vampire_protos.h>
 #include <clib/icon_protos.h>
 #include <clib/gadtools_protos.h>
+#include <clib/alib_protos.h>
 
 #include <hardware/intbits.h>
 

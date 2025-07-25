@@ -364,10 +364,17 @@ AudioDriver_Arne_ResampleHW::setChannelFrequency(ChannelMixer::TMixerChannel * c
 {
     //printf("ch %ld per = %ld\n", chn->index, chn->period);
 
-    channelExactPeriod[chn->index] = (float) chn->period / 1024.0f;
+    float period = (float) chn->period / 1024.0f;
+    mp_uword periodWord = (mp_uword) period;
+    
+    channelExactPeriod[chn->index] = period;
 
-    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = (mp_uword) channelExactPeriod[chn->index];
-    channelPeriod[chn->index] = (mp_uword) channelExactPeriod[chn->index];
+    if((period - periodWord) >= 0.5) {
+        periodWord |= 0x8000;
+    }
+
+    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = periodWord;
+    channelPeriod[chn->index] = periodWord;
 }
 
 void
