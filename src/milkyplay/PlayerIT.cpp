@@ -1075,6 +1075,7 @@ void PlayerIT::playInstrument(TModuleChannel* chnInf, bool bNoRestart/* = false*
 						   (mp_sbyte*)module->smp[i].sample,
 						   (mp_sbyte*)module->smp[i].sample2x,
 						   (mp_sbyte*)module->smp[i].sample4x,
+						   (mp_sbyte*)module->smp[i].sample8x,
 						   module->smp[i].samplen,
 						   chnInf->smpoffs + chnInf->smpoffshigh,
 						   0, // sample offset fraction
@@ -1093,6 +1094,7 @@ void PlayerIT::playInstrument(TModuleChannel* chnInf, bool bNoRestart/* = false*
 						   (mp_sbyte*)module->smp[i].sample,
 						   (mp_sbyte*)module->smp[i].sample2x,
 						   (mp_sbyte*)module->smp[i].sample4x,
+						   (mp_sbyte*)module->smp[i].sample8x,
 						   module->smp[i].samplen,
 						   smpoffset,
 						   smpoffsetfrac, // sample offset fraction
@@ -1111,6 +1113,7 @@ void PlayerIT::playInstrument(TModuleChannel* chnInf, bool bNoRestart/* = false*
 				playSample(chn,(mp_sbyte*)module->smp[i].sample,
 						   (mp_sbyte*)module->smp[i].sample2x,
 						   (mp_sbyte*)module->smp[i].sample4x,
+						   (mp_sbyte*)module->smp[i].sample8x,
 						   module->smp[i].samplen,
 						   chnInf->smpoffs + chnInf->smpoffshigh,
 						   0, // sample offset fraction
@@ -1128,6 +1131,7 @@ void PlayerIT::playInstrument(TModuleChannel* chnInf, bool bNoRestart/* = false*
 				playSample(chn,(mp_sbyte*)module->smp[i].sample,
 						   (mp_sbyte*)module->smp[i].sample2x,
 						   (mp_sbyte*)module->smp[i].sample4x,
+						   (mp_sbyte*)module->smp[i].sample8x,
 						   module->smp[i].samplen,
 						   smpoffset,
 						   smpoffsetfrac, // sample offset fraction

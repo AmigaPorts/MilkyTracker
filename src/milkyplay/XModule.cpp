@@ -203,6 +203,11 @@ void TXMSample::postProcessSamples()
 	}
 	this->sample4x = (mp_sbyte *) allocPaddedMem(type & 16 ? this->samplen >> 1 : this->samplen >> 2);
 
+	if(this->sample8x) {
+		freePaddedMem((mp_ubyte *) this->sample8x);
+	}
+	this->sample8x = (mp_sbyte *) allocPaddedMem(type & 16 ? this->samplen >> 2 : this->samplen >> 3);
+
 	// 16 bit sample
 	if (type&16)
 	{
@@ -270,6 +275,12 @@ void TXMSample::postProcessSamples()
 		s = data;
 		d = reinterpret_cast<mp_sword *>(this->sample4x);
 		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=4, j++) {
+			d[j] = s[i];
+		}
+
+		s = data;
+		d = reinterpret_cast<mp_sword *>(this->sample8x);
+		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=8, j++) {
 			d[j] = s[i];
 		}
 	}
@@ -341,6 +352,12 @@ void TXMSample::postProcessSamples()
 		s = data;
 		d = reinterpret_cast<mp_sbyte *>(this->sample4x);
 		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=4, j++) {
+			d[j] = s[i];
+		}
+		
+		s = data;
+		d = reinterpret_cast<mp_sbyte *>(this->sample8x);
+		for(mp_sint32 i = 0, j = 0; i < this->samplen; i+=8, j++) {
 			d[j] = s[i];
 		}
 	}

@@ -426,6 +426,7 @@ DoNote1:
 										   module->smp[module->instr[q].snum[0]].sample, // sample buffer
 										   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
+										   module->smp[module->instr[q].snum[0]].sample8x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].samplen, // sample size
 										   0, // sample offset
 										   0, // sample offset fraction
@@ -440,6 +441,7 @@ DoNote1:
 										   module->smp[module->instr[q].snum[0]].sample, // sample buffer
 										   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
+										   module->smp[module->instr[q].snum[0]].sample8x, // sped up sample buffer
 										   module->smp[module->instr[q].snum[0]].samplen, // sample size
 										   0, // sample offset
 										   0, // sample offset fraction
@@ -500,6 +502,7 @@ NoNote1:
 									   module->smp[module->instr[q].snum[0]].sample, // sample buffer
 									   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
+									   module->smp[module->instr[q].snum[0]].sample8x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].samplen, // sample size
 									   0, // sample offset
 									   0, // sample offset fraction
@@ -514,6 +517,7 @@ NoNote1:
 									   module->smp[module->instr[q].snum[0]].sample, // sample buffer
 									   module->smp[module->instr[q].snum[0]].sample2x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].sample4x, // sped up sample buffer
+									   module->smp[module->instr[q].snum[0]].sample8x, // sped up sample buffer
 									   module->smp[module->instr[q].snum[0]].samplen, // sample size
 									   0, // sample offset
 									   0, // sample offset fraction

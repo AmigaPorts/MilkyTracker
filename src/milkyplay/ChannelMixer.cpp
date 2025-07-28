@@ -98,6 +98,9 @@ void ChannelMixer::ResamplerBase::directOutChannel(ChannelMixer* mixer, mp_uint3
 		case MP_SAMPLE_FADEOUT:
 		{
 			chn->sample = newChannel[c].sample;
+			chn->smp2x = newChannel[c].smp2x;
+			chn->smp4x = newChannel[c].smp4x;
+			chn->smp8x = newChannel[c].smp8x;
 			chn->smplen = newChannel[c].smplen;
 			chn->loopstart = newChannel[c].loopstart;
 			chn->loopend = newChannel[c].loopend;
@@ -145,6 +148,9 @@ void ChannelMixer::ResamplerBase::addChannelsNormal(ChannelMixer* mixer, mp_uint
 			case MP_SAMPLE_FADEOUT:
 			{
 				chn->sample = newChannel[c].sample;
+				chn->smp2x = newChannel[c].smp2x;
+				chn->smp4x = newChannel[c].smp4x;
+				chn->smp8x = newChannel[c].smp8x;
 				chn->smplen = newChannel[c].smplen;
 				chn->loopstart = newChannel[c].loopstart;
 				chn->loopend = newChannel[c].loopend;
@@ -280,6 +286,9 @@ void ChannelMixer::ResamplerBase::addChannelsRamping(ChannelMixer* mixer, mp_uin
 
 				// fade in new sample
 				chn->sample = newChannel[c].sample;
+				chn->smp2x = newChannel[c].smp2x;
+				chn->smp4x = newChannel[c].smp4x;
+				chn->smp8x = newChannel[c].smp8x;
 				chn->smplen = newChannel[c].smplen;
 				chn->loopstart = newChannel[c].loopstart;
 				chn->loopend = newChannel[c].loopend;
@@ -745,11 +754,6 @@ void ChannelMixer::setActiveChannels(mp_uint32 num)
 // Default lo precision calculations
 void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f, mp_sint32 per)
 {
-	//printf("per: %.2f\n", (float)per / 1024.0f);
-
-	f /= 2;
-	per /= 2;
-
 	channel[c].smpadd = ((mp_sint32)(((mp_int64)((mp_int64)f*(mp_int64)rMixFrequency))>>15))<<0;
 	channel[c].period = per;
 
@@ -811,6 +815,7 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 							  mp_sbyte* smp, // sample buffer
 							  mp_sbyte* smp2x, // 2x sped up sample buffer
 							  mp_sbyte* smp4x, // 4x sped up sample buffer
+							  mp_sbyte* smp8x, // 8x sped up sample buffer
 							  mp_sint32 smplen, // sample size
 							  mp_sint32 smpoffs, // sample offset
 							  mp_sint32 smpoffsfrac,
@@ -823,12 +828,6 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 	// doesn't play
 	if (smp == NULL)
 		return;
-
-	smp = smp2x;
-	smplen >>= 1;
-	smpoffs >>= 1;
-	lstart >>= 1;
-	len >>= 1;
 
 	// disable looping when loopstart = loopend
 	if (lstart == len)
@@ -885,7 +884,10 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 	// play sample but don't ramp volume
 	if (!ramp)
 	{
-		channel[c].sample=(mp_sbyte*)smp;
+		channel[c].sample = (mp_sbyte*)smp;
+		channel[c].smp2x = (mp_sbyte*)smp2x;
+		channel[c].smp4x = (mp_sbyte*)smp4x;
+		channel[c].smp8x = (mp_sbyte*)smp8x;
 		channel[c].smplen = smplen;
 		channel[c].loopstart=lstart;
 		channel[c].loopend=len;
@@ -908,6 +910,9 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 	else if (!(channel[c].flags&MP_SAMPLE_PLAY))
 	{
 		channel[c].sample=(mp_sbyte*)smp;
+		channel[c].smp2x = (mp_sbyte*)smp2x;
+		channel[c].smp4x = (mp_sbyte*)smp4x;
+		channel[c].smp8x = (mp_sbyte*)smp8x;
 		channel[c].smplen = smplen;
 		channel[c].loopstart=lstart;
 		channel[c].loopend=len;
@@ -952,6 +957,9 @@ void ChannelMixer::playSample(mp_sint32 c, // channel
 	else
 	{
 		newChannel[c].sample=(mp_sbyte*)smp;
+		newChannel[c].smp2x = (mp_sbyte*)smp2x;
+		newChannel[c].smp4x = (mp_sbyte*)smp4x;
+		newChannel[c].smp8x = (mp_sbyte*)smp8x;
 		newChannel[c].smplen = smplen;
 		newChannel[c].loopstart = lstart;
 		newChannel[c].loopend = len;
@@ -1054,6 +1062,9 @@ void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
 			// Fade out = switch sample while playing
 			case MP_SAMPLE_FADEOUT:
 				chn->sample = newChannel[c].sample;
+				chn->smp2x = newChannel[c].smp2x;
+				chn->smp4x = newChannel[c].smp4x;
+				chn->smp8x = newChannel[c].smp8x;
 				chn->smplen = newChannel[c].smplen;
 				chn->loopstart = newChannel[c].loopstart;
 				chn->loopend = newChannel[c].loopend;

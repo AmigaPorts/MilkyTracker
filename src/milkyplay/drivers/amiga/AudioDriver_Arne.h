@@ -67,6 +67,7 @@ private:
 	mp_sint32           channelSamplePos[16];
 	float               channelExactPeriod[16];
 	mp_sint32          	channelPeriod[16];
+	mp_uint32           channelPlaybackShift[16];
 
 protected:
 	virtual mp_sint32   allocResources();
