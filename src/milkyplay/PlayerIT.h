@@ -585,6 +585,13 @@ private:
 			}
 		}
 	
+#ifdef __AMIGA__
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
+			return getlogperiod(note,relnote,finetune);
+		}
+#endif
+
 		return (module->header.freqtab&1) ? getlinperiod(note,relnote,finetune) : getlogperiod(note,relnote,finetune);
 	}
 	
