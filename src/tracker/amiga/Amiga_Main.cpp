@@ -65,7 +65,8 @@
 #define GID_AUDIO_MIXER_DESC	(GID_BASE + 5)
 #define GID_RUN					(GID_BASE + 6)
 #define GID_QUIT				(GID_BASE + 7)
-#define GID_DETECTED			(GID_BASE + 8)
+#define GID_BUILD_INFO			(GID_BASE + 8)
+#define GID_SPECS				(GID_BASE + 9)
 
 #define STR2(a) #a
 #define STR(a) STR2(a)
@@ -492,7 +493,8 @@ static int setup(AmigaApplication * app)
 	long winWidth, winHeight;
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
-	char detected[256] = {0};
+	char build_info[256] = {0};
+	char specs[256] = {0};
 	char winTitle[256] = {0};
 	bool foundDisplay = false;
 	int displayIndex;
@@ -536,22 +538,33 @@ static int setup(AmigaApplication * app)
 
 		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
 		newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
-		newGadget.ng_Width      = 30 * pubScreen->RastPort.TxWidth + 20;
+		newGadget.ng_Width      = 40 * pubScreen->RastPort.TxWidth + 20;
 		newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
 
-		sprintf(detected, "Specs: %ld, FPU: %s, SAGA: %s, AMMX: %s, V4: %s",
+		sprintf(build_info, "Built for %ld on %s", AMIGA_ARCH, NOW);
+
+		newGadget.ng_GadgetText = NULL;
+		newGadget.ng_GadgetID   = GID_BUILD_INFO;
+		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+			GTTX_Text, build_info,
+			TAG_END);
+		if(!gadget) {
+			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
+			return -2;
+		}
+
+		sprintf(specs, "Specs: %ld, FPU: %s, SAGA: %s, AMMX: %s, V4: %s",
 			cpuType,
 			hasFPU ? "Y" : "N",
 			useSAGA ? "Y" : "N",
 			hasAMMX ? "Y" : "N",
 			isV4Core ? "Y" : "N");
 
-		INFO("%s", detected);
-
 		newGadget.ng_GadgetText = NULL;
-		newGadget.ng_GadgetID   = GID_DETECTED;
+		newGadget.ng_GadgetID   = GID_SPECS;
+		newGadget.ng_TopEdge   += newGadget.ng_Height;
 		gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-			GTTX_Text, detected,
+			GTTX_Text, specs,
 			TAG_END);
 		if(!gadget) {
 			ERROR("Cannot create gadget %d!", newGadget.ng_GadgetID);
@@ -626,7 +639,7 @@ static int setup(AmigaApplication * app)
 
 		newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
 		newGadget.ng_TopEdge   += newGadget.ng_Height + 8;
-		newGadget.ng_Width      = 22 * pubScreen->RastPort.TxWidth + 8;
+		newGadget.ng_Width      = 27 * pubScreen->RastPort.TxWidth + 8;
 		newGadget.ng_GadgetText = "Run";
 		newGadget.ng_GadgetID   = GID_RUN;
 		newGadget.ng_Flags      = 0;
@@ -651,7 +664,7 @@ static int setup(AmigaApplication * app)
 		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
 		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
 
-		sprintf(winTitle, "Setup (Built for " STR(AMIGA_ARCH) " @ " STR(NOW) ")");
+		strcpy(winTitle, "MilkyTracker Setup");
 
 		window = OpenWindowTags(NULL,
 			WA_Width,  		winWidth,
