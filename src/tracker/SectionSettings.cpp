@@ -624,6 +624,13 @@ public:
 		radioGroup->addItem("Amiga frequencies");
 		radioGroup->addItem("Linear frequencies");
 
+#ifdef __AMIGA__
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
+			radioGroup->enable(false);
+		}
+#endif
+
 		container->addControl(radioGroup);
 
 		//container->addControl(new PPSeperator(0, screen, PPPoint(x2 + 158, y+4), UPPERFRAMEHEIGHT-8, TrackerConfig::colorThemeMain, false));

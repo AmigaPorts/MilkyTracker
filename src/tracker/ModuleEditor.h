@@ -205,7 +205,15 @@ public:
 		FrequencyLinear = 1
 	};
 	void setFrequency(Frequencies frequency);
-	Frequencies getFrequency() const { return (Frequencies)(module->header.freqtab & 1); }
+	Frequencies getFrequency() const { 
+#ifdef __AMIGA__
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
+			return FrequencyAmiga;
+		}
+#endif
+		return (Frequencies)(module->header.freqtab & 1); 
+	}
 
 	mp_sint32 getSongBPM() const { return module->header.speed; }
 	mp_sint32 getSongTickSpeed() const { return module->header.tempo; }
