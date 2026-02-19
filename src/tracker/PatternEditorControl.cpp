@@ -46,14 +46,41 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	borderColor(&TrackerConfig::colorThemeMain),
 	cursorColor(&TrackerConfig::colorPatternEditorCursorLine),
 	selectionColor(&TrackerConfig::colorPatternEditorSelection),
-	menuPosX(0), menuPosY(0),
+	font(NULL),
+	hTopScrollbar(NULL), hBottomScrollbar(NULL), vLeftScrollbar(NULL), vRightScrollbar(NULL),
+	caughtControl(NULL),
+	controlCaughtByLMouseButton(false), controlCaughtByRMouseButton(false),
+	patternEditor(NULL), module(NULL), pattern(NULL),
+	currentOrderlistIndex(0),
+	songPos(),
+	startIndex(0), startPos(0),
+	visibleWidth(0), visibleHeight(0), slotSize(0),
+	muteChannels(),
+	recChannels(),
+	cursorPositions(),
+	cursorSizes(),
+	cursorCopy(), preCursor(), ppreCursor(NULL),
+	startSelection(false),
+	keyboardStartSelection(false),
+	assureUpdate(false), assureCursor(false),
+	selectionTicker(0),
+	hasDragged(false),
+	moveSelection(false),
+	moveSelectionInitialPos(),
+	moveSelectionFinalPos(),
+	menuPosX(0),
+	menuPosY(0),
 	menuInvokeChannel(-1), lastMenuInvokeChannel(-1),
+	editMenuControl(NULL),
 	eventKeyDownBindings(NULL),
 	scanCodeBindings(NULL),
 	eventKeyDownBindingsMilkyTracker(NULL), scanCodeBindingsMilkyTracker(NULL), eventKeyDownBindingsFastTracker(NULL), scanCodeBindingsFastTracker(NULL),
-	patternEditor(NULL), module(NULL), pattern(NULL),
-	ppreCursor(NULL),
+	editMode(),
+	selectionKeyModifier(0),
 	lastAction(RMouseDownActionInvalid), RMouseDownInChannelHeading(-1),
+
+	dialog(NULL),
+	transposeHandlerResponder(NULL),
 	playerMaster(playerMaster)
 {
 	// default color
@@ -66,20 +93,7 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	hTopScrollbar = new PPScrollbar(2, parentScreen, this, PPPoint(location.x + SCROLLBARWIDTH, location.y), size.width - SCROLLBARWIDTH*2, true);
 	hBottomScrollbar = new PPScrollbar(3, parentScreen, this, PPPoint(location.x + SCROLLBARWIDTH, location.y + size.height - SCROLLBARWIDTH), size.width - SCROLLBARWIDTH*2, true);
 
-	caughtControl = NULL;
-	controlCaughtByLMouseButton = controlCaughtByRMouseButton = false;
-	pattern = NULL;
-
-	startIndex = 0;
-	startPos = 0;
-
 	songPos.orderListIndex = songPos.row = -1;
-
-	startSelection = false;
-
-	// assuming false is zero :)
-	memset(muteChannels, 0, sizeof(muteChannels));
-	memset(recChannels, 0 ,sizeof(recChannels));
 
 	// context menu
 	editMenuControl = new PPContextMenu(4, parentScreen, this, PPPoint(0,0), TrackerConfig::colorThemeMain, false, PPFont::getFont(PPFont::FONT_SYSTEM));
@@ -116,7 +130,6 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	setRecordMode(false);
 
 	transposeHandlerResponder = new TransposeHandlerResponder(*this);
-	dialog = NULL;
 }
 
 PatternEditorControl::~PatternEditorControl()
@@ -219,14 +232,17 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 		lineColor.r = lineColor.g = lineColor.b = 64;
 
 	PPColor bColor = *borderColor, dColor = *borderColor, bCursor = lineColor, dCursor = lineColor;
-	// adjust dark color
-	dColor.scaleFixed(32768);
-	// adjust bright color
-	bColor.scaleFixed(87163);
-	// adjust dark color
-	dCursor.scaleFixed(32768);
-	// adjust bright color
-	bCursor.scaleFixed(87163);
+
+	if(g->getOperatingBitDepth() > 4) {
+		// adjust dark color
+		dColor.scaleFixed(32768);
+		// adjust bright color
+		bColor.scaleFixed(87163);
+		// adjust dark color
+		dCursor.scaleFixed(32768);
+		// adjust bright color
+		bCursor.scaleFixed(87163);
+	}
 
 	g->setRect(location.x+SCROLLBARWIDTH, location.y+SCROLLBARWIDTH,
 			   location.x + size.width - SCROLLBARWIDTH, location.y + size.height - SCROLLBARWIDTH);
@@ -614,14 +630,16 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 				for (pp_int32 k = cursorPositions[cursor.inner]; k < cursorPositions[cursor.inner]+cursorSizes[cursor.inner]; k++)
 					g->drawVLine(py, py + font->getCharHeight(), px + k);
 
-				PPColor c = g->getColor();
-				PPColor c2 = c;
-				c.scaleFixed(32768);
-				c2.scaleFixed(87163);
-				g->setColor(c2);
-				g->drawHLine(px + cursorPositions[cursor.inner], px + cursorPositions[cursor.inner]+cursorSizes[cursor.inner], py - 1);
-				g->setColor(c);
-				g->drawHLine(px + cursorPositions[cursor.inner], px + cursorPositions[cursor.inner]+cursorSizes[cursor.inner], py + font->getCharHeight());
+				if(g->getOperatingBitDepth() > 4) {
+					PPColor c = g->getColor();
+					PPColor c2 = c;
+					c.scaleFixed(32768);
+					c2.scaleFixed(87163);
+					g->setColor(c2);
+					g->drawHLine(px + cursorPositions[cursor.inner], px + cursorPositions[cursor.inner]+cursorSizes[cursor.inner], py - 1);
+					g->setColor(c);
+					g->drawHLine(px + cursorPositions[cursor.inner], px + cursorPositions[cursor.inner]+cursorSizes[cursor.inner], py + font->getCharHeight());
+				}
 			}
 
 			patternTools->setPosition(pattern, j, row);
@@ -777,7 +795,7 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 			g->drawString(name,px, py);
 		}
 	}
-	
+
 	for (j = startPos; j < numVisibleChannels; j++)
 	{
 
@@ -858,55 +876,55 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 			break;
 		}
 	}
-	
+
 	// --------------------- draw moved selection ---------------------
-	
-	if (hasValidSelection() && moveSelection)
+
+	if (properties.advancedDnd && hasValidSelection() && moveSelection)
 	{
 		pp_int32 moveSelectionRows = moveSelectionFinalPos.row - moveSelectionInitialPos.row;
 		pp_int32 moveSelectionChannels = moveSelectionFinalPos.channel - moveSelectionInitialPos.channel;
-		
+
 		pp_int32 i1 = selectionStart.row + moveSelectionRows;
 		pp_int32 j1 = selectionStart.channel + moveSelectionChannels;
 		pp_int32 i2 = selectionEnd.row + moveSelectionRows;
 		pp_int32 j2 = selectionEnd.channel + moveSelectionChannels;
-		
+
 		if (i2 >= 0 && j2 >= 0 && i1 < pattern->rows && j1 < numVisibleChannels)
 		{
 			i1 = PPTools::clamp(i1, 0, pattern->rows);
 			i2 = PPTools::clamp(i2, 0, pattern->rows);
 			j1 = PPTools::clamp(j1, 0, numVisibleChannels);
 			j2 = PPTools::clamp(j2, 0, numVisibleChannels);
-			
-			pp_int32 x1 = (location.x + (j1-startPos) * slotSize + SCROLLBARWIDTH) + cursorPositions[selectionStart.inner] + (getRowCountWidth() + 4);
-			pp_int32 y1 = (location.y + (i1-startIndex) * font->getCharHeight() + SCROLLBARWIDTH) + (font->getCharHeight() + 4);
-			
-			pp_int32 x2 = (location.x + (j2-startPos) * slotSize + SCROLLBARWIDTH) + cursorPositions[selectionEnd.inner]+cursorSizes[selectionEnd.inner] + (getRowCountWidth() + 3);
-			pp_int32 y2 = (location.y + (i2-startIndex) * font->getCharHeight() + SCROLLBARWIDTH) + (font->getCharHeight()*2 + 2);
-			
+
+			pp_int32 x1 = (location.x + (j1 - startPos) * slotSize + SCROLLBARWIDTH) + cursorPositions[selectionStart.inner] + (getRowCountWidth() + 4);
+			pp_int32 y1 = (location.y + (i1 - startIndex) * font->getCharHeight() + SCROLLBARWIDTH) + (font->getCharHeight() + 4);
+
+			pp_int32 x2 = (location.x + (j2 - startPos) * slotSize + SCROLLBARWIDTH) + cursorPositions[selectionEnd.inner]+cursorSizes[selectionEnd.inner] + (getRowCountWidth() + 3);
+			pp_int32 y2 = (location.y + (i2 - startIndex) * font->getCharHeight() + SCROLLBARWIDTH) + (font->getCharHeight() * 2 + 2);
+
 			// use a different color for cloning the selection instead of moving it
 			if (::getKeyModifier() & selectionKeyModifier)
 				g->setColor(hiLightPrimary);
 			else
 				g->setColor(textColor);
-			
+
 			const pp_int32 dashLen = 6;
-			
+
 			// inner dashed lines
 			g->drawHLineDashed(x1, x2, y1, dashLen, 3);
-			g->drawHLineDashed(x1, x2, y2, dashLen, 3+y2-y1);
+			g->drawHLineDashed(x1, x2, y2, dashLen, 3 + y2 - y1);
 			g->drawVLineDashed(y1, y2, x1, dashLen, 3);
-			g->drawVLineDashed(y1, y2+2, x2, dashLen, 3+x2-x1);
-			
+			g->drawVLineDashed(y1, y2+2, x2, dashLen, 3 + x2 - x1);
+
 			// outer dashed lines
 			g->drawHLineDashed(x1-1, x2+1, y1-1, dashLen, 1);
-			g->drawHLineDashed(x1-1, x2, y2+1, dashLen, 3+y2-y1);
+			g->drawHLineDashed(x1-1, x2, y2+1, dashLen, 3 + y2 - y1);
 			g->drawVLineDashed(y1-1, y2+1, x1-1, dashLen, 1);
-			g->drawVLineDashed(y1-1, y2+2, x2+1, dashLen, 3+x2-x1);
+			g->drawVLineDashed(y1-1, y2+2, x2+1, dashLen, 3 + x2 - x1);
 		}
-		
+
 	}
-	
+
 	// draw scrollbars
 	hTopScrollbar->paint(g);
 	hBottomScrollbar->paint(g);

@@ -110,45 +110,48 @@ PianoControl::PianoControl(pp_int32 id,
 						   pp_uint8 numNotes,
 						   bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
-	border(border),
 	NUMNOTES(numNotes),
+	border(border),
+	ourOwnBorderColor(),
 	borderColor(&ourOwnBorderColor),
-	mode(ModeEdit)
+	hScrollbar(NULL),
+	caughtControl(NULL),
+	controlCaughtByLMouseButton(false), controlCaughtByRMouseButton(false),
+	startPos(0),
+	visibleWidth(size.width - 2),
+	visibleHeight(size.height - SCROLLBARWIDTH - 2),
+	sampleIndex(0),
+	mode(ModeEdit),
+	currentSelectedNote(0)
 {
 	// default color
 	ourOwnBorderColor.set(192, 192, 192);
 
 	hScrollbar = new PPScrollbar(0, parentScreen, this, PPPoint(location.x, location.y + size.height - SCROLLBARWIDTH - 1), size.width - 1, true);
 
-#ifndef __LOWRES__
+#if defined(__LOWRES__) || defined(__AMIGA__)
+	xscale = 2;
+#	if defined(__AMIGA__)
+	yscale = 2;
+#	else
+	yscale = 1;
+#	endif
+	pianoBitmap = PianoBitmapSmall::getInstance();
+#else
 	xscale = 1;
 	yscale = 1;
 	pianoBitmap = PianoBitmapLarge::getInstance();
-#else
-	xscale = 2;
-	yscale = 1;
-	pianoBitmap = PianoBitmapSmall::getInstance();
 #endif
 
 	xMax = XMAX()*xscale;
 	yMax = YMAX()*yscale;
 
-	visibleWidth = size.width - 2;
-	visibleHeight = size.height - SCROLLBARWIDTH - 2;
-
 	adjustScrollbars();
-
-	startPos = 0;
-
-	caughtControl = NULL;
-	controlCaughtByLMouseButton = controlCaughtByRMouseButton = false;
-
+		
 	nbu = new pp_uint8[NUMNOTES];
 	memset(nbu, 0, NUMNOTES);
 
 	keyState = new KeyState[NUMNOTES];
-
-	sampleIndex = 0;
 }
 
 PianoControl::~PianoControl()

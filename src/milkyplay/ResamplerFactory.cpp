@@ -51,11 +51,15 @@ bool ResamplerSincTableBase<16>::tableInit = false;
 
 ChannelMixer::ResamplerBase* ResamplerFactory::createResampler(ResamplerTypes type)
 {
+#ifdef __AMIGA__
+	return new ResamplerSimple();
+#endif
+
 	switch (type)
 	{
 		case MIXER_NORMAL:
 			return new ResamplerSimple();
-			
+
 		case MIXER_NORMAL_RAMPING:
 			return new ResamplerSimpleRamp();
 

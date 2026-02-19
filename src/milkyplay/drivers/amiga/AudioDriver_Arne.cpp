@@ -20,7 +20,7 @@
 
 #define DMA2F_AUDIO             0xfff
 
-#define MAX_CHANNELS            8
+#define MAX_CHANNELS            16
 
 AudioDriver_Arne::AudioDriver_Arne()
 {
@@ -39,7 +39,7 @@ AudioDriver_Arne::getChannels() const
 const char*
 AudioDriver_Arne::getDriverID()
 {
-    return "Apollo SAGA Arne 8-ch";
+    return "Apollo SAGA Arne 16-ch";
 }
 
 mp_sint32
@@ -228,8 +228,10 @@ AudioDriver_Arne_ResampleHW::initHardware()
     for(int i = 0; i < MAX_CHANNELS; i++) {
         channelLoopStart[i] = 0;
         channelRepeatLength[i] = 1;
+        channelSampleExactPos[i] = 0.0f;
         channelSamplePos[i] = 0;
-        channelPeriod[i] = 1;
+        channelExactPeriod[i] = 1.0f;
+        channelPlaybackShift[i] = 0;
     }
 }
 
@@ -292,8 +294,8 @@ AudioDriver_Arne_ResampleHW::enableIRQ()
 
     // Reset Timer A
     ciab.ciacra = CIACRAF_LOAD | CIACRAF_START;
-    ciab.ciatalo = (1773447/125)&0xff;
-    ciab.ciatahi = (1773447/125)>>8;
+    ciab.ciatalo = (1773447/(125 * 5))&0xff;
+    ciab.ciatahi = (1773447/(125 * 5))>>8;
 
     // Reset Timer B
     ciab.ciacrb = CIACRBF_LOAD;
@@ -360,29 +362,51 @@ AudioDriver_Arne_ResampleHW::playAudio()
 void
 AudioDriver_Arne_ResampleHW::setChannelFrequency(ChannelMixer::TMixerChannel * chn)
 {
-    //printf("ch %ld per = %ld\n", chn->index, chn->period);
+    const float minPeriod = 124.0f * 1024.0f;
+    float period = (float) chn->period;
 
-    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = chn->period >> 10;
-    channelPeriod[chn->index] = chn->period >> 10;
+    channelExactPeriod[chn->index] = period / 1024.0f;
+
+    channelPlaybackShift[chn->index] = 0;
+
+    if(period < minPeriod) {
+        period *= 2.0f;
+        channelPlaybackShift[chn->index]++;
+    }
+    
+    if(period < minPeriod) {
+        period *= 2.0f;
+        channelPlaybackShift[chn->index]++;
+    }
+    
+    if(period < minPeriod) {
+        period *= 2.0f;
+        channelPlaybackShift[chn->index]++;
+    }
+
+    if(period < minPeriod) {
+        // @todo show warning somewhere?
+    }
+
+    period = period / 1024.0f;
+
+    mp_uword periodWord = (mp_uword) period;    
+    
+    if((period - periodWord) >= 0.5) {
+        periodWord |= 0x8000;
+    }
+
+    *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = periodWord;
 }
 
 void
 AudioDriver_Arne_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 {
-    mp_sint32 vol = 0;
+    mp_sint32 voll = (chn->finalvoll >> 21) + 6;
+    mp_sint32 volr = (chn->finalvolr >> 21) + 6;
 
-    switch (chn->index & 3) {
-        case 0:
-        case 3:
-            vol = chn->finalvoll;
-            break;
-        case 1:
-        case 2:
-            vol = chn->finalvolr;
-            break;
-    }
-
-    *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) = ((vol >> 21) + 6) >> 3;
+    *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) =
+        (((voll >> 3) & 0xff) << 8) | ((volr >> 3) & 0xff);
 }
 
 void
@@ -400,7 +424,7 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     }
 
     // Get sample position
-    mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : channelSamplePos[chn->index];
+    mp_sint32 smppos = (chn->flags & ChannelMixer::MP_SAMPLE_RESTART) ? chn->smppos : channelSamplePos[chn->index];
 
     /*printf("ch %ld play = $%08lx smppos = $%08lx, $%08lx, $%08lx, loopend = $%08lx\n",
         chn->index, chn->sample, chn->smppos, smppos, hwChannelPos[chn->index], chn->loopend);*/
@@ -415,19 +439,45 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
         }
     }
 
+    // Sets the period AND the playback shift we need to choose another sample version
+    setChannelFrequency(chn);
+
+    // Shift down playback coefficients
+    mp_sint32 xshift = channelPlaybackShift[chn->index],
+        xsmppos = smppos,
+        xloopstart = chn->loopstart,
+        xloopend = chn->loopend;
+
+    if(xshift > 0) {
+        xsmppos >>= xshift;
+        xloopstart >>= xshift;
+        xloopend >>= xshift;
+    }
+
     // Set sample
+    const mp_sbyte * xsample;
+    if(xshift == 3) {
+        xsample = chn->smp8x;
+    } else if(xshift == 2) {
+        xsample = chn->smp4x;
+    } else if(xshift == 1) {
+        xsample = chn->smp2x;
+    } else {
+        xsample = chn->sample;
+    }  
+    
     if(is16bit) {
-        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sword *) chn->sample) + smppos);
+        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sword *) xsample) + xsmppos);
         *((volatile mp_uword *) AUDIO_MODE(chn->index)) = AUDIO_MODEF_16;
     } else {
-        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sbyte *) chn->sample) + smppos);
+        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sbyte *) xsample) + xsmppos);
         *((volatile mp_uword *) AUDIO_MODE(chn->index)) = 0;
     }
-    *((volatile mp_uint32 *) AUDIO_LENHI(chn->index)) = (mp_uint32) ((chn->loopend - smppos) >> 1);
+    *((volatile mp_uint32 *) AUDIO_LENHI(chn->index)) = (mp_uint32) ((xloopend - xsmppos) >> 1);
 
+    channelSampleExactPos[chn->index] = (float) smppos;
     channelSamplePos[chn->index] = smppos;
 
-    setChannelFrequency(chn);
     setChannelVolume(chn);
 
     if ((chn->flags & 3) == 0) {
@@ -435,11 +485,11 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
         channelRepeatLength[chn->index] = 1;
     } else {
         if(is16bit) {
-            channelLoopStart[chn->index] = (mp_uint32) (((mp_sword *) chn->sample) + chn->loopstart);
+            channelLoopStart[chn->index] = (mp_uint32) (((mp_sword *) xsample) + xloopstart);
         } else {
-            channelLoopStart[chn->index] = (mp_uint32) (((mp_sbyte *) chn->sample) + chn->loopstart);
+            channelLoopStart[chn->index] = (mp_uint32) (((mp_sbyte *) xsample) + xloopstart);
         }
-        channelRepeatLength[chn->index] = (mp_uint32) ((chn->loopend - chn->loopstart) >> 1);
+        channelRepeatLength[chn->index] = (mp_uint32) ((xloopend - xloopstart) >> 1);
     }
 
     // And mark DMA channel as to be played
@@ -463,10 +513,11 @@ AudioDriver_Arne_ResampleHW::stopSample(ChannelMixer::TMixerChannel * chn)
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
     }
 
+    channelSampleExactPos[chn->index] = 0.0f;
     channelSamplePos[chn->index] = 0;
     channelLoopStart[chn->index] = 0;
     channelRepeatLength[chn->index] = 1;
-    channelPeriod[chn->index] = 1;
+    channelExactPeriod[chn->index] = 1.0f;
 
     //
     // See playSample what happens next!
@@ -480,14 +531,37 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
 
     // Handle one-shot
     for(i = 0; i < MAX_CHANNELS; i++) {
-        if((chn->flags & 3) == 0 && chn->flags & 8192 && channelSamplePos[i] >= chn->loopend) {
-            chn->flags &= ~8192;
+        if((chn->flags & 3) == 0 && chn->flags & ChannelMixer::MP_SAMPLE_ONESHOT && channelSamplePos[i] >= chn->loopend) {
+            chn->flags &= ~ChannelMixer::MP_SAMPLE_ONESHOT;
             chn->flags |= 1;
             chn->loopend = chn->loopendcopy;
 
-            channelLoopStart[i] = (mp_uint32) chn->sample;
-            channelRepeatLength[i] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
+            // Shift down playback coefficients
+            mp_sint32 xshift = channelPlaybackShift[i],
+                xloopstart = chn->loopstart,
+                xloopend = chn->loopend;
+
+            if(xshift > 0) {
+                xloopstart >>= xshift;
+                xloopend >>= xshift;
+            }
+
+            // Set sample
+            const mp_sbyte * xsample;
+            if(xshift == 3) {
+                xsample = chn->smp8x;
+            } else if(xshift == 2) {
+                xsample = chn->smp4x;
+            } else if(xshift == 1) {
+                xsample = chn->smp2x;
+            } else {
+                xsample = chn->sample;
+            }  
+            
+            channelLoopStart[i] = (mp_uint32) xsample;
+            channelRepeatLength[i] = (mp_uword) (((xloopend - xloopstart) >> 1) & 0xffff);
             channelSamplePos[i] = ((channelSamplePos[i] - chn->loopstart) % (chn->loopend - chn->loopstart)) + chn->loopstart;
+            channelSampleExactPos[i] = (float) channelSamplePos[i];
 
             newDMACON |= DMAF_AUD0 << i;
         }
@@ -501,11 +575,19 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
         ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
     }
 
+    // Record exact position inside sample
     for(i = 0; i < MAX_CHANNELS; i++) {
         //
         // Period is bound to Paula/Video clock !
-        // @todo Is bound to 50Hz so can be inprecise for some operations
         //
-        channelSamplePos[i] += (PAULA_CLK / REFRESHRATE) / channelPeriod[i];
+        float a = ((float) PAULA_CLK / 250.0f) / channelExactPeriod[i];
+        channelSampleExactPos[i] += a;
+        channelSamplePos[i] = (mp_sint32) channelSampleExactPos[i];
     }
+}
+
+int
+AudioDriver_Arne_ResampleHW::getOperationFrequency()
+{
+    return 250;
 }

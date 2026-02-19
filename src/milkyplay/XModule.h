@@ -187,6 +187,9 @@ public:
 	char		name[MP_MAXTEXT];
 	mp_ubyte	terminate;
 	mp_sbyte*   sample;
+	mp_sbyte*   sample2x;
+	mp_sbyte*   sample4x;
+	mp_sbyte*   sample8x;
 
 	static mp_uint32 getPaddedSize(mp_uint32 size)
 	{

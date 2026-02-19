@@ -67,6 +67,7 @@ private:
 
 	Tracker* tracker;
 	PPContextMenu* editMenuControl;
+	PPContextMenu* subMenuFX;
 	PPContextMenu* subMenuAdvanced;
 	PPContextMenu* subMenuXPaste;
 	PPContextMenu* subMenuGenerators;
@@ -280,6 +281,8 @@ private:
 	{
 		MenuCommandIDCrop = 99,
 		MenuCommandIDMixPaste,
+		MenuCommandIDMixOverflowPaste,
+		MenuCommandIDMixSpreadPaste,
 		MenuCommandIDAMPaste,
 		MenuCommandIDFMPaste,
 		MenuCommandIDPHPaste,
@@ -288,6 +291,9 @@ private:
 		MenuCommandIDCompress,
 		MenuCommandIDVolumeBoost,
 		MenuCommandIDVolumeFade,
+		MenuCommandIDVolumeFadeIn,
+		MenuCommandIDVolumeFadeOut,
+		MenuCommandIDVolumeFold,
 		MenuCommandIDReverse,
 		MenuCommandIDPTBoost,
 		MenuCommandIDXFade,

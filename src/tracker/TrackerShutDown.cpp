@@ -129,7 +129,7 @@ bool Tracker::shutDown()
 	{
 		// ----------- Save last settings -----------
 		// store version string to database
-		settingsDatabase->store("VERSION", MILKYTRACKER_VERSION );
+		settingsDatabase->store("VERSION", MILKYTRACKER_VERSION);
 
 		char buffer[100];
 		// playmode settings

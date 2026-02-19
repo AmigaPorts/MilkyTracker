@@ -66,8 +66,10 @@ void PPPathEntry_POSIX::create(const PPSystemString& path, const PPSystemString&
 			type = Hidden;
 		if (S_ISFIFO(file_status.st_mode))
 			type = Hidden;
+#ifndef __MINGW32__
 		if (S_ISSOCK(file_status.st_mode))
 			type = Hidden;
+#endif
 		if (S_ISREG(file_status.st_mode))
 			type = File;
 	}

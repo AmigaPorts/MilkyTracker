@@ -65,21 +65,10 @@ SYSCHAR System::buffer[PATH_MAX+1];
 
 const SYSCHAR* System::getTempFileName()
 {
-	// Suppressed warning: "'tmpnam' is deprecated: This function is provided for
-	// compatibility reasons only. Due to security concerns inherent in the
-	// design of tmpnam(3), it is highly recommended that you use mkstemp(3)
-	// instead."
+	strcpy(buffer, "/tmp/milkytracker.XXXXXX");
 
-	// Note: Replacing tmpnam() with mkstemp() requires modifying the module
-	// load, export and decompressor functions to accept a file handle (XMFILE)
-	// instead of a file name.
-#pragma clang diagnostic push
-#ifndef __amigaos4__ // GCC 4.2.4 was upset about this pragma
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-	if ((tmpnam(buffer) == NULL))
-#pragma clang diagnostic pop
-	{
+	int fd = mkstemp(buffer);
+	if (fd < 0) {
 		// should not be the case, if it is the case, create something that
 		// "might" work out
 		char *home = getenv("HOME");
@@ -90,6 +79,8 @@ const SYSCHAR* System::getTempFileName()
 		}
 		else
 			strcpy(buffer, "milkytracker_temp");
+	} else {
+		close(fd);
 	}
 	return buffer;
 }
@@ -136,9 +127,17 @@ const SYSCHAR* System::getConfigFileName()
 		strncpy(buffer, home, PATH_MAX);
 		strncat(buffer, "/.config", PATH_MAX);
 	}
+#ifdef __MINGW32__
+	mkdir(buffer);
+#else
 	mkdir(buffer, S_IRWXU);
+#endif
 	strncat(buffer, "/milkytracker", PATH_MAX);
+#ifdef __MINGW32__
+	mkdir(buffer);
+#else
 	mkdir(buffer, S_IRWXU);
+#endif
 	strncat(buffer, "/config", PATH_MAX);
 	// Move possible existing config into new location if not already present
 	if(home && access(oldLoc, F_OK) == 0 && access(buffer, F_OK) != 0)

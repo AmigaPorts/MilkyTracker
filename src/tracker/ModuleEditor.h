@@ -145,7 +145,7 @@ private:
 
 	DialogSynth * dialogSynth;
 public:
-	ModuleEditor();
+	ModuleEditor(mp_uword numChannels = 8);
 	~ModuleEditor();
 
 	XModule* getModule() { return module; }
@@ -205,7 +205,15 @@ public:
 		FrequencyLinear = 1
 	};
 	void setFrequency(Frequencies frequency);
-	Frequencies getFrequency() const { return (Frequencies)(module->header.freqtab & 1); }
+	Frequencies getFrequency() const { 
+#ifdef __AMIGA__
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
+			return FrequencyAmiga;
+		}
+#endif
+		return (Frequencies)(module->header.freqtab & 1); 
+	}
 
 	mp_sint32 getSongBPM() const { return module->header.speed; }
 	mp_sint32 getSongTickSpeed() const { return module->header.tempo; }
@@ -394,7 +402,7 @@ public:
 						 bool evaluate);
 
 	void adjustSampleOffsetCommandAfterSampleSizeChange(TXMSample *sample, pp_int32 oldSize);
-						 
+
 public:
 	static void insertText(char* dst, const char* src, mp_sint32 max);
 

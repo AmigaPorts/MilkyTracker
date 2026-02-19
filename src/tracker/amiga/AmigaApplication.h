@@ -4,6 +4,7 @@
 #include "BasicTypes.h"
 
 #include <exec/exec.h>
+#include <exec/execbase.h>
 #include <intuition/intuition.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
@@ -25,6 +26,7 @@
 #include <clib/vampire_protos.h>
 #include <clib/icon_protos.h>
 #include <clib/gadtools_protos.h>
+#include <clib/alib_protos.h>
 
 #include <hardware/intbits.h>
 
@@ -113,7 +115,7 @@ public:
     void                    loop();
     int                     stop();
 
-    bool                    isFullScreen() const { return displayID != -1; }
+    bool                    isFullScreen() const { return displayID > -1; }
     bool                    isAMMX() const { return hasAMMX; }
     bool                    isSAGA() const { return useSAGA; }
     bool                    isV4() const { return isV4Core; }
@@ -128,6 +130,7 @@ public:
     AudioDriverInterface *  createAudioDriver();
     AudioDriver             getAudioDriver() const { return audioDriver; }
     AudioMixer              getAudioMixer() const { return audioMixer; }
+    LONG                    getDisplayID() const { return displayID; }
 
     void                    setRunning(bool running) { this->running = running; }
     void                    setCpuType(int cpuType) { this->cpuType = cpuType; }

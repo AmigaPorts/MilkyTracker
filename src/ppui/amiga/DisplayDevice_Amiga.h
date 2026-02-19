@@ -57,6 +57,8 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 private:
 	AmigaApplication * 	app;
 
+	bool				active;
+
 	bool                useRTGWindowed;
 	bool                useRTGFullscreen;
 	bool                useRTGMode;
@@ -77,6 +79,8 @@ private:
 	std::vector<PPRect> drawCommands;
 
 	pp_uint32			palette[1 + (256 * 3) + 1];
+	pp_uint32           paletteStore[1 + (256 * 3) + 1];
+	bool                paletteStored;
 	struct Screen * 	screen;
 	struct Window *     window;
 	struct RastPort * 	rastPort;
@@ -89,8 +93,12 @@ private:
 
 	void * 				allocMemAligned(pp_uint32 size, void ** aligned);
 
+	void				storePalette();
+	void				restorePalette();
 public:
 	void                flush();
+
+	void                setActive(bool active);
 
 	DisplayDevice_Amiga(AmigaApplication * app);
 	virtual ~DisplayDevice_Amiga();

@@ -115,7 +115,7 @@ public:
 	}
 };
 
-ModuleEditor::ModuleEditor() :
+ModuleEditor::ModuleEditor(mp_uword numChannels) :
 	module(NULL),
 	patternEditor(NULL),
 	sampleEditor(NULL),
@@ -140,7 +140,7 @@ ModuleEditor::ModuleEditor() :
 
 	module = new XModule();
 
-	createNewSong();
+	createNewSong(numChannels);
 
 	changesListener = new ChangesListener(*this);
 

@@ -31,8 +31,8 @@
 #include "Seperator.h"
 #include "GraphicsAbstract.h"
 
-PPSeperator::PPSeperator(pp_int32 id, PPScreen* parentScreen, 
-						 const PPPoint& location, pp_uint32 size, 
+PPSeperator::PPSeperator(pp_int32 id, PPScreen* parentScreen,
+						 const PPPoint& location, pp_uint32 size,
 						 const PPColor& theColor, bool horizontal/* = true*/) :
 	PPControl(id, parentScreen, NULL, location, PPSize(0,0)),
 	horizontal(horizontal),
@@ -57,16 +57,16 @@ void PPSeperator::paint(PPGraphicsAbstract* g)
 
 	g->setRect(location.x, location.y, location.x + size.width+1, location.y + size.height+1);
 
-	//g->setColor(color);	
-	
+	//g->setColor(color);
+
 	PPColor bColor = *color, dColor = *color;
 
 	// adjust dark color
 	dColor.scaleFixed(20000);
-	
+
 	// adjust bright color
 	bColor.scaleFixed(87163);
-	
+
 	if (horizontal)
 	{
 		g->setColor(dColor);
@@ -77,7 +77,7 @@ void PPSeperator::paint(PPGraphicsAbstract* g)
 		g->setColor(dColor);
 		g->drawVLine(location.y, location.y + size.height, location.x);
 	}
-	
+
 	if (horizontal)
 	{
 		g->setColor(bColor);

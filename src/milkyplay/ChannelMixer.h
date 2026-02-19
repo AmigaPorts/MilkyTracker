@@ -190,6 +190,9 @@ public:
 													// bit 13 = one shot looping
 													// bit 15 = mute channel
 		const mp_sbyte*		sample;					// pointer to sample
+		const mp_sbyte*     smp2x;
+		const mp_sbyte*     smp4x;
+		const mp_sbyte*     smp8x;
 		mp_sint32			smplen;
 		mp_sint32			smppos;					// 32 bit integer part of sample position
 		mp_sint32			smpposfrac;				// 16 bit fractional part of sample position
@@ -493,6 +496,9 @@ public:
 
 	void			playSample(mp_sint32 c, // channel
 							   mp_sbyte* smp, // sample buffer
+							   mp_sbyte* smp2x, // sped up sample buffer
+							   mp_sbyte* smp4x, // sped up sample buffer
+							   mp_sbyte* smp8x, // sped up sample buffer
 							   mp_sint32 smplen, // sample size
 							   mp_sint32 smpoffs, // sample offset
 							   mp_sint32 smpoffsfrac,

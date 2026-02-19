@@ -60,8 +60,8 @@ void PPMessageBoxContainer::paint(PPGraphicsAbstract* g)
 		return;
 
 	PPColor bColor = *color, dColor = *color, vbColor = *color;
-	// adjust dark color
 
+	// adjust dark color
 	dColor.scaleFixed(32768);
 	bColor.scaleFixed(87163);
 	vbColor.scaleFixed(131072);

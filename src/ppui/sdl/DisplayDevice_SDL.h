@@ -56,7 +56,7 @@ protected:
 	Orientations orientation;
 	int drv_index;
 	
-	SDL_Window* CreateWindow(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags);
+	SDL_Window* createWindow(pp_int32& w, pp_int32& h, pp_int32& bpp, Uint32 flags);
 
 	// used for rotating coordinates etc.
 	void adjust(pp_int32& x, pp_int32& y);

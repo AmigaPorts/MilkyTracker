@@ -330,13 +330,6 @@ private:
 
 	mp_sint32		getperiod(mp_sint32 note,mp_sint32 relnote,mp_sint32 finetune)
 	{
-#ifdef __AMIGA__
-		extern bool ForceLogPeriod();
-		if(ForceLogPeriod()) {
-			return getlogperiod(note,relnote,finetune);
-		}
-#endif
-
 		if (playModeFT2)
 		{
 			// FT2 doesn't support lower 3 bits
@@ -349,6 +342,13 @@ private:
 					finetune = -128;
 			}
 		}
+
+#ifdef __AMIGA__
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
+			return getlogperiod(note,relnote,finetune);
+		}
+#endif
 
 		return (module->header.freqtab&1) ? getlinperiod(note,relnote,finetune) : getlogperiod(note,relnote,finetune);
 	}
