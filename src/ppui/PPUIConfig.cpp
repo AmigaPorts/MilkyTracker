@@ -31,6 +31,8 @@
 #include "PPUIConfig.h"
 
 #ifdef __AMIGA__
+struct Library * MUIMasterBase;
+
 template<>
 PPUIConfig * PPSingleton<PPUIConfig>::instance = NULL;
 #endif

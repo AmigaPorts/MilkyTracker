@@ -9,9 +9,6 @@
 #include "tracker/SectionInstruments.h"
 
 #if defined(__AMIGA__)
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-struct Library *MUIMasterBase;
 
 /* MUI Objects */
 static Object *app, *win1, *btnOpen, *btnPlay, *btnStop, *driverString, *modFileString, *bpmString, *speedString, *positionString, *rowString;
@@ -644,7 +641,7 @@ void initApp() {
 						TAG_END);
 	screen->app = app;
 	Printf("Halloj1!\n");
-	PPContainer* containerAbout = new PPContainer(CONTAINER_ABOUT, screen, nullptr, PPPoint(116-2, 0), PPSize((306-116+2)+14,24), true);
+	auto* containerAbout = new PPContainer(CONTAINER_ABOUT, screen, nullptr, PPPoint(116-2, 0), PPSize((306-116+2)+14,24), true);
 	containerAbout->setColor(TrackerConfig::colorThemeMain);
 	Printf("containerAbout\n");
 	containerAbout->setRows(2);

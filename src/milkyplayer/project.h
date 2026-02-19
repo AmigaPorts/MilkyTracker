@@ -14,7 +14,7 @@
 #include <proto/asl.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-#include <proto/muimaster_lib.h>
+#include <inline/muimaster_lib.h>
 
 #include <clib/alib_protos.h>
 #include <utility/tagitem.h>
