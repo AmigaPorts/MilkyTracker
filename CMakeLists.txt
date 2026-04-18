@@ -164,7 +164,9 @@ elseif(HAIKU)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
     # https://bugzilla.libsdl.org/show_bug.cgi?id=3295
-    cmake_policy(SET CMP0004 OLD)
+    if(${CMAKE_VERSION} VERSION_LESS "4.0.0")
+        cmake_policy(SET CMP0004 OLD)
+    endif()
 
     find_package(SDL2 REQUIRED)
 endif()
@@ -206,7 +208,7 @@ if(UNIX)
         endif()
 
         # Metainfo version and timestamp configuration, mandatory for flathub
-        string( TIMESTAMP METAINFO_DATE "%Y-%m-%d" )
+        string( TIMESTAMP METAINFO_DATE "%Y-%m-%d" UTC )
         configure_file(
             ${PROJECT_SOURCE_DIR}/resources/org.milkytracker.MilkyTracker.metainfo.xml.in
             ${PROJECT_BINARY_DIR}/resources/org.milkytracker.MilkyTracker.metainfo.xml
